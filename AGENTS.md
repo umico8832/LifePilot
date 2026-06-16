@@ -1,0 +1,33 @@
+# LifePilot Agent Guide
+
+LifePilot 采用 AI Agent 自主持续开发模式。新 Agent 接手时，应先读本文件，再按任务类型阅读 docs 目录中的专项文档。
+
+## 必读顺序
+
+1. `docs/AUTO_DEV_PROTOCOL.md`：自主开发循环、停止条件、文档维护规则。
+2. `docs/CURRENT_STATE.md`：当前阶段、最高优先级任务、阻塞项、下一项自动任务。
+3. `docs/BACKLOG.md`：可执行任务池和任务选择规则。
+4. `docs/HANDOFF.md`：交接信息、运行方式、测试方式、续接提示词。
+5. `docs/CHANGELOG_AGENT.md`：最近开发记录。
+
+## 按任务类型继续阅读
+
+- 产品和范围：`docs/PRODUCT_STRATEGY.md`、`docs/PRD.md`、`docs/ROADMAP.md`
+- 架构和模块：`docs/ARCHITECTURE.md`
+- 数据库：`docs/DB_DESIGN.md`
+- API：`docs/API_DESIGN.md`
+- 测试：`docs/TESTING.md`
+- Git：`docs/AGENT_GIT_RULES.md`
+- 自审：`docs/AGENT_REVIEW_CHECKLIST.md`
+- 技术决策：`docs/DECISION_LOG.md`
+
+## 协作原则
+
+- 除非触发 `docs/AUTO_DEV_PROTOCOL.md` 中的停止条件，否则完成一个任务后应继续从 `docs/BACKLOG.md` 选择下一项最高优先级任务。
+- 不要每完成一个中型任务就停下来问用户“下一步做什么”。
+- 当前阶段、临时 TODO、开发进度不要写入本文件。
+- 当前状态写入 `docs/CURRENT_STATE.md`。
+- 任务池写入 `docs/BACKLOG.md`。
+- 开发日志写入 `docs/CHANGELOG_AGENT.md`。
+- 上下文交接写入 `docs/HANDOFF.md` 和 `docs/NEXT_CHAT_PROMPT.md`。
+

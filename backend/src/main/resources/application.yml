@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: lifepilot-backend
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/lifepilot?useUnicode=true&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${SPRING_DATASOURCE_USERNAME:lifepilot}
+    password: ${SPRING_DATASOURCE_PASSWORD:lifepilot_dev_password}
+  flyway:
+    enabled: ${FLYWAY_ENABLED:true}
+  jackson:
+    default-property-inclusion: non_null
+
+server:
+  port: ${BACKEND_PORT:8080}
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+
+lifepilot:
+  jwt:
+    secret: ${JWT_SECRET:change-me-in-local-env-only-change-before-prod}
+    expiration-minutes: ${JWT_EXPIRATION_MINUTES:120}
+  ai:
+    provider: ${AI_PROVIDER:mock}
