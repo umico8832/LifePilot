@@ -79,10 +79,10 @@ onMounted(async () => {
         </div>
       </div>
       <div class="status-card">
-        <span class="metric">Phase 3</span>
+        <span class="metric">Phase 5</span>
         <div>
           <p class="status-label">当前阶段</p>
-          <p class="status-value">生活空间</p>
+          <p class="status-value">购物清单</p>
         </div>
       </div>
       <div class="status-card">
@@ -101,11 +101,11 @@ onMounted(async () => {
         <h2>生活空间</h2>
         <p>个人空间、家庭空间、成员管理与权限控制。</p>
       </article>
-      <article class="module-panel">
+      <article class="module-panel" :class="{ clickable: authStore.isAuthenticated }" @click="authStore.isAuthenticated && router.push('/finance')">
         <h2>智能记账</h2>
         <p>收入、支出、分类、预算和自然语言录入。</p>
       </article>
-      <article class="module-panel">
+      <article class="module-panel" :class="{ clickable: authStore.isAuthenticated }" @click="authStore.isAuthenticated && router.push('/shopping')">
         <h2>购物清单</h2>
         <p>清单项、采购状态、预算估算和库存联动。</p>
       </article>

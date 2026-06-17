@@ -69,3 +69,13 @@
 - 遗留问题：前端分类管理 UI 尚未集成到 FinanceView；购物清单、库存、待办、AI provider 等模块尚未实现。
 - 下一步任务：P0-010 实现购物清单 CRUD。
 - 建议 commit message：`feat(finance): 实现消费分类管理 CRUD`
+
+## 2026-06-17 14:41 Asia/Shanghai
+
+- Agent 任务名称：P0-010 实现购物清单 CRUD。
+- 修改文件：`backend/src/main/resources/db/migration/V4__create_shopping_list_and_item.sql`、`backend/src/main/java/com/lifepilot/shopping/**`（ShoppingList、ShoppingItem 实体、Mapper、DTO、ShoppingService、ShoppingController）、`backend/src/test/java/com/lifepilot/shopping/ShoppingControllerTests.java`、`frontend/src/api/shopping.ts`、`frontend/src/views/shopping/ShoppingView.vue`、`frontend/src/router/index.ts`、`frontend/src/views/HomeView.vue`、`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/CHANGELOG_AGENT.md`。
+- 实现内容：Flyway V4 迁移创建 `shopping_list` 和 `shopping_item` 表；后端 `shopping` 模块实现购物清单 CRUD（POST/GET/PATCH/DELETE `/api/spaces/{spaceId}/shopping-lists`）和清单项 CRUD（POST/PATCH/DELETE `/{listId}/items`），所有接口需要空间成员权限，删除清单时级联删除物品；前端新增购物清单 API、ShoppingView 页面（清单列表 → 清单详情两级视图，物品勾选已购状态、编辑、删除）；路由 /shopping；首页更新阶段信息和模块入口链接。
+- 测试结果：后端 `mvn test` 通过，26 tests passed（Auth 3 + Health 1 + App 1 + Household 9 + Transaction 6 + Shopping 6）；前端 `npm run build` 通过；Flyway V1-V4 在 H2 测试数据库迁移通过。
+- 遗留问题：库存、待办、AI provider 等模块尚未实现；前端构建提示单个 chunk 较大。
+- 下一步任务：P0-011 实现库存物品 CRUD。
+- 建议 commit message：`feat(shopping): 实现购物清单和清单项 CRUD`

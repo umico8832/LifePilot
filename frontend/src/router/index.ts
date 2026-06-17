@@ -4,6 +4,7 @@ import AuthView from '@/views/auth/AuthView.vue'
 import HomeView from '@/views/HomeView.vue'
 import SpaceView from '@/views/space/SpaceView.vue'
 import FinanceView from '@/views/finance/FinanceView.vue'
+import ShoppingView from '@/views/shopping/ShoppingView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -27,6 +28,11 @@ const router = createRouter({
       path: '/finance',
       name: 'finance',
       component: FinanceView,
+    },
+    {
+      path: '/shopping',
+      name: 'shopping',
+      component: ShoppingView,
     },
   ],
 })
