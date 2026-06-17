@@ -79,24 +79,28 @@ onMounted(async () => {
         </div>
       </div>
       <div class="status-card">
-        <span class="metric">Phase 1</span>
+        <span class="metric">Phase 3</span>
         <div>
           <p class="status-label">当前阶段</p>
-          <p class="status-value">项目骨架</p>
+          <p class="status-value">生活空间</p>
         </div>
       </div>
       <div class="status-card">
-        <span class="metric">{{ authStore.isAuthenticated ? 'JWT' : 'P0-005' }}</span>
+        <span class="metric">{{ authStore.isAuthenticated ? 'JWT' : 'P0-006' }}</span>
         <div>
           <p class="status-label">{{ authStore.isAuthenticated ? '当前用户' : '下一任务' }}</p>
           <p class="status-value">
-            {{ authStore.isAuthenticated ? authStore.user?.email : '用户注册登录' }}
+            {{ authStore.isAuthenticated ? authStore.user?.email : '生活空间模型' }}
           </p>
         </div>
       </div>
     </section>
 
     <section class="module-grid" aria-label="LifePilot modules">
+      <article class="module-panel" :class="{ clickable: authStore.isAuthenticated }" @click="authStore.isAuthenticated && router.push('/spaces')">
+        <h2>生活空间</h2>
+        <p>个人空间、家庭空间、成员管理与权限控制。</p>
+      </article>
       <article class="module-panel">
         <h2>智能记账</h2>
         <p>收入、支出、分类、预算和自然语言录入。</p>

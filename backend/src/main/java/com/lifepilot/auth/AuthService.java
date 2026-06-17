@@ -7,6 +7,7 @@ import com.lifepilot.auth.dto.LoginRequest;
 import com.lifepilot.auth.dto.RegisterRequest;
 import com.lifepilot.common.BusinessException;
 import com.lifepilot.security.JwtService;
+import com.lifepilot.space.HouseholdService;
 import com.lifepilot.user.UserAccount;
 import com.lifepilot.user.UserService;
 import com.lifepilot.user.dto.CurrentUserResponse;
@@ -16,14 +17,17 @@ public class AuthService {
 
     private final UserService userService;
     private final JwtService jwtService;
+    private final HouseholdService householdService;
 
-    public AuthService(UserService userService, JwtService jwtService) {
+    public AuthService(UserService userService, JwtService jwtService, HouseholdService householdService) {
         this.userService = userService;
         this.jwtService = jwtService;
+        this.householdService = householdService;
     }
 
     public AuthResponse register(RegisterRequest request) {
         UserAccount user = userService.createUser(request.email(), request.password(), request.displayName());
+        householdService.createPersonalSpace(user.getId(), user.getDisplayName());
         return toAuthResponse(user);
     }
 

@@ -39,3 +39,33 @@
 - 遗留问题：这些 skills 需要在后续真实业务模块实现中继续迭代；当前只提供流程约束，不代表对应业务功能已完成。
 - 下一步任务：P0-006 实现生活空间模型。
 - 建议 commit message：`chore(agent): 补充后端与 AI 项目 skills`
+
+## 2026-06-17 14:10 Asia/Shanghai
+
+- Agent 任务名称：P0-006 实现生活空间模型。
+- 修改文件：`backend/src/main/resources/db/migration/V2__create_household_and_member.sql`、`backend/src/main/java/com/lifepilot/space/**`、`backend/src/main/java/com/lifepilot/auth/AuthService.java`、`backend/src/main/java/com/lifepilot/common/GlobalExceptionHandler.java`、`backend/src/test/java/com/lifepilot/space/HouseholdControllerTests.java`、`frontend/src/api/space.ts`、`frontend/src/stores/space.ts`、`frontend/src/views/space/SpaceView.vue`、`frontend/src/router/index.ts`、`frontend/src/views/HomeView.vue`、`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/HANDOFF.md`、`docs/CHANGELOG_AGENT.md`。
+- 实现内容：Flyway V2 迁移创建 `household` 和 `household_member` 表；后端 `space` 模块（Household、HouseholdMember 实体、Mapper、HouseholdService、HouseholdController）实现空间 CRUD、成员管理（邀请、角色更新）、空间成员校验；注册时自动创建个人空间；`GlobalExceptionHandler` 新增 FORBIDDEN → 403 映射；前端新增空间 API、Pinia space store、SpaceView 页面（左侧空间列表 + 右侧成员表格 + 重命名/邀请对话框）；首页新增生活空间模块入口。
+- 测试结果：后端 `mvn test` 通过，14 tests passed（Auth 3 + Health 1 + App 1 + Household 9）；前端 `npm install && npm run build` 通过；Flyway V1、V2 在 H2 测试数据库迁移通过。
+- 遗留问题：记账、购物、库存、待办等业务模块尚未实现；AI provider 尚未落代码；前端生产构建提示单个 chunk 较大。
+- 下一步任务：P0-007 实现支出记录 CRUD。
+- 建议 commit message：`feat(space): 实现生活空间模型和成员管理`
+
+## 2026-06-17 14:20 Asia/Shanghai
+
+- Agent 任务名称：P0-007 实现支出记录 CRUD；P0-008 实现收入记录 CRUD。
+- 修改文件：`backend/src/main/resources/db/migration/V3__create_transaction_record.sql`、`backend/src/main/java/com/lifepilot/finance/**`、`backend/src/test/java/com/lifepilot/finance/TransactionControllerTests.java`、`frontend/src/api/transaction.ts`、`frontend/src/views/finance/FinanceView.vue`、`frontend/src/router/index.ts`、`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/CHANGELOG_AGENT.md`。
+- 实现内容：Flyway V3 迁移创建 `transaction_record` 和 `transaction_category` 表；后端 `finance` 模块（TransactionRecord 实体、Mapper、TransactionService、TransactionController）实现支出/收入记录 CRUD，所有接口需要空间成员权限；前端新增记账 API、FinanceView 页面（空间选择器 + 收支合计统计 + 记录表格 + 创建/编辑对话框）；`transaction_record.type` 字段同时支持 `expense` 和 `income`，因此 P0-007 和 P0-008 一并完成。
+- 测试结果：后端 `mvn test` 通过，20 tests passed（Auth 3 + Health 1 + App 1 + Household 9 + Transaction 6）；前端 `npm run build` 通过。
+- 遗留问题：`transaction_category` 表已创建但分类 CRUD（P0-009）尚未实现；AI provider 尚未落代码；前端构建提示单个 chunk 较大。
+- 下一步任务：P0-009 实现消费分类管理。
+- 建议 commit message：`feat(finance): 实现支出和收入记录 CRUD`
+
+## 2026-06-17 14:24 Asia/Shanghai
+
+- Agent 任务名称：P0-009 实现消费分类管理。
+- 修改文件：`backend/src/main/java/com/lifepilot/finance/CategoryService.java`、`backend/src/main/java/com/lifepilot/finance/CategoryController.java`、`backend/src/main/java/com/lifepilot/finance/dto/CreateCategoryRequest.java`、`backend/src/main/java/com/lifepilot/finance/dto/CategoryResponse.java`、`frontend/src/api/transaction.ts`、`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/CHANGELOG_AGENT.md`。
+- 实现内容：后端 CategoryService 实现分类 CRUD（POST/GET/DELETE `/api/spaces/{spaceId}/transaction-categories`），所有接口需要空间成员权限；前端分类 API 已加入 `transaction.ts`。
+- 测试结果：后端 `mvn test` 通过，20 tests passed；前端 `npm run build` 通过。
+- 遗留问题：前端分类管理 UI 尚未集成到 FinanceView；购物清单、库存、待办、AI provider 等模块尚未实现。
+- 下一步任务：P0-010 实现购物清单 CRUD。
+- 建议 commit message：`feat(finance): 实现消费分类管理 CRUD`

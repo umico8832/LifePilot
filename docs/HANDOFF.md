@@ -15,33 +15,16 @@
 
 ## 当前阶段
 
-Phase 2：用户与鉴权。用户注册、登录、JWT 鉴权和当前用户接口已完成。
+Phase 5：购物清单。Phase 0-4 全部完成（文档、骨架、鉴权、空间、记账+分类）。
 
 ## 已完成内容
 
-- 创建 Agent 自主开发文档体系。
-- 创建后端 Spring Boot 基础结构和健康检查。
-- 创建前端 Vue 3 基础首页。
-- 创建 Docker Compose、`.env.example`、`.gitignore`。
-- 验证后端测试、前端构建和 high 级别 npm audit。
-- 本地浏览器验证首页显示 `lifepilot-backend UP`，无 console error。
-- 实现用户注册、登录、JWT 鉴权、当前用户接口和前端登录/注册页。
-- 使用 MySQL Compose 在 `3307` 完成真实注册、登录、`/api/users/me` 验证。
-- 新增项目 Agent skills：自主开发、后端模块、API/数据契约、AI mock provider、前端设计、本地 Web 验证、文档协作。
-
-## 项目 Skills
-
-项目内 skills 位于 `agent-skills/*/SKILL.md`，用于辅助后续 Agent 按场景加载可复用流程：
-
-- `lifepilot-auto-dev`：按 backlog 持续开发和更新交接状态。
-- `lifepilot-backend-module`：实现 Spring Boot 后端业务模块、空间权限和测试。
-- `lifepilot-api-data-contract`：设计或审查 REST API、MySQL/Flyway、前端 API 类型契约。
-- `lifepilot-ai-mock-provider`：实现安全、确定性的 AI mock provider 和结构化草稿流程。
-- `lifepilot-frontend-design`：设计或改造 Vue 3 + Element Plus 前端页面。
-- `lifepilot-webapp-testing`：运行本地浏览器/Playwright 验证，包含 `scripts/with_server.py`。
-- `lifepilot-doc-coauthoring`：编写、重构和同步项目文档。
-
-这些 skills 是项目协作材料，不替代 `AGENTS.md` 和 `docs/*`；任务匹配时先读对应 skill，再读专项文档。
+- Phase 0-1：文档体系、项目骨架、Spring Boot 配置、Vue 3 配置。
+- Phase 2：用户注册登录、JWT 鉴权、当前用户接口。
+- Phase 3：生活空间模型（Household、HouseholdMember、成员权限、注册自动创建个人空间）。
+- Phase 4：支出记录 CRUD、收入记录 CRUD（共用 transaction_record）、消费分类管理（CategoryService/CategoryController）。
+- 前端页面：AuthView、HomeView、SpaceView、FinanceView（含记账和分类 API）。
+- 项目 Agent skills 体系。
 
 ## 运行方式
 
@@ -75,24 +58,18 @@ BACKEND_PROXY_TARGET=http://localhost:18081 npm run dev
 cd backend && mvn test
 cd frontend && npm install && npm run build
 cd frontend && npm audit --audit-level=high
-for d in agent-skills/*; do python3 /Users/umico/.codex/skills/.system/skill-creator/scripts/quick_validate.py "$d"; done
 ```
 
 ## 当前遗留问题
 
-- 生活空间、记账、购物、库存等业务模块尚未实现。
+- 购物清单、库存、待办等业务模块尚未实现。
 - AI provider 尚未落代码，仅有设计方向。
+- 前端分类管理 UI 尚未集成到 FinanceView。
 - 前端生产构建提示单个 chunk 较大，后续需要结合路由分包优化。
-- 如果 `8080` 被占用，可用 `BACKEND_PORT=18081 mvn spring-boot:run` 启后端，并用 `BACKEND_PROXY_TARGET=http://localhost:18081 npm run dev` 启前端。
-- Flyway 对 MySQL 8.4 输出“建议升级”警告，但当前迁移成功。
 
 ## 下一步建议任务
 
-P0-006 实现生活空间模型。
-
-## 新对话续接提示词
-
-如需新开对话，使用 `docs/NEXT_CHAT_PROMPT.md`。
+P0-010 实现购物清单 CRUD。
 
 ## 接手注意事项
 
@@ -100,4 +77,3 @@ P0-006 实现生活空间模型。
 - 任务匹配时读取 `agent-skills/*/SKILL.md`。
 - 按 `docs/BACKLOG.md` 自动取下一项未完成任务。
 - 不要接入真实密钥、支付、短信、邮件、第三方登录或真实 OCR 付费服务。
-- 不要提供医疗、法律、投资建议。
