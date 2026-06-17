@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Package, AlertCircle, RefreshCw } from '@lucide/vue'
 
 import AppShell from '@/layouts/AppShell.vue'
 import { useSpaceStore } from '@/stores/space'
@@ -17,6 +18,7 @@ const spaceStore = useSpaceStore()
 const items = ref<InventoryItemResponse[]>([])
 const alertItems = ref<InventoryItemResponse[]>([])
 const loading = ref(false)
+const loadError = ref(false)
 const showAlerts = ref(false)
 const dialogVisible = ref(false)
 const editingId = ref<number | null>(null)
@@ -40,8 +42,12 @@ onMounted(async () => {
 async function loadItems() {
   if (!spaceStore.currentSpace) return
   loading.value = true
+  loadError.value = false
   try {
     items.value = await listInventoryItems(spaceStore.currentSpace.id)
+  } catch {
+    loadError.value = true
+    items.value = []
   } finally {
     loading.value = false
   }
@@ -163,43 +169,71 @@ const displayItems = computed(() => showAlerts.value ? alertItems.value : items.
         <el-button type="primary" @click="openCreateDialog">添加物品</el-button>
       </div>
 
-      <el-table :data="displayItems" v-loading="loading" stripe style="width: 100%">
-        <el-table-column label="物品名称" prop="name" min-width="150" />
-        <el-table-column label="分类" width="120">
-          <template #default="{ row }">
-            {{ row.category || '-' }}
-          </template>
-        </el-table-column>
-        <el-table-column label="数量" width="120">
-          <template #default="{ row }">
-            <span :class="{ 'low-stock': row.lowStock }">
-              {{ row.quantity }}{{ row.unit ? ' ' + row.unit : '' }}
-            </span>
-          </template>
-        </el-table-column>
-        <el-table-column label="存放位置" width="140">
-          <template #default="{ row }">
-            {{ row.location || '-' }}
-          </template>
-        </el-table-column>
-        <el-table-column label="低库存阈值" width="120">
-          <template #default="{ row }">
-            {{ row.lowStockThreshold ?? '-' }}
-          </template>
-        </el-table-column>
-        <el-table-column label="状态" width="100">
-          <template #default="{ row }">
-            <el-tag v-if="row.lowStock" type="danger" size="small">低库存</el-tag>
-            <el-tag v-else type="success" size="small">正常</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="160">
-          <template #default="{ row }">
-            <el-button size="small" text @click="openEditDialog(row)">编辑</el-button>
-            <el-button size="small" text type="danger" @click="handleDelete(row)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+      <!-- No space state -->
+      <div v-if="!spaceStore.currentSpace" class="empty-state">
+        <Package :size="48" class="empty-icon" />
+        <p class="empty-title">请先选择一个空间</p>
+        <p class="empty-desc">库存数据归属于空间，请在顶部选择空间后开始管理。</p>
+      </div>
+
+      <!-- Error state -->
+      <div v-else-if="loadError" class="error-state">
+        <AlertCircle :size="48" class="error-icon" />
+        <p class="empty-title">数据加载失败</p>
+        <p class="empty-desc">无法加载库存数据，请检查网络后重试。</p>
+        <el-button type="primary" size="small" @click="loadItems">
+          <RefreshCw :size="14" />
+          重新加载
+        </el-button>
+      </div>
+
+      <!-- Table + empty -->
+      <template v-else>
+        <el-table :data="displayItems" v-loading="loading" stripe style="width: 100%">
+          <el-table-column label="物品名称" prop="name" min-width="150" />
+          <el-table-column label="分类" width="120">
+            <template #default="{ row }">
+              {{ row.category || '-' }}
+            </template>
+          </el-table-column>
+          <el-table-column label="数量" width="120">
+            <template #default="{ row }">
+              <span :class="{ 'low-stock': row.lowStock }">
+                {{ row.quantity }}{{ row.unit ? ' ' + row.unit : '' }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column label="存放位置" width="140">
+            <template #default="{ row }">
+              {{ row.location || '-' }}
+            </template>
+          </el-table-column>
+          <el-table-column label="低库存阈值" width="120">
+            <template #default="{ row }">
+              {{ row.lowStockThreshold ?? '-' }}
+            </template>
+          </el-table-column>
+          <el-table-column label="状态" width="100">
+            <template #default="{ row }">
+              <el-tag v-if="row.lowStock" type="danger" size="small">低库存</el-tag>
+              <el-tag v-else type="success" size="small">正常</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="160">
+            <template #default="{ row }">
+              <el-button size="small" text @click="openEditDialog(row)">编辑</el-button>
+              <el-button size="small" text type="danger" @click="handleDelete(row)">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <!-- Empty state -->
+        <div v-if="!loading && displayItems.length === 0" class="empty-state">
+          <Package :size="48" class="empty-icon" />
+          <p class="empty-title">{{ showAlerts ? '没有低库存物品' : '暂无库存物品' }}</p>
+          <p class="empty-desc">{{ showAlerts ? '所有物品库存充足。' : '点击「添加物品」开始管理你的家庭库存。' }}</p>
+        </div>
+      </template>
 
       <!-- Create/Edit dialog -->
       <el-dialog v-model="dialogVisible" :title="editingId ? '编辑库存物品' : '添加库存物品'" width="500px">
@@ -253,5 +287,38 @@ const displayItems = computed(() => showAlerts.value ? alertItems.value : items.
 .low-stock {
   color: var(--el-color-danger, #f56c6c);
   font-weight: bold;
+}
+
+.empty-state,
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.empty-icon {
+  color: var(--color-muted, #aaa);
+  margin-bottom: 16px;
+}
+
+.error-icon {
+  color: var(--el-color-danger, #f56c6c);
+  margin-bottom: 16px;
+}
+
+.empty-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text, #333);
+  margin: 0 0 8px;
+}
+
+.empty-desc {
+  font-size: 13px;
+  color: var(--color-muted, #888);
+  margin: 0 0 16px;
 }
 </style>

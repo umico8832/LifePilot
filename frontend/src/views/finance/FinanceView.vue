@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { RefreshCw, FileText, AlertCircle } from '@lucide/vue'
 
 import AppShell from '@/layouts/AppShell.vue'
 import { useSpaceStore } from '@/stores/space'
@@ -16,6 +17,7 @@ import { parseTransaction, type TransactionDraft } from '@/api/ai'
 const spaceStore = useSpaceStore()
 const transactions = ref<TransactionResponse[]>([])
 const loading = ref(false)
+const loadError = ref(false)
 const dialogVisible = ref(false)
 const editingId = ref<number | null>(null)
 
@@ -64,8 +66,12 @@ onMounted(async () => {
 async function loadTransactions() {
   if (!spaceStore.currentSpace) return
   loading.value = true
+  loadError.value = false
   try {
     transactions.value = await listTransactions(spaceStore.currentSpace.id)
+  } catch {
+    loadError.value = true
+    transactions.value = []
   } finally {
     loading.value = false
   }
@@ -246,32 +252,59 @@ function handleAiEdit() {
         </div>
       </div>
 
+      <!-- No space state -->
+      <div v-if="!spaceStore.currentSpace" class="empty-state">
+        <FileText :size="48" class="empty-icon" />
+        <p class="empty-title">请先选择一个空间</p>
+        <p class="empty-desc">记账数据归属于空间，请在顶部选择空间后开始记账。</p>
+      </div>
+
+      <!-- Error state -->
+      <div v-else-if="loadError" class="error-state">
+        <AlertCircle :size="48" class="error-icon" />
+        <p class="empty-title">数据加载失败</p>
+        <p class="empty-desc">无法加载记账记录，请检查网络后重试。</p>
+        <el-button type="primary" size="small" @click="loadTransactions">
+          <RefreshCw :size="14" />
+          重新加载
+        </el-button>
+      </div>
+
       <!-- Transaction table -->
-      <el-table :data="transactions" v-loading="loading" stripe style="width: 100%">
-        <el-table-column label="类型" width="80">
-          <template #default="{ row }">
-            <el-tag :type="row.type === 'expense' ? 'danger' : 'success'" size="small">
-              {{ row.type === 'expense' ? '支出' : '收入' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="金额" width="120">
-          <template #default="{ row }">
-            <span :class="row.type === 'expense' ? 'text-expense' : 'text-income'">
-              {{ formatAmount(row.amount, row.type) }}
-            </span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="merchant" label="商家" />
-        <el-table-column prop="note" label="备注" />
-        <el-table-column prop="occurredAt" label="时间" width="180" />
-        <el-table-column label="操作" width="160">
-          <template #default="{ row }">
-            <el-button size="small" text @click="openEditDialog(row)">编辑</el-button>
-            <el-button size="small" text type="danger" @click="handleDelete(row)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+      <template v-else>
+        <el-table :data="transactions" v-loading="loading" stripe style="width: 100%">
+          <el-table-column label="类型" width="80">
+            <template #default="{ row }">
+              <el-tag :type="row.type === 'expense' ? 'danger' : 'success'" size="small">
+                {{ row.type === 'expense' ? '支出' : '收入' }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="金额" width="120">
+            <template #default="{ row }">
+              <span :class="row.type === 'expense' ? 'text-expense' : 'text-income'">
+                {{ formatAmount(row.amount, row.type) }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="merchant" label="商家" />
+          <el-table-column prop="note" label="备注" />
+          <el-table-column prop="occurredAt" label="时间" width="180" />
+          <el-table-column label="操作" width="160">
+            <template #default="{ row }">
+              <el-button size="small" text @click="openEditDialog(row)">编辑</el-button>
+              <el-button size="small" text type="danger" @click="handleDelete(row)">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <!-- Empty state for table -->
+        <div v-if="!loading && transactions.length === 0" class="empty-state">
+          <FileText :size="48" class="empty-icon" />
+          <p class="empty-title">暂无记账记录</p>
+          <p class="empty-desc">点击「记一笔」或「AI 记账」开始记录你的第一笔收支。</p>
+        </div>
+      </template>
 
       <!-- Create/Edit dialog -->
       <el-dialog v-model="dialogVisible" :title="editingId ? '编辑记录' : '记一笔'" width="450px">
@@ -465,5 +498,38 @@ function handleAiEdit() {
   color: var(--color-text, #333);
   font-style: normal;
   font-weight: 500;
+}
+
+.empty-state,
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.empty-icon {
+  color: var(--color-muted, #aaa);
+  margin-bottom: 16px;
+}
+
+.error-icon {
+  color: var(--el-color-danger, #f56c6c);
+  margin-bottom: 16px;
+}
+
+.empty-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text, #333);
+  margin: 0 0 8px;
+}
+
+.empty-desc {
+  font-size: 13px;
+  color: var(--color-muted, #888);
+  margin: 0 0 16px;
 }
 </style>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { ShoppingCart, AlertCircle, RefreshCw } from '@lucide/vue'
 
 import AppShell from '@/layouts/AppShell.vue'
 import { useSpaceStore } from '@/stores/space'
@@ -21,6 +22,7 @@ const spaceStore = useSpaceStore()
 const shoppingLists = ref<ShoppingListResponse[]>([])
 const activeList = ref<ShoppingListResponse | null>(null)
 const loading = ref(false)
+const loadError = ref(false)
 const listDialogVisible = ref(false)
 const itemDialogVisible = ref(false)
 const editingListId = ref<number | null>(null)
@@ -48,8 +50,12 @@ onMounted(async () => {
 async function loadLists() {
   if (!spaceStore.currentSpace) return
   loading.value = true
+  loadError.value = false
   try {
     shoppingLists.value = await listShoppingLists(spaceStore.currentSpace.id)
+  } catch {
+    loadError.value = true
+    shoppingLists.value = []
   } finally {
     loading.value = false
   }
@@ -236,32 +242,58 @@ function getStatusLabel(status: string) {
           <el-button type="primary" @click="openCreateListDialog">新建清单</el-button>
         </div>
 
-        <el-table :data="shoppingLists" v-loading="loading" stripe style="width: 100%">
-          <el-table-column label="清单名称">
-            <template #default="{ row }">
-              <el-button link type="primary" @click="openListDetail(row)">{{ row.name }}</el-button>
-            </template>
-          </el-table-column>
-          <el-table-column label="状态" width="100">
-            <template #default="{ row }">
-              <el-tag :type="row.status === 'completed' ? 'success' : 'info'" size="small">
-                {{ getStatusLabel(row.status) }}
-              </el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column label="预算" width="120">
-            <template #default="{ row }">
-              {{ row.estimatedBudget ? '¥' + row.estimatedBudget.toFixed(2) : '-' }}
-            </template>
-          </el-table-column>
-          <el-table-column label="创建时间" prop="createdAt" width="180" />
-          <el-table-column label="操作" width="200">
-            <template #default="{ row }">
-              <el-button size="small" text @click="openEditListDialog(row)">编辑</el-button>
-              <el-button size="small" text type="danger" @click="handleDeleteList(row)">删除</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
+        <!-- No space state -->
+        <div v-if="!spaceStore.currentSpace" class="empty-state">
+          <ShoppingCart :size="48" class="empty-icon" />
+          <p class="empty-title">请先选择一个空间</p>
+          <p class="empty-desc">购物清单归属于空间，请在顶部选择空间后开始管理。</p>
+        </div>
+
+        <!-- Error state -->
+        <div v-else-if="loadError" class="error-state">
+          <AlertCircle :size="48" class="error-icon" />
+          <p class="empty-title">数据加载失败</p>
+          <p class="empty-desc">无法加载购物清单，请检查网络后重试。</p>
+          <el-button type="primary" size="small" @click="loadLists">
+            <RefreshCw :size="14" />
+            重新加载
+          </el-button>
+        </div>
+
+        <!-- Table + empty -->
+        <template v-else>
+          <el-table :data="shoppingLists" v-loading="loading" stripe style="width: 100%">
+            <el-table-column label="清单名称">
+              <template #default="{ row }">
+                <el-button link type="primary" @click="openListDetail(row)">{{ row.name }}</el-button>
+              </template>
+            </el-table-column>
+            <el-table-column label="状态" width="100">
+              <template #default="{ row }">
+                <el-tag :type="row.status === 'completed' ? 'success' : 'info'" size="small">
+                  {{ getStatusLabel(row.status) }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="预算" width="120">
+              <template #default="{ row }">
+                {{ row.estimatedBudget ? '¥' + row.estimatedBudget.toFixed(2) : '-' }}
+              </template>
+            </el-table-column>
+            <el-table-column label="创建时间" prop="createdAt" width="180" />
+            <el-table-column label="操作" width="200">
+              <template #default="{ row }">
+                <el-button size="small" text @click="openEditListDialog(row)">编辑</el-button>
+                <el-button size="small" text type="danger" @click="handleDeleteList(row)">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+          <div v-if="!loading && shoppingLists.length === 0" class="empty-state">
+            <ShoppingCart :size="48" class="empty-icon" />
+            <p class="empty-title">暂无购物清单</p>
+            <p class="empty-desc">点击「新建清单」创建你的第一个购物计划。</p>
+          </div>
+        </template>
       </template>
 
       <!-- List detail with items -->
@@ -282,7 +314,7 @@ function getStatusLabel(status: string) {
           <el-button size="small" type="primary" @click="openCreateItemDialog">添加物品</el-button>
         </div>
 
-        <el-table :data="activeList.items" stripe style="width: 100%">
+        <el-table v-if="activeList.items.length > 0" :data="activeList.items" stripe style="width: 100%">
           <el-table-column label="已购" width="60">
             <template #default="{ row }">
               <el-checkbox
@@ -313,6 +345,11 @@ function getStatusLabel(status: string) {
             </template>
           </el-table-column>
         </el-table>
+        <div v-else class="empty-state">
+          <ShoppingCart :size="48" class="empty-icon" />
+          <p class="empty-title">清单里还没有物品</p>
+          <p class="empty-desc">点击「添加物品」开始加入要采购的东西。</p>
+        </div>
       </template>
 
       <!-- Create/Edit list dialog -->
@@ -390,5 +427,38 @@ function getStatusLabel(status: string) {
 .item-purchased {
   text-decoration: line-through;
   color: var(--color-muted, #888);
+}
+
+.empty-state,
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.empty-icon {
+  color: var(--color-muted, #aaa);
+  margin-bottom: 16px;
+}
+
+.error-icon {
+  color: var(--el-color-danger, #f56c6c);
+  margin-bottom: 16px;
+}
+
+.empty-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text, #333);
+  margin: 0 0 8px;
+}
+
+.empty-desc {
+  font-size: 13px;
+  color: var(--color-muted, #888);
+  margin: 0 0 16px;
 }
 </style>

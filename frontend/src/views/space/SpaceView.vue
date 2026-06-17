@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
+import { Home, AlertCircle, RefreshCw } from '@lucide/vue'
 
 import AppShell from '@/layouts/AppShell.vue'
 import { useSpaceStore } from '@/stores/space'
 
 const spaceStore = useSpaceStore()
+const spacesLoading = ref(false)
+const spacesError = ref(false)
 const newSpaceName = ref('')
 const newSpaceType = ref('family')
 const inviteEmail = ref('')
@@ -18,8 +21,20 @@ const personalSpaces = computed(() => spaceStore.spaces.filter((s) => s.type ===
 const familySpaces = computed(() => spaceStore.spaces.filter((s) => s.type !== 'personal'))
 
 onMounted(async () => {
-  await spaceStore.fetchSpaces()
+  await loadSpaces()
 })
+
+async function loadSpaces() {
+  spacesLoading.value = true
+  spacesError.value = false
+  try {
+    await spaceStore.fetchSpaces()
+  } catch {
+    spacesError.value = true
+  } finally {
+    spacesLoading.value = false
+  }
+}
 
 async function handleCreateSpace() {
   if (!newSpaceName.value.trim()) return
@@ -91,6 +106,7 @@ function openInviteDialog() {
                 <span class="space-name">{{ space.name }}</span>
                 <span class="space-role">{{ space.memberRole }}</span>
               </li>
+              <li v-if="personalSpaces.length === 0" class="empty-item">暂无个人空间</li>
             </ul>
           </div>
           <div class="sidebar-section">
@@ -138,17 +154,22 @@ function openInviteDialog() {
 
             <div class="members-section">
               <h3>成员列表</h3>
-              <el-table :data="spaceStore.members" stripe style="width: 100%">
+              <el-table v-if="spaceStore.members.length > 0" :data="spaceStore.members" stripe style="width: 100%">
                 <el-table-column prop="displayName" label="名称" />
                 <el-table-column prop="email" label="邮箱" />
                 <el-table-column prop="role" label="角色" width="120" />
                 <el-table-column prop="status" label="状态" width="100" />
               </el-table>
+              <div v-else class="members-empty">
+                <p>暂无成员，{{ spaceStore.currentSpace.type !== 'personal' ? '点击「邀请成员」添加家庭成员。' : '个人空间仅包含你自己。' }}</p>
+              </div>
             </div>
           </template>
           <template v-else>
             <div class="empty-state">
-              <p>请从左侧选择一个空间，或创建新的家庭空间。</p>
+              <Home :size="48" class="empty-icon" />
+              <p class="empty-title">选择一个空间</p>
+              <p class="empty-desc">请从左侧选择一个空间，或创建新的家庭空间。</p>
             </div>
           </template>
         </main>
@@ -299,11 +320,37 @@ function openInviteDialog() {
   margin-bottom: 12px;
 }
 
+.members-empty {
+  padding: 32px 24px;
+  text-align: center;
+  color: var(--color-muted, #888);
+  font-size: 13px;
+}
+
 .empty-state {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   height: 300px;
+  text-align: center;
+}
+
+.empty-icon {
+  color: var(--color-muted, #aaa);
+  margin-bottom: 16px;
+}
+
+.empty-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text, #333);
+  margin: 0 0 8px;
+}
+
+.empty-desc {
+  font-size: 13px;
   color: var(--color-muted, #888);
+  margin: 0;
 }
 </style>

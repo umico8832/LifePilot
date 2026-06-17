@@ -139,3 +139,13 @@
 - 遗留问题：前端构建提示单个 chunk 较大。
 - 下一步任务：P1-004 完善前端空态和错误态。
 - 建议 commit message：`feat(api): add springdoc-openapi for Swagger UI documentation`
+
+## 2026-06-17 17:41 Asia/Shanghai
+
+- Agent 任务名称：P1-004 完善前端空态和错误态。
+- 修改文件：`frontend/src/views/finance/FinanceView.vue`、`frontend/src/views/shopping/ShoppingView.vue`、`frontend/src/views/inventory/InventoryView.vue`、`frontend/src/views/space/SpaceView.vue`、`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/CHANGELOG_AGENT.md`、`docs/HANDOFF.md`、`docs/NEXT_CHAT_PROMPT.md`。
+- 实现内容：为 FinanceView、ShoppingView、InventoryView、SpaceView 四个 CRUD 页面统一增加三种状态：① no-space（未选空间时引导选择）② error（加载失败时显示错误图标 + 文案 + 重新加载按钮）③ empty（数据为空时显示引导文案）；SpaceView 额外增加个人空间空列表提示、成员列表空状态、空间详情空态改进为带图标引导；ShoppingView 清单详情中物品列表增加空态；InventoryView 低库存筛选无结果时显示差异化文案；所有空态/错误态使用 lucide 图标（FileText / ShoppingCart / Package / Home / AlertCircle / RefreshCw）+ 统一 CSS 类（empty-state / error-state / empty-icon / empty-title / empty-desc）。
+- 测试结果：后端 `./mvnw test` 通过，53 tests passed；前端 `npm run build` 通过。
+- 遗留问题：前端构建提示单个 chunk 较大。
+- 下一步任务：P1-005 增加前端路由守卫和未登录重定向。
+- 建议 commit message：`feat(frontend): 完善 CRUD 页面空态、错误态和未选空间引导`
