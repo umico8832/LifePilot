@@ -1,46 +1,71 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import type { RouteRecordRaw } from 'vue-router'
 
-import AuthView from '@/views/auth/AuthView.vue'
-import HomeView from '@/views/HomeView.vue'
-import SpaceView from '@/views/space/SpaceView.vue'
-import FinanceView from '@/views/finance/FinanceView.vue'
-import ShoppingView from '@/views/shopping/ShoppingView.vue'
-import InventoryView from '@/views/inventory/InventoryView.vue'
+import { useAuthStore } from '@/stores/auth'
+
+const routes: RouteRecordRaw[] = [
+  {
+    path: '/',
+    name: 'home',
+    component: () => import('@/views/HomeView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/auth',
+    name: 'auth',
+    component: () => import('@/views/auth/AuthView.vue'),
+    meta: { guestOnly: true },
+  },
+  {
+    path: '/spaces',
+    name: 'spaces',
+    component: () => import('@/views/space/SpaceView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/finance',
+    name: 'finance',
+    component: () => import('@/views/finance/FinanceView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/shopping',
+    name: 'shopping',
+    component: () => import('@/views/shopping/ShoppingView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/inventory',
+    name: 'inventory',
+    component: () => import('@/views/inventory/InventoryView.vue'),
+    meta: { requiresAuth: true },
+  },
+]
 
 const router = createRouter({
   history: createWebHistory(),
-  routes: [
-    {
-      path: '/',
-      name: 'home',
-      component: HomeView,
-    },
-    {
-      path: '/auth',
-      name: 'auth',
-      component: AuthView,
-    },
-    {
-      path: '/spaces',
-      name: 'spaces',
-      component: SpaceView,
-    },
-    {
-      path: '/finance',
-      name: 'finance',
-      component: FinanceView,
-    },
-    {
-      path: '/shopping',
-      name: 'shopping',
-      component: ShoppingView,
-    },
-    {
-      path: '/inventory',
-      name: 'inventory',
-      component: InventoryView,
-    },
-  ],
+  routes,
+})
+
+router.beforeEach(async (to, _from, next) => {
+  const authStore = useAuthStore()
+
+  // On first load with a token, validate it by fetching the current user
+  if (authStore.token && !authStore.user) {
+    await authStore.loadCurrentUser()
+  }
+
+  const isAuthenticated = authStore.isAuthenticated
+
+  if (to.meta.requiresAuth && !isAuthenticated) {
+    // Redirect unauthenticated users to login
+    next({ name: 'auth', query: { redirect: to.fullPath } })
+  } else if (to.meta.guestOnly && isAuthenticated) {
+    // Redirect authenticated users away from auth page
+    next({ name: 'home' })
+  } else {
+    next()
+  }
 })
 
 export default router

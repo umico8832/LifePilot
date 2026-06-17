@@ -34,7 +34,8 @@ async function submit() {
       })
     }
 
-    await router.push('/')
+    const redirect = (router.currentRoute.value.query.redirect as string) || '/'
+    await router.push(redirect)
   } catch (error) {
     errorMessage.value = readErrorMessage(error)
   }

@@ -12,3 +12,19 @@ http.interceptors.request.use((config) => {
   }
   return config
 })
+
+http.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('lifepilot.accessToken')
+      // Use dynamic import to avoid circular dependency with router
+      const { default: router } = await import('@/router')
+      const currentRoute = router.currentRoute.value
+      if (currentRoute.name !== 'auth') {
+        router.push({ name: 'auth', query: { redirect: currentRoute.fullPath } })
+      }
+    }
+    return Promise.reject(error)
+  },
+)

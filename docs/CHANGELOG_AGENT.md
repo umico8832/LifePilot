@@ -149,3 +149,23 @@
 - 遗留问题：前端构建提示单个 chunk 较大。
 - 下一步任务：P1-005 增加前端路由守卫和未登录重定向。
 - 建议 commit message：`feat(frontend): 完善 CRUD 页面空态、错误态和未选空间引导`
+
+## 2026-06-17 17:50 Asia/Shanghai
+
+- Agent 任务名称：P1-005 增加前端路由守卫和未登录重定向。
+- 修改文件：`frontend/src/router/index.ts`、`frontend/src/api/http.ts`、`frontend/src/views/auth/AuthView.vue`、`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/CHANGELOG_AGENT.md`、`docs/HANDOFF.md`、`docs/NEXT_CHAT_PROMPT.md`。
+- 实现内容：`router/index.ts` 重构路由定义，所有业务路由添加 `meta: { requiresAuth: true }`，认证路由添加 `meta: { guestOnly: true }`；新增 `router.beforeEach` 全局守卫：首次加载时验证 token（`loadCurrentUser`）、未登录用户访问受保护路由自动重定向到 `/auth?redirect=`、已登录用户访问 `/auth` 自动重定向到 `/`；`http.ts` 新增 401 响应拦截器：清除 localStorage token + 动态导入 router 避免循环依赖 + 自动跳转认证页；`AuthView.vue` 登录/注册成功后读取 `redirect` query 参数跳回原页面。
+- 测试结果：后端 `./mvnw test` 通过，53 tests passed；前端 `npm run build` 通过（vue-tsc + vite build）。
+- 遗留问题：前端构建提示单个 chunk 较大。
+- 下一步任务：P1-006 前端大 chunk 分包（按路由懒加载）。
+- 建议 commit message：`feat(auth): 增加前端路由守卫和 401 自动登出`
+
+## 2026-06-17 17:57 Asia/Shanghai
+
+- Agent 任务名称：P1-006 前端大 chunk 分包；P1-007 完善 AppShell 导航栏。
+- 修改文件：`frontend/src/router/index.ts`、`frontend/src/layouts/AppShell.vue`、`frontend/src/styles.css`、`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/CHANGELOG_AGENT.md`、`docs/HANDOFF.md`、`docs/NEXT_CHAT_PROMPT.md`。
+- 实现内容：P1-006 所有路由改为 `() => import(...)` 懒加载，最大 chunk 从 1,090 kB 降至 117 kB；P1-007 AppShell 侧边栏导航项改为 `<button>` + `router.push` 路由链接（总览 / 空间 / 记账 / 购物 / 库存），使用 lucide 图标（Home / LayoutGrid / Receipt / ShoppingCart / Package），当前路由自动高亮；侧边栏底部新增 `sidebar-footer` 显示用户名称（displayName 或 email）+ 退出登录按钮（LogOut 图标，hover 变红），退出调用 `authStore.logout()` 后跳转 `/auth`；CSS 新增 `.sidebar-footer`、`.user-label`、`.logout-button`、`.nav-item:hover` 样式。
+- 测试结果：后端 `./mvnw test` 通过，53 tests passed；前端 `npm run build` 通过，无 500 kB 以上 chunk 警告。
+- 遗留问题：待办模块、AI 其他端点尚未实现。
+- 下一步任务：P1-008 前端视口宽度适配完善。
+- 建议 commit message：`feat(frontend): 按路由懒加载 + AppShell 导航栏改造`
