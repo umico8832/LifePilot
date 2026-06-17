@@ -89,3 +89,13 @@
 - 遗留问题：待办、AI provider 等模块尚未实现；前端构建提示单个 chunk 较大。
 - 下一步任务：P0-012 实现自然语言记账 mock provider。
 - 建议 commit message：`feat(inventory): 实现库存物品 CRUD 和低库存提醒`
+
+## 2026-06-17 15:54 Asia/Shanghai
+
+- Agent 任务名称：P0-012 实现自然语言记账 mock provider。
+- 修改文件：`backend/src/main/java/com/lifepilot/ai/**`（AiProvider 接口、MockAiProvider、AiService、AiController、DTO）、`backend/src/test/java/com/lifepilot/ai/AiControllerTests.java`、`frontend/src/api/ai.ts`、`frontend/src/views/finance/FinanceView.vue`、`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/CHANGELOG_AGENT.md`。
+- 实现内容：后端新增 `ai` 模块，`AiProvider` 接口 + `MockAiProvider` 实现（确定性规则解析中文自然语言记账，支持金额提取、收支类型识别、关键词分类推断、商家名提取）；`AiService` 校验空间成员权限后调用 provider；`AiController` 提供 `POST /api/ai/spaces/{spaceId}/parse-transaction` 端点；返回 `TransactionDraftResponse` 结构化草稿（type、amount、currency、occurredAt、merchant、categoryName、note、needsReview、rawInput、validationMessage）；前端新增 `ai.ts` API 客户端，`FinanceView.vue` 新增「🤖 AI 记账」按钮 → 自然语言输入对话框（含示例快捷标签）→ AI 解析结果确认对话框（可编辑字段 + needsReview 警告 + 分类展示 + 手动编辑 / 确认创建）；AI 确认后调用交易创建 API 写入记录。
+- 测试结果：后端 `mvn test` 通过，40 tests passed（Auth 3 + Health 1 + App 1 + Household 9 + Transaction 6 + Shopping 6 + Inventory 6 + AI 8）；前端 `npm run build` 通过；AI 测试覆盖：已知分类支出解析、收入解析、模糊输入 needsReview、无金额输入、空文本校验、未认证访问、小数金额、交通分类。
+- 遗留问题：其他 AI 端点（`create-shopping-list-draft`、`create-todo-draft`、`monthly-report-draft`）尚未实现；待办模块尚未实现；前端构建提示单个 chunk 较大。
+- 下一步任务：P0-013 实现首页统计面板。
+- 建议 commit message：`feat(ai): 实现自然语言记账 mock provider`
