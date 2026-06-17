@@ -109,8 +109,8 @@ AI 接口返回草稿，用户确认后再调用业务写入接口。
 
 ## 统计接口
 
-- `GET /api/spaces/{spaceId}/statistics/overview`
-- `GET /api/spaces/{spaceId}/statistics/finance/monthly`
+- `GET /api/spaces/{spaceId}/statistics/overview` ✅
+- `GET /api/spaces/{spaceId}/statistics/finance/monthly` ✅
 - `GET /api/spaces/{spaceId}/statistics/finance/categories`
 - `GET /api/spaces/{spaceId}/statistics/inventory`
 - `GET /api/spaces/{spaceId}/statistics/todos`

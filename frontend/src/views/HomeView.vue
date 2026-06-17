@@ -1,16 +1,33 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { CircleCheck, CircleX, LogIn, LogOut, RefreshCw } from '@lucide/vue'
+import { onMounted, ref, computed } from 'vue'
+import {
+  CircleCheck,
+  CircleX,
+  DollarSign,
+  ShoppingCart,
+  Package,
+  AlertTriangle,
+  LogIn,
+  LogOut,
+  RefreshCw,
+} from '@lucide/vue'
 import { useRouter } from 'vue-router'
 
 import { fetchHealth } from '@/api/health'
+import { getOverview, type OverviewResponse } from '@/api/statistics'
 import AppShell from '@/layouts/AppShell.vue'
 import { useAuthStore } from '@/stores/auth'
+import { useSpaceStore } from '@/stores/space'
 
 const healthStatus = ref('checking')
 const healthMessage = ref('正在检查后端服务')
 const router = useRouter()
 const authStore = useAuthStore()
+const spaceStore = useSpaceStore()
+
+const overview = ref<OverviewResponse | null>(null)
+const overviewLoading = ref(false)
+const overviewError = ref('')
 
 async function loadHealth() {
   healthStatus.value = 'checking'
@@ -26,12 +43,33 @@ async function loadHealth() {
   }
 }
 
+async function loadOverview() {
+  if (!authStore.isAuthenticated || !spaceStore.currentSpace) return
+  overviewLoading.value = true
+  overviewError.value = ''
+  try {
+    overview.value = await getOverview(spaceStore.currentSpace.id)
+  } catch {
+    overviewError.value = '统计数据加载失败'
+  } finally {
+    overviewLoading.value = false
+  }
+}
+
+function formatAmount(val: number): string {
+  return val.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
 function logout() {
   authStore.logout()
 }
 
 onMounted(async () => {
   await Promise.all([loadHealth(), authStore.loadCurrentUser()])
+  if (authStore.isAuthenticated) {
+    await spaceStore.fetchSpaces()
+    await loadOverview()
+  }
 })
 </script>
 
@@ -78,20 +116,62 @@ onMounted(async () => {
           <p class="status-value">{{ healthMessage }}</p>
         </div>
       </div>
-      <div class="status-card">
-        <span class="metric">Phase 6</span>
+      <div v-if="authStore.isAuthenticated && spaceStore.currentSpace" class="status-card">
+        <DollarSign :size="24" class="status-icon" />
         <div>
-          <p class="status-label">当前阶段</p>
-          <p class="status-value">家庭库存</p>
+          <p class="status-label">本月结余</p>
+          <p class="status-value" v-if="overview">
+            ¥{{ formatAmount(overview.netBalance) }}
+          </p>
+          <p class="status-value" v-else-if="overviewLoading">加载中…</p>
+          <p class="status-value status-error" v-else>{{ overviewError || '暂无数据' }}</p>
         </div>
       </div>
-      <div class="status-card">
-        <span class="metric">{{ authStore.isAuthenticated ? 'JWT' : 'P0-006' }}</span>
+      <div v-if="authStore.isAuthenticated && spaceStore.currentSpace" class="status-card">
+        <span class="metric">{{ overview ? overview.transactionCount : '—' }}</span>
         <div>
-          <p class="status-label">{{ authStore.isAuthenticated ? '当前用户' : '下一任务' }}</p>
+          <p class="status-label">记账笔数</p>
           <p class="status-value">
-            {{ authStore.isAuthenticated ? authStore.user?.email : '生活空间模型' }}
+            {{ overview ? `收入 ¥${formatAmount(overview.totalIncome)}` : '—' }}
           </p>
+        </div>
+      </div>
+    </section>
+
+    <section v-if="authStore.isAuthenticated && overview" class="overview-cards">
+      <div class="overview-card" @click="router.push('/finance')">
+        <DollarSign :size="20" />
+        <div>
+          <p class="overview-label">总收入</p>
+          <p class="overview-amount income">¥{{ formatAmount(overview.totalIncome) }}</p>
+        </div>
+      </div>
+      <div class="overview-card" @click="router.push('/finance')">
+        <DollarSign :size="20" />
+        <div>
+          <p class="overview-label">总支出</p>
+          <p class="overview-amount expense">¥{{ formatAmount(overview.totalExpense) }}</p>
+        </div>
+      </div>
+      <div class="overview-card" @click="router.push('/inventory')">
+        <Package :size="20" />
+        <div>
+          <p class="overview-label">库存物品</p>
+          <p class="overview-amount">{{ overview.inventoryItemCount }} 件</p>
+        </div>
+      </div>
+      <div class="overview-card" @click="router.push('/shopping')">
+        <ShoppingCart :size="20" />
+        <div>
+          <p class="overview-label">购物清单</p>
+          <p class="overview-amount">{{ overview.shoppingListCount }} 个</p>
+        </div>
+      </div>
+      <div v-if="overview.inventoryAlertCount > 0" class="overview-card alert-card" @click="router.push('/inventory')">
+        <AlertTriangle :size="20" class="alert-icon" />
+        <div>
+          <p class="overview-label">库存预警</p>
+          <p class="overview-amount alert">{{ overview.inventoryAlertCount }} 项</p>
         </div>
       </div>
     </section>
@@ -120,3 +200,69 @@ onMounted(async () => {
     </section>
   </AppShell>
 </template>
+
+<style scoped>
+.overview-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.overview-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: var(--color-surface);
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.overview-card:hover {
+  border-color: var(--color-primary);
+}
+
+.overview-label {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.overview-amount {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 2px 0 0;
+}
+
+.overview-amount.income {
+  color: #16a34a;
+}
+
+.overview-amount.expense {
+  color: #dc2626;
+}
+
+.overview-amount.alert {
+  color: #f59e0b;
+}
+
+.status-icon {
+  color: var(--color-primary);
+}
+
+.alert-card {
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+
+.alert-icon {
+  color: #f59e0b;
+}
+
+.status-error {
+  color: var(--color-text-muted);
+}
+</style>
