@@ -119,3 +119,13 @@
 - 遗留问题：前端构建提示单个 chunk 较大。
 - 下一步任务：P1-002 增加 GitHub Actions CI。
 - 建议 commit message：`feat(common): 完善全局异常处理器和统一错误响应`
+
+## 2026-06-17 17:12 Asia/Shanghai
+
+- Agent 任务名称：P1-002 增加 GitHub Actions CI。
+- 修改文件：`.github/workflows/ci.yml`、`backend/.mvn/wrapper/maven-wrapper.properties`、`backend/mvnw`、`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/CHANGELOG_AGENT.md`、`docs/HANDOFF.md`、`docs/NEXT_CHAT_PROMPT.md`。
+- 实现内容：生成 Maven wrapper（`mvnw`），配置 Maven 3.9.9；创建 `.github/workflows/ci.yml`，包含两个并行 jobs：`backend`（JDK 17 Temurin + Maven cache + `./mvnw test -B`）和 `frontend`（Node 20 + npm cache + `npm ci` + `npm run build`）；触发条件为 push/PR 到 main/master 分支。
+- 测试结果：后端 `./mvnw test` 通过，53 tests passed；前端 `npm run build` 通过。
+- 遗留问题：前端构建提示单个 chunk 较大；CI 需 push 到 GitHub 后才能在 GitHub Actions 面板验证。
+- 下一步任务：P1-003 增加 OpenAPI 文档。
+- 建议 commit message：`ci: add GitHub Actions workflow for backend tests and frontend build`
