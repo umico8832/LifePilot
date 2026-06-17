@@ -262,6 +262,7 @@ function getStatusLabel(status: string) {
 
         <!-- Table + empty -->
         <template v-else>
+          <div class="table-scroll">
           <el-table :data="shoppingLists" v-loading="loading" stripe style="width: 100%">
             <el-table-column label="清单名称">
               <template #default="{ row }">
@@ -288,6 +289,7 @@ function getStatusLabel(status: string) {
               </template>
             </el-table-column>
           </el-table>
+          </div>
           <div v-if="!loading && shoppingLists.length === 0" class="empty-state">
             <ShoppingCart :size="48" class="empty-icon" />
             <p class="empty-title">暂无购物清单</p>
@@ -314,7 +316,8 @@ function getStatusLabel(status: string) {
           <el-button size="small" type="primary" @click="openCreateItemDialog">添加物品</el-button>
         </div>
 
-        <el-table v-if="activeList.items.length > 0" :data="activeList.items" stripe style="width: 100%">
+        <div v-if="activeList.items.length > 0" class="table-scroll">
+        <el-table :data="activeList.items" stripe style="width: 100%">
           <el-table-column label="已购" width="60">
             <template #default="{ row }">
               <el-checkbox
@@ -345,6 +348,7 @@ function getStatusLabel(status: string) {
             </template>
           </el-table-column>
         </el-table>
+        </div>
         <div v-else class="empty-state">
           <ShoppingCart :size="48" class="empty-icon" />
           <p class="empty-title">清单里还没有物品</p>

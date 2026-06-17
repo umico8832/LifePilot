@@ -2,11 +2,11 @@
 
 ## 当前阶段
 
-P1-007 完成。Phase 0-6, 9-10, 12, P1-001～P1-007 全部完成。
+P1-008 完成。Phase 0-6, 9-10, 12, P1-001～P1-008 全部完成。
 
 ## 当前最高优先级任务
 
-P1-008 前端视口宽度适配完善。
+待确定（从 BACKLOG 中选取下一个 P1 任务）。
 
 ## 最近完成任务
 
@@ -18,6 +18,7 @@ P1-008 前端视口宽度适配完善。
 - P1-005 增加前端路由守卫和未登录重定向（`router.beforeEach` 鉴权守卫 + `requiresAuth` / `guestOnly` meta + 401 响应拦截器自动登出 + AuthView 登录后跳回 `redirect`）。
 - P1-006 前端大 chunk 分包（所有路由改为 `() => import(...)` 懒加载，最大 chunk 从 1,090 kB 降至 117 kB）。
 - P1-007 完善 AppShell 导航栏（导航项改为路由链接 + 当前路由高亮 + lucide 图标 + 底部用户名称 + 退出登录按钮 + 侧边栏 footer 样式）。
+- P1-008 前端视口宽度适配完善（4 断点响应式：1024px 双列 grid、900px 侧边栏→顶栏水平导航图标+文字、768px SpaceView 双栏→单栏、560px 手机图标导航、所有表格 `.table-scroll` 防溢出、工具栏 flex-wrap、Dialog 92vw 上限）。
 
 ## 当前阻塞项
 
@@ -25,12 +26,12 @@ P1-008 前端视口宽度适配完善。
 
 ## 下一项自动任务
 
-P1-008 前端视口宽度适配完善。
+待确定：从 `docs/BACKLOG.md` 选取下一个最高优先级 P1 todo 任务。
 
 ## 最近验证结果
 
 - 后端 `./mvnw test`：通过，53 tests passed。
-- 前端 `npm run build`：通过（vue-tsc + vite build），无 500 kB 以上 chunk 警告。
+- 前端 `npm run build`：通过（vue-tsc + vite build）。
 - Flyway 迁移 V1-V5 在 H2 测试数据库上通过。
 
 ## 注意事项

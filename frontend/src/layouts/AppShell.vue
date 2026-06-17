@@ -56,7 +56,7 @@ function handleLogout() {
           @click="navigateTo(item.routeName)"
         >
           <component :is="item.icon" :size="18" />
-          {{ item.label }}
+          <span class="nav-label">{{ item.label }}</span>
         </button>
       </nav>
       <div v-if="isAuthenticated" class="sidebar-footer">

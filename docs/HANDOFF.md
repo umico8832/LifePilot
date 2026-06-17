@@ -15,7 +15,7 @@
 
 ## 当前阶段
 
-P1-004 完成。Phase 0-6, 9-10, 12, P1-001～P1-004 全部完成（文档、骨架、鉴权、空间、记账+分类、购物清单、库存、AI mock provider、首页统计面板、统一异常处理、GitHub Actions CI、OpenAPI 文档、前端空态/错误态）。
+P1-008 完成。Phase 0-6, 9-10, 12, P1-001～P1-008 全部完成（文档、骨架、鉴权、空间、记账+分类、购物清单、库存、AI mock provider、首页统计面板、统一异常处理、GitHub Actions CI、OpenAPI 文档、前端空态/错误态、路由守卫、路由懒加载、AppShell 导航栏、前端视口适配）。
 
 ## 已完成内容
 
@@ -31,6 +31,10 @@ P1-004 完成。Phase 0-6, 9-10, 12, P1-001～P1-004 全部完成（文档、骨
 - P1-002：GitHub Actions CI（`.github/workflows/ci.yml`，后端 Maven test + 前端 npm build 并行 jobs）；Maven wrapper（`backend/mvnw`）。
 - P1-003：OpenAPI 文档（springdoc-openapi 2.8.6 + OpenApiConfig + SecurityConfig 放行 swagger 路径），可通过 `/swagger-ui.html` 访问。
 - P1-004：前端空态和错误态（FinanceView / ShoppingView / InventoryView / SpaceView 增加 no-space、error、empty 状态和引导文案）。
+- P1-005：前端路由守卫和未登录重定向（`router.beforeEach` + `requiresAuth` / `guestOnly` meta + 401 响应拦截器自动登出）。
+- P1-006：前端大 chunk 分包（所有路由改为 `() => import(...)` 懒加载）。
+- P1-007：AppShell 导航栏（路由链接 + 当前路由高亮 + lucide 图标 + 用户名 + 退出按钮）。
+- P1-008：前端视口宽度适配（4 断点响应式：1024px 双列 grid、900px 侧边栏→水平导航、768px 双栏→单栏、560px 手机图标导航、`.table-scroll`、Dialog 自适应宽度）。
 - 前端页面：AuthView、HomeView（统计仪表盘）、SpaceView、FinanceView（含 AI 记账）、ShoppingView、InventoryView。
 - 项目 Agent skills 体系（7 个 skills）。
 
@@ -72,13 +76,12 @@ cd frontend && npm audit --audit-level=high
 
 - 待办模块尚未实现。
 - AI 其他端点（create-shopping-list-draft、create-todo-draft、monthly-report-draft）尚未实现。
-- 前端构建提示单个 chunk 较大，后续需要结合路由分包优化。
 - 前端分类管理 UI 尚未集成到 FinanceView。
 - CI 需 push 到 GitHub 后才能在 GitHub Actions 面板验证。
 
 ## 下一步建议任务
 
-P1-005 增加前端路由守卫和未登录重定向。
+从 `docs/BACKLOG.md` 选取下一个最高优先级 P1 todo 任务。
 
 ## 接手注意事项
 

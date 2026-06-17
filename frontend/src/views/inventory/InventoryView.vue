@@ -189,6 +189,7 @@ const displayItems = computed(() => showAlerts.value ? alertItems.value : items.
 
       <!-- Table + empty -->
       <template v-else>
+        <div class="table-scroll">
         <el-table :data="displayItems" v-loading="loading" stripe style="width: 100%">
           <el-table-column label="物品名称" prop="name" min-width="150" />
           <el-table-column label="分类" width="120">
@@ -226,6 +227,7 @@ const displayItems = computed(() => showAlerts.value ? alertItems.value : items.
             </template>
           </el-table-column>
         </el-table>
+        </div>
 
         <!-- Empty state -->
         <div v-if="!loading && displayItems.length === 0" class="empty-state">

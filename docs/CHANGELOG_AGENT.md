@@ -1,5 +1,18 @@
 # Agent Changelog
 
+## 2026-06-18 00:53 Asia/Shanghai
+
+- Agent 任务名称：P1-008 前端视口宽度适配完善。
+- 修改文件：`frontend/src/styles.css`、`frontend/src/layouts/AppShell.vue`、`frontend/src/views/finance/FinanceView.vue`、`frontend/src/views/shopping/ShoppingView.vue`、`frontend/src/views/inventory/InventoryView.vue`、`frontend/src/views/space/SpaceView.vue`、`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`。
+- 实现内容：
+  - `styles.css` 新增 4 个响应式断点（1024px 双列 grid、900px 侧边栏→水平导航栏、560px 手机图标导航），新增 `.table-scroll`、`.responsive-wrap`、`.toolbar { flex-wrap }` 等全局工具类，Dialog 在 ≤560px 下自动缩放为 92vw。
+  - `AppShell.vue` 导航按钮增加 `<span class="nav-label">` 包裹，侧边栏在 ≤900px 变为水平滚动顶栏，品牌名和用户名在移动端隐藏。
+  - 所有 CRUD 视图（Finance、Shopping、Inventory、Space）的 `el-table` 外包 `.table-scroll` 防止窄屏水平溢出。
+  - `SpaceView.vue` 侧边栏+详情双栏在 ≤768px 下堆叠为单列。
+- 测试结果：`cd frontend && npm run build`（vue-tsc + vite build）通过，无 TS 错误。
+- 遗留问题：vendor chunk（auth chunk 143kB）仍较大，后续可进一步拆分。
+- 下一步任务：P1-009 待定。
+
 ## 2026-06-16 22:35 Asia/Shanghai
 
 - Agent 任务名称：P0-001 创建项目文档体系；P0-002 创建项目骨架；P0-003 配置后端 Spring Boot；P0-004 配置前端 Vue 3。

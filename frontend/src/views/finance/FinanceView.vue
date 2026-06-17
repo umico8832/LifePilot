@@ -237,7 +237,7 @@ function handleAiEdit() {
       </div>
 
       <!-- Summary -->
-      <div class="summary-band">
+      <div class="summary-band responsive-wrap">
         <div class="summary-card">
           <span class="summary-label">支出合计</span>
           <span class="summary-value expense">¥{{ totalExpense.toFixed(2) }}</span>
@@ -272,6 +272,7 @@ function handleAiEdit() {
 
       <!-- Transaction table -->
       <template v-else>
+        <div class="table-scroll">
         <el-table :data="transactions" v-loading="loading" stripe style="width: 100%">
           <el-table-column label="类型" width="80">
             <template #default="{ row }">
@@ -297,6 +298,7 @@ function handleAiEdit() {
             </template>
           </el-table-column>
         </el-table>
+        </div>
 
         <!-- Empty state for table -->
         <div v-if="!loading && transactions.length === 0" class="empty-state">

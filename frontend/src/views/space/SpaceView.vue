@@ -154,12 +154,14 @@ function openInviteDialog() {
 
             <div class="members-section">
               <h3>成员列表</h3>
-              <el-table v-if="spaceStore.members.length > 0" :data="spaceStore.members" stripe style="width: 100%">
+              <div v-if="spaceStore.members.length > 0" class="table-scroll">
+              <el-table :data="spaceStore.members" stripe style="width: 100%">
                 <el-table-column prop="displayName" label="名称" />
                 <el-table-column prop="email" label="邮箱" />
                 <el-table-column prop="role" label="角色" width="120" />
                 <el-table-column prop="status" label="状态" width="100" />
               </el-table>
+              </div>
               <div v-else class="members-empty">
                 <p>暂无成员，{{ spaceStore.currentSpace.type !== 'personal' ? '点击「邀请成员」添加家庭成员。' : '个人空间仅包含你自己。' }}</p>
               </div>
@@ -352,5 +354,24 @@ function openInviteDialog() {
   font-size: 13px;
   color: var(--color-muted, #888);
   margin: 0;
+}
+
+@media (max-width: 768px) {
+  .space-layout {
+    flex-direction: column;
+  }
+
+  .space-sidebar {
+    width: 100%;
+  }
+
+  .detail-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .detail-actions {
+    width: 100%;
+  }
 }
 </style>
