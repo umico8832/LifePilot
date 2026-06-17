@@ -15,7 +15,7 @@
 
 ## 当前阶段
 
-Phase 5：购物清单。Phase 0-4 全部完成（文档、骨架、鉴权、空间、记账+分类）。
+Phase 10 完成 + P1-001 完成。Phase 0-6, 9-10, P1-001 全部完成（文档、骨架、鉴权、空间、记账+分类、购物清单、库存、AI mock provider、首页统计面板、统一异常处理）。
 
 ## 已完成内容
 
@@ -23,8 +23,13 @@ Phase 5：购物清单。Phase 0-4 全部完成（文档、骨架、鉴权、空
 - Phase 2：用户注册登录、JWT 鉴权、当前用户接口。
 - Phase 3：生活空间模型（Household、HouseholdMember、成员权限、注册自动创建个人空间）。
 - Phase 4：支出记录 CRUD、收入记录 CRUD（共用 transaction_record）、消费分类管理（CategoryService/CategoryController）。
-- 前端页面：AuthView、HomeView、SpaceView、FinanceView（含记账和分类 API）。
-- 项目 Agent skills 体系。
+- Phase 5：购物清单和清单项 CRUD（ShoppingList/ShoppingItem/ShoppingService/ShoppingController）。
+- Phase 6：库存物品 CRUD 和低库存提醒（InventoryItem/InventoryService/InventoryController）。
+- Phase 9：AI mock provider 自然语言记账（AiProvider/MockAiProvider/AiService/AiController）。
+- Phase 10：首页统计面板（StatisticService/StatisticController，overview + finance/monthly 两个端点）。
+- P1-001：完善错误码和异常处理（GlobalExceptionHandler 统一处理 8 类异常，所有错误响应使用 ApiResponse.error 结构）。
+- 前端页面：AuthView、HomeView（统计仪表盘）、SpaceView、FinanceView（含 AI 记账）、ShoppingView、InventoryView。
+- 项目 Agent skills 体系（7 个 skills）。
 
 ## 运行方式
 
@@ -62,14 +67,14 @@ cd frontend && npm audit --audit-level=high
 
 ## 当前遗留问题
 
-- 购物清单、库存、待办等业务模块尚未实现。
-- AI provider 尚未落代码，仅有设计方向。
+- 待办模块尚未实现。
+- AI 其他端点（create-shopping-list-draft、create-todo-draft、monthly-report-draft）尚未实现。
+- 前端构建提示单个 chunk 较大，后续需要结合路由分包优化。
 - 前端分类管理 UI 尚未集成到 FinanceView。
-- 前端生产构建提示单个 chunk 较大，后续需要结合路由分包优化。
 
 ## 下一步建议任务
 
-P0-010 实现购物清单 CRUD。
+P1-002 增加 GitHub Actions CI。
 
 ## 接手注意事项
 
@@ -77,3 +82,4 @@ P0-010 实现购物清单 CRUD。
 - 任务匹配时读取 `agent-skills/*/SKILL.md`。
 - 按 `docs/BACKLOG.md` 自动取下一项未完成任务。
 - 不要接入真实密钥、支付、短信、邮件、第三方登录或真实 OCR 付费服务。
+- 本机 `8080` 和 `3306` 端口被占用，当前开发服务使用后端 `18081`、MySQL `3307` 和前端 `5173`。

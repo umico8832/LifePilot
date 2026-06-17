@@ -99,3 +99,23 @@
 - 遗留问题：其他 AI 端点（`create-shopping-list-draft`、`create-todo-draft`、`monthly-report-draft`）尚未实现；待办模块尚未实现；前端构建提示单个 chunk 较大。
 - 下一步任务：P0-013 实现首页统计面板。
 - 建议 commit message：`feat(ai): 实现自然语言记账 mock provider`
+
+## 2026-06-17 16:24 Asia/Shanghai
+
+- Agent 任务名称：P0-013 实现首页统计面板。
+- 修改文件：`backend/src/main/java/com/lifepilot/statistics/**`（StatisticService、StatisticController、DTOs）、`backend/src/test/java/com/lifepilot/statistics/StatisticControllerTests.java`、`frontend/src/api/statistics.ts`、`frontend/src/views/HomeView.vue`、`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/CHANGELOG_AGENT.md`、`docs/HANDOFF.md`。
+- 实现内容：后端新增 `statistics` 模块，`StatisticService` 聚合记账（收入/支出/结余/笔数）、库存（物品数/低库存预警数）、购物清单（清单数）数据；`StatisticController` 提供 `GET /api/spaces/{spaceId}/statistics/overview` 和 `GET /api/spaces/{spaceId}/statistics/finance/monthly`（含分类支出明细）两个端点，所有接口需要空间成员权限；前端新增 `statistics.ts` API 客户端，`HomeView.vue` 全面改造为统计仪表盘：已登录用户看到后端真实数据（总收入、总支出、结余、记账笔数、库存物品数、购物清单数、库存预警数），各统计卡片可点击跳转到对应模块；8 项统计测试覆盖：空数据返回零值、记账聚合、库存/购物计数、低库存预警检测、月度财务分类汇总、认证校验、非成员权限校验。
+- 测试结果：后端 `mvn test` 通过，48 tests passed（Auth 3 + Health 1 + App 1 + Household 9 + Transaction 6 + Shopping 6 + Inventory 6 + AI 8 + Statistics 8）；前端 `npm run build` 通过。
+- 遗留问题：其他 AI 端点尚未实现；待办模块尚未实现；前端构建提示单个 chunk 较大。
+- 下一步任务：P1-001 完善错误码和异常处理。
+- 建议 commit message：`feat(statistics): 实现首页统计面板和统计 API`
+
+## 2026-06-17 16:34 Asia/Shanghai
+
+- Agent 任务名称：P1-001 完善错误码和异常处理。
+- 修改文件：`backend/src/main/java/com/lifepilot/common/GlobalExceptionHandler.java`、`backend/src/test/java/com/lifepilot/common/GlobalExceptionHandlerTests.java`、`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/CHANGELOG_AGENT.md`、`docs/HANDOFF.md`。
+- 实现内容：`GlobalExceptionHandler` 新增 5 类异常处理器：`HttpMessageNotReadableException`（畸形请求体 → VALIDATION_ERROR/400）、`MissingServletRequestParameterException`（缺失参数 → VALIDATION_ERROR/400）、`HttpRequestMethodNotSupportedException`（→ METHOD_NOT_ALLOWED/405）、`HttpMediaTypeNotSupportedException`（→ UNSUPPORTED_MEDIA_TYPE/415）、`NoResourceFoundException`（→ NOT_FOUND/404）、兜底 `Exception`（→ INTERNAL_ERROR/500 + 日志记录）；新增 `GlobalExceptionHandlerTests`（5 项测试：404 统一响应、畸形 JSON、缺失参数、空字段校验、405 方法不允许）。
+- 测试结果：后端 `mvn test` 通过，53 tests passed（Auth 3 + Health 1 + App 1 + Household 9 + Transaction 6 + Shopping 6 + Inventory 6 + AI 8 + Statistics 8 + ExceptionHandler 5）；前端 `npm run build` 通过。
+- 遗留问题：前端构建提示单个 chunk 较大。
+- 下一步任务：P1-002 增加 GitHub Actions CI。
+- 建议 commit message：`feat(common): 完善全局异常处理器和统一错误响应`
