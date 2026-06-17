@@ -1,0 +1,4 @@
+interface:
+  display_name: "LifePilot Auto Dev"
+  short_description: "Follow the LifePilot autonomous loop"
+  default_prompt: "Use $lifepilot-auto-dev to continue LifePilot development from the backlog."

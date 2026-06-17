@@ -39,3 +39,13 @@
 
 - 决策：P0-005 暂不引入额外 JWT 库，使用 Java 标准库实现 HS256 JWT 签发和校验。
 - 原因：减少早期依赖面，同时保持 JWT 行为可测试；后续如需更完整 JWT/JWK 能力再引入成熟库。
+
+## 2026-06-16：新增项目内 Agent skills
+
+- 决策：在 `agent-skills/` 中维护 LifePilot 项目专属 skills，首批包含自主开发、前端设计、本地 Web 验证和文档协作。
+- 原因：项目已有长期 Agent 协作协议，skills 可以把高频、可复用、容易漏步骤的流程按任务加载，减少上下文负担；选择参考 Anthropic 示例而不是整包引入，避免不合技术栈或许可证不清晰的内容进入项目。
+
+## 2026-06-17：补充工程向 Agent skills
+
+- 决策：继续在 `agent-skills/` 中新增后端模块、API/数据契约、AI mock provider 三个工程向 skills。
+- 原因：LifePilot 后续 P0 任务高度重复地涉及空间权限、REST 合约、Flyway 迁移、前端 API 类型和 AI 草稿确认流程；将这些流程抽成 skills 比引入通用艺术、Artifact、Claude API 或文档格式 skills 更贴合当前阶段。

@@ -25,6 +25,7 @@
 - 本地浏览器验证通过：首页显示 `lifepilot-backend UP`。
 - 用户注册、登录、JWT 鉴权、当前用户接口和前端登录/注册页已实现。
 - 真实 MySQL curl 和浏览器 UI 注册验证通过。
+- 项目内 `agent-skills/` 已新增自主开发、后端模块、API/数据契约、AI mock provider、前端设计、本地 Web 验证、文档协作 skills。
 
 未完成内容：
 
@@ -32,6 +33,16 @@
 - 记账、购物、库存、统计和 AI mock provider。
 
 最近一次修改：初始化项目文档和全栈骨架。
+
+项目 skills：
+
+- `agent-skills/lifepilot-auto-dev/SKILL.md`：继续自主开发、接手 backlog、更新交接状态。
+- `agent-skills/lifepilot-backend-module/SKILL.md`：实现 Spring Boot 后端业务模块、权限和测试。
+- `agent-skills/lifepilot-api-data-contract/SKILL.md`：设计或审查 API、数据库迁移、前端 API 类型契约。
+- `agent-skills/lifepilot-ai-mock-provider/SKILL.md`：实现 AI mock provider、结构化草稿和用户确认流程。
+- `agent-skills/lifepilot-frontend-design/SKILL.md`：设计或改造 Vue 3 前端页面。
+- `agent-skills/lifepilot-webapp-testing/SKILL.md`：验证本地前端交互、浏览器 console、前后端联调。
+- `agent-skills/lifepilot-doc-coauthoring/SKILL.md`：编写、重构或同步项目文档。
 
 当前遗留问题：需要实现 P0-006 生活空间模型；Flyway 对 MySQL 8.4 输出建议升级警告但迁移成功。
 
@@ -45,6 +56,8 @@
 - `docs/BACKLOG.md`
 - `docs/HANDOFF.md`
 - `docs/CHANGELOG_AGENT.md`
+
+任务匹配时，再阅读对应的 `agent-skills/*/SKILL.md`。
 
 禁止事项：
 

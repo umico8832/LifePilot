@@ -1,0 +1,4 @@
+interface:
+  display_name: "LifePilot API Data Contract"
+  short_description: "Keep APIs, DB, and docs aligned"
+  default_prompt: "Use $lifepilot-api-data-contract to design or review LifePilot API and database contracts."

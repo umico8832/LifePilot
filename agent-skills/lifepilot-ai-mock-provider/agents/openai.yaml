@@ -1,0 +1,4 @@
+interface:
+  display_name: "LifePilot AI Mock Provider"
+  short_description: "Build safe structured AI mock flows"
+  default_prompt: "Use $lifepilot-ai-mock-provider to implement a LifePilot AI mock provider flow."

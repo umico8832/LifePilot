@@ -1,0 +1,4 @@
+interface:
+  display_name: "LifePilot Backend Module"
+  short_description: "Build Spring Boot business modules"
+  default_prompt: "Use $lifepilot-backend-module to implement a LifePilot backend business module."

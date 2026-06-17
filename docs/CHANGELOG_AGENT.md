@@ -19,3 +19,23 @@
 - 遗留问题：生活空间尚未实现；Flyway 对 MySQL 8.4 输出建议升级警告但迁移成功；前端生产构建提示单个 chunk 较大，后续可按路由分包。
 - 下一步任务：P0-006 实现生活空间模型。
 - 建议 commit message：`feat(auth): 完成 JWT 登录注册流程`
+
+## 2026-06-16 23:30 Asia/Shanghai
+
+- Agent 任务名称：新增项目 Agent skills。
+- 修改文件：`agent-skills/*`、`AGENTS.md`、`docs/CURRENT_STATE.md`、`docs/HANDOFF.md`、`docs/NEXT_CHAT_PROMPT.md`、`docs/CHANGELOG_AGENT.md`、`docs/DECISION_LOG.md`。
+- 实现内容：参考 Anthropic Agent Skills 示例，新增 `lifepilot-auto-dev`、`lifepilot-frontend-design`、`lifepilot-webapp-testing`、`lifepilot-doc-coauthoring` 四个项目内 skills；前端设计和 Web 验证 skill 已按 LifePilot 的 Vue 3、Element Plus、本地端口和验证流程改写；保留 Apache 2.0 许可证文件用于上游衍生内容。
+- 测试结果：`quick_validate.py` 对 `agent-skills/*` 全部通过；`python3 agent-skills/lifepilot-webapp-testing/scripts/with_server.py --help` 通过。
+- 遗留问题：项目内 skills 需要后续真实任务持续迭代；当前不会自动替代 Codex 全局 skills，需要 Agent 按 `AGENTS.md` 路由阅读。
+- 下一步任务：P0-006 实现生活空间模型。
+- 建议 commit message：`chore(agent): 新增 LifePilot 项目 skills`
+
+## 2026-06-17 00:10 Asia/Shanghai
+
+- Agent 任务名称：补充工程向项目 Agent skills。
+- 修改文件：`agent-skills/lifepilot-backend-module/*`、`agent-skills/lifepilot-api-data-contract/*`、`agent-skills/lifepilot-ai-mock-provider/*`、`AGENTS.md`、`docs/CURRENT_STATE.md`、`docs/HANDOFF.md`、`docs/NEXT_CHAT_PROMPT.md`、`docs/CHANGELOG_AGENT.md`、`docs/DECISION_LOG.md`。
+- 实现内容：在已有 Anthropic-style skill 体系上，新增后端业务模块、API/数据库契约、AI mock provider 三个 LifePilot 原生 skills，覆盖 P0-006 到 P0-012 的高频工程流程。
+- 测试结果：`quick_validate.py` 对 7 个 `agent-skills/*` 全部通过；`python3 agent-skills/lifepilot-webapp-testing/scripts/with_server.py --help` 通过。
+- 遗留问题：这些 skills 需要在后续真实业务模块实现中继续迭代；当前只提供流程约束，不代表对应业务功能已完成。
+- 下一步任务：P0-006 实现生活空间模型。
+- 建议 commit message：`chore(agent): 补充后端与 AI 项目 skills`

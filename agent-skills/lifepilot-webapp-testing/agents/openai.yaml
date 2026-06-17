@@ -1,0 +1,4 @@
+interface:
+  display_name: "LifePilot Webapp Testing"
+  short_description: "Verify local LifePilot web flows"
+  default_prompt: "Use $lifepilot-webapp-testing to verify a local LifePilot frontend flow."

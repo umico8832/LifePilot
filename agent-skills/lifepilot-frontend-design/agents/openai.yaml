@@ -1,0 +1,4 @@
+interface:
+  display_name: "LifePilot Frontend Design"
+  short_description: "Design distinctive Vue screens for LifePilot"
+  default_prompt: "Use $lifepilot-frontend-design to design or refine a LifePilot frontend screen."

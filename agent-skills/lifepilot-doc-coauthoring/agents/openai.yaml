@@ -1,0 +1,4 @@
+interface:
+  display_name: "LifePilot Doc Coauthoring"
+  short_description: "Draft durable LifePilot project docs"
+  default_prompt: "Use $lifepilot-doc-coauthoring to draft or revise a LifePilot project document."
