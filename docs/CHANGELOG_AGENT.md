@@ -79,3 +79,13 @@
 - 遗留问题：库存、待办、AI provider 等模块尚未实现；前端构建提示单个 chunk 较大。
 - 下一步任务：P0-011 实现库存物品 CRUD。
 - 建议 commit message：`feat(shopping): 实现购物清单和清单项 CRUD`
+
+## 2026-06-17 15:31 Asia/Shanghai
+
+- Agent 任务名称：P0-011 实现库存物品 CRUD。
+- 修改文件：`backend/src/main/resources/db/migration/V5__create_inventory_item.sql`、`backend/src/main/java/com/lifepilot/inventory/**`（InventoryItem 实体、InventoryItemMapper、DTO、InventoryService、InventoryController）、`backend/src/test/java/com/lifepilot/inventory/InventoryControllerTests.java`、`frontend/src/api/inventory.ts`、`frontend/src/views/inventory/InventoryView.vue`、`frontend/src/router/index.ts`、`frontend/src/views/HomeView.vue`、`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/CHANGELOG_AGENT.md`。
+- 实现内容：Flyway V5 迁移创建 `inventory_item` 表（含 category、quantity、unit、location、expire_at、low_stock_threshold 字段）；后端 `inventory` 模块实现库存物品 CRUD（POST/GET/PATCH/DELETE `/api/spaces/{spaceId}/inventory-items`）和低库存提醒接口（GET `.../inventory-items/alerts`），`InventoryItemResponse` 自动计算 `lowStock` 布尔值；前端新增库存 API、InventoryView 页面（物品列表 + 低库存提醒筛选 + 创建/编辑对话框）；路由 /inventory；首页更新阶段信息和库存模块入口链接。
+- 测试结果：后端 `mvn test` 通过，32 tests passed（Auth 3 + Health 1 + App 1 + Household 9 + Transaction 6 + Shopping 6 + Inventory 6）；前端 `npm run build` 通过；Flyway V1-V5 在 H2 测试数据库迁移通过。
+- 遗留问题：待办、AI provider 等模块尚未实现；前端构建提示单个 chunk 较大。
+- 下一步任务：P0-012 实现自然语言记账 mock provider。
+- 建议 commit message：`feat(inventory): 实现库存物品 CRUD 和低库存提醒`

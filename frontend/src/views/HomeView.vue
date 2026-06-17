@@ -79,10 +79,10 @@ onMounted(async () => {
         </div>
       </div>
       <div class="status-card">
-        <span class="metric">Phase 5</span>
+        <span class="metric">Phase 6</span>
         <div>
           <p class="status-label">当前阶段</p>
-          <p class="status-value">购物清单</p>
+          <p class="status-value">家庭库存</p>
         </div>
       </div>
       <div class="status-card">
@@ -109,7 +109,7 @@ onMounted(async () => {
         <h2>购物清单</h2>
         <p>清单项、采购状态、预算估算和库存联动。</p>
       </article>
-      <article class="module-panel">
+      <article class="module-panel" :class="{ clickable: authStore.isAuthenticated }" @click="authStore.isAuthenticated && router.push('/inventory')">
         <h2>家庭库存</h2>
         <p>食品、日用品、常备物品、位置和临期提醒。</p>
       </article>
