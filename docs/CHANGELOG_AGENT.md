@@ -129,3 +129,13 @@
 - 遗留问题：前端构建提示单个 chunk 较大；CI 需 push 到 GitHub 后才能在 GitHub Actions 面板验证。
 - 下一步任务：P1-003 增加 OpenAPI 文档。
 - 建议 commit message：`ci: add GitHub Actions workflow for backend tests and frontend build`
+
+## 2026-06-17 17:18 Asia/Shanghai
+
+- Agent 任务名称：P1-003 增加 OpenAPI 文档。
+- 修改文件：`backend/pom.xml`、`backend/src/main/java/com/lifepilot/config/OpenApiConfig.java`、`backend/src/main/java/com/lifepilot/config/SecurityConfig.java`、`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/CHANGELOG_AGENT.md`、`docs/HANDOFF.md`、`docs/NEXT_CHAT_PROMPT.md`。
+- 实现内容：新增 springdoc-openapi-starter-webmvc-ui 2.8.6 依赖；创建 `OpenApiConfig` 配置类（设置 API 标题、描述、版本）；`SecurityConfig` 新增放行 `/swagger-ui/**`、`/swagger-ui.html`、`/v3/api-docs/**` 路径，无需认证即可访问 API 文档。
+- 测试结果：后端 `./mvnw test` 通过，53 tests passed；Swagger UI 可通过 `/swagger-ui.html` 访问，OpenAPI JSON 可通过 `/v3/api-docs` 获取。
+- 遗留问题：前端构建提示单个 chunk 较大。
+- 下一步任务：P1-004 完善前端空态和错误态。
+- 建议 commit message：`feat(api): add springdoc-openapi for Swagger UI documentation`
