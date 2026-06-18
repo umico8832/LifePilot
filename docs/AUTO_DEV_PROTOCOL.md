@@ -11,15 +11,16 @@ LifePilot 的目标是让 AI Agent 可以长期、连续、自主地维护和开
 
 ## Agent 自主开发循环
 
-1. 阅读 `AGENTS.md`、`docs/CURRENT_STATE.md`、`docs/BACKLOG.md`、`docs/HANDOFF.md`。
+1. 阅读 `AGENTS.md`、`docs/CURRENT_STATE.md`、`docs/BACKLOG.md`、`docs/HANDOFF.md`、`docs/RECENT_HISTORY.md`。
 2. 从 `docs/BACKLOG.md` 选择最高优先级且未阻塞的任务。
 3. 阅读相关设计文档。
 4. 实施最小可验证变更。
 5. 运行任务要求的测试或构建验证。
-6. 更新 `docs/CURRENT_STATE.md`、`docs/BACKLOG.md`、`docs/CHANGELOG_AGENT.md`，必要时更新设计文档。
-7. 运行文档一致性检查（当前为 `python3 scripts/agent_doc_check.py`）。
-8. 自审 `docs/AGENT_REVIEW_CHECKLIST.md`。
-9. 未触发停止条件时，继续选择下一项任务。
+6. 按改动类型更新必要文档。
+7. 追加 `docs/CHANGELOG_AGENT.md`，运行 `python3 scripts/agent_changelog_archive.py` 刷新近期历史并自动归档旧历史。
+8. 运行文档一致性检查（当前为 `python3 scripts/agent_doc_check.py`）。
+9. 自审 `docs/AGENT_REVIEW_CHECKLIST.md`。
+10. 未触发停止条件时，继续选择下一项任务。
 
 ## 任务选择规则
 
@@ -37,6 +38,13 @@ LifePilot 的目标是让 AI Agent 可以长期、连续、自主地维护和开
 - 当前任务足够明确时，合理默认决策并继续。
 - 遇到普通实现细节，不频繁询问用户。
 
+## 半自主提交规则
+
+- 默认不主动提交；只有用户明确要求提交，或用户明确进入“继续开发 / 自主开发 / 按 backlog 做下一个任务”模式时，Agent 才可以在完成一个完整 backlog 任务后自动提交一次。
+- 自动提交前必须满足：任务验收完成、验证通过或说明跳过原因、相关文档同步、工作区不包含无关用户改动、提交信息符合 `docs/AGENT_GIT_RULES.md`。
+- 普通解释、分析、审查、调研、小范围文档讨论或用户未要求提交的改动，不自动提交。
+- Agent 永远不能自动 push、force push、rebase、reset、删除分支或删除 tag；这些操作必须等待用户明确确认。
+
 ## 停止条件
 
 只有以下情况允许停止等待用户：
@@ -51,6 +59,9 @@ LifePilot 的目标是让 AI Agent 可以长期、连续、自主地维护和开
 8. Git 出现冲突且无法安全自动解决。
 9. 当前任务需求与已有文档发生重大冲突。
 10. 所有当前阶段 P0/P1/P2 任务均已完成。
+11. 文档与代码严重冲突，且无法判断哪个来源可信。
+12. 工作区存在会被误提交的无关用户改动。
+13. 需要 push、force push、rebase、reset、删除分支、删除 tag 或其他高风险 Git 操作。
 
 除以上情况外，不要停下来问用户“下一步做什么”。
 
@@ -70,14 +81,26 @@ LifePilot 的目标是让 AI Agent 可以长期、连续、自主地维护和开
 - `AGENTS.md` 只保留长期协作入口，不写临时进度。
 - `docs/CURRENT_STATE.md` 是唯一当前状态源，只在这里记录当前阶段、阻塞项、最近验证和下一任务。
 - `docs/BACKLOG.md` 是唯一任务源，只在这里记录任务状态、优先级、验收标准和后续任务建议。
-- `docs/CHANGELOG_AGENT.md` 是历史记录，每完成任务追加记录，不作为当前状态来源。
+- `docs/RECENT_HISTORY.md` 是默认接手阅读的短历史摘要，由 `scripts/agent_changelog_archive.py` 生成或刷新，不作为当前状态来源。
+- `docs/CHANGELOG_AGENT.md` 是近期完整历史记录，每完成任务追加记录；旧记录由 `scripts/agent_changelog_archive.py` 自动归档到 `docs/changelog/`，不作为当前状态来源。
 - `docs/HANDOFF.md` 是稳定运行手册，只保留项目定位、技术栈、运行/测试方式、端口注意事项和接手流程；不要复制当前阶段、下一任务或已完成清单。
 - `docs/NEXT_CHAT_PROMPT.md` 是极简新对话入口，只引用权威文档；不要复制当前阶段、下一任务或长篇状态。
 - 设计改变时更新对应设计文档和 `docs/DECISION_LOG.md`。
 
+## 文档更新分层
+
+- 每个完成的开发任务：更新 `docs/CURRENT_STATE.md`、`docs/BACKLOG.md`、`docs/CHANGELOG_AGENT.md`，并运行 `python3 scripts/agent_changelog_archive.py`。
+- API 改动：同步 `docs/API_DESIGN.md`。
+- 数据库或迁移改动：同步 `docs/DB_DESIGN.md`。
+- 架构、模块边界或目录结构变化：同步 `docs/ARCHITECTURE.md`。
+- 测试策略或验证命令变化：同步 `docs/TESTING.md`。
+- Git、提交、自动开发流程或文档权威关系变化：同步对应规则文档和 `docs/DECISION_LOG.md`。
+- 运行方式、端口、环境依赖或接手流程变化：同步 `docs/HANDOFF.md` 和 `docs/NEXT_CHAT_PROMPT.md`。
+
 ## 测试与验证规则
 
 - 文档任务至少检查文件是否完整、互相引用是否正确。
+- 文档历史任务运行 `python3 scripts/agent_changelog_archive.py` 和 `python3 scripts/agent_doc_check.py`。
 - 后端任务优先运行 `cd backend && mvn test`。
 - 前端任务优先运行 `cd frontend && npm install && npm run build`。
 - 无法运行测试时，必须说明原因并记录到 `docs/CHANGELOG_AGENT.md`。

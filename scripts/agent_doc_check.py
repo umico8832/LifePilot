@@ -55,6 +55,7 @@ def main() -> int:
     current = read("docs/CURRENT_STATE.md")
     backlog = read("docs/BACKLOG.md")
     changelog = read("docs/CHANGELOG_AGENT.md")
+    recent_history = read("docs/RECENT_HISTORY.md")
     handoff = read("docs/HANDOFF.md")
     next_prompt = read("docs/NEXT_CHAT_PROMPT.md")
 
@@ -79,9 +80,17 @@ def main() -> int:
     completed_ids = re.findall(r"(P\d+-\d+)", current_stage)
     recent_completed = completed_ids[-1] if completed_ids else None
     if recent_completed and recent_completed not in changelog:
-        fail(f"CHANGELOG_AGENT does not mention recent completed task {recent_completed}.")
+        archive_text = "\n".join(
+            path.read_text(encoding="utf-8")
+            for path in sorted((ROOT / "docs" / "changelog").glob("*.md"))
+        )
+        if recent_completed not in archive_text:
+            fail(f"CHANGELOG_AGENT and archives do not mention recent completed task {recent_completed}.")
     if recent_completed:
-        ok(f"CHANGELOG_AGENT mentions recent completed task {recent_completed}.")
+        ok(f"CHANGELOG_AGENT or archive mentions recent completed task {recent_completed}.")
+        if recent_completed not in recent_history:
+            fail(f"RECENT_HISTORY does not mention recent completed task {recent_completed}.")
+        ok(f"RECENT_HISTORY mentions recent completed task {recent_completed}.")
 
     stale_patterns = [
         r"^## 当前阶段",
@@ -102,12 +111,16 @@ def main() -> int:
     required_handoff_refs = [
         "docs/CURRENT_STATE.md",
         "docs/BACKLOG.md",
-        "docs/CHANGELOG_AGENT.md",
+        "docs/RECENT_HISTORY.md",
     ]
     for ref in required_handoff_refs:
         if ref not in handoff:
             fail(f"docs/HANDOFF.md does not reference {ref}.")
     ok("HANDOFF references authoritative docs.")
+
+    if "docs/changelog/" not in changelog:
+        fail("CHANGELOG_AGENT does not explain archived history in docs/changelog/.")
+    ok("CHANGELOG_AGENT references archive directory.")
 
     print("[OK] Agent documentation consistency check passed.")
     return 0

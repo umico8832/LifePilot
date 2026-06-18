@@ -1,6 +1,6 @@
 # Roadmap
 
-每个 Phase 完成后，Agent 必须更新 `docs/CURRENT_STATE.md` 和 `docs/CHANGELOG_AGENT.md`。
+每个 Phase 完成后，Agent 必须更新 `docs/CURRENT_STATE.md` 和 `docs/CHANGELOG_AGENT.md`，再运行 `python3 scripts/agent_changelog_archive.py` 刷新 `docs/RECENT_HISTORY.md`。
 
 ## Phase 0：项目规划文档
 
@@ -118,4 +118,3 @@
 - 数据库任务：迁移审计和备份策略文档。
 - AI 任务：降级和限流策略。
 - 验收标准：可稳定演示，测试和构建自动化。
-

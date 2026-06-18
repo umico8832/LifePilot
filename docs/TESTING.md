@@ -29,12 +29,13 @@
 ```bash
 cd backend && ./mvnw test
 cd frontend && npm install && npm run build
+python3 scripts/agent_changelog_archive.py
 python3 scripts/agent_doc_check.py
 ```
 
 ## 每类任务至少应该跑什么验证
 
-- 文档任务：检查文件存在、Markdown 结构、交叉引用，并运行 `python3 scripts/agent_doc_check.py`。
+- 文档任务：检查文件存在、Markdown 结构、交叉引用，并运行 `python3 scripts/agent_changelog_archive.py` 和 `python3 scripts/agent_doc_check.py`。
 - 后端接口任务：`./mvnw test`，必要时手动 curl。
 - 前端页面任务：`npm run build`，必要时浏览器检查。
 - 数据库任务：迁移执行验证。

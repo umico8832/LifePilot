@@ -12,5 +12,6 @@
 - 是否存在真实密钥、真实 `.env` 或外部服务凭据？
 - 是否涉及医疗、法律、投资、支付、自动购买等禁止能力？
 - 是否需要更新 `docs/CURRENT_STATE.md`、`docs/BACKLOG.md`、`docs/CHANGELOG_AGENT.md`？
+- 是否运行 `python3 scripts/agent_changelog_archive.py` 刷新 `docs/RECENT_HISTORY.md` 并自动归档旧历史？
 - 是否运行 `python3 scripts/agent_doc_check.py` 并通过？
 - 是否可以继续下一项任务？

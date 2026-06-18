@@ -2,7 +2,7 @@
 
 本文件是稳定接手手册，只记录长期有效的运行、测试和接手信息。
 
-当前阶段、下一任务、阻塞项和最近验证结果以 `docs/CURRENT_STATE.md` 为准。任务池和任务状态以 `docs/BACKLOG.md` 为准。历史记录以 `docs/CHANGELOG_AGENT.md` 为准。
+当前阶段、下一任务、阻塞项和最近验证结果以 `docs/CURRENT_STATE.md` 为准。任务池和任务状态以 `docs/BACKLOG.md` 为准。最近历史摘要以 `docs/RECENT_HISTORY.md` 为准。完整历史按需查看 `docs/CHANGELOG_AGENT.md` 和 `docs/changelog/`。
 
 ## 项目基本信息
 
@@ -23,7 +23,7 @@
 2. 读 `docs/AUTO_DEV_PROTOCOL.md`。
 3. 读 `docs/CURRENT_STATE.md` 获取当前状态和下一任务。
 4. 读 `docs/BACKLOG.md` 获取任务池和验收标准。
-5. 读 `docs/CHANGELOG_AGENT.md` 了解最近历史。
+5. 读 `docs/RECENT_HISTORY.md` 了解最近历史。
 6. 按任务类型读取对应设计文档和 `agent-skills/*/SKILL.md`。
 
 ## 运行方式
@@ -58,6 +58,7 @@ BACKEND_PROXY_TARGET=http://localhost:18081 npm run dev
 cd backend && ./mvnw test
 cd frontend && npm install && npm run build
 cd frontend && npm audit --audit-level=high
+python3 scripts/agent_changelog_archive.py
 python3 scripts/agent_doc_check.py
 ```
 
@@ -85,4 +86,4 @@ cd backend && mvn test
 
 - `docs/HANDOFF.md` 不记录当前阶段和下一任务，避免和 `docs/CURRENT_STATE.md` 漂移。
 - `docs/NEXT_CHAT_PROMPT.md` 只保留极简入口，避免复制状态。
-- 完成任务后至少更新 `docs/CURRENT_STATE.md`、`docs/BACKLOG.md`、`docs/CHANGELOG_AGENT.md`，并运行 `python3 scripts/agent_doc_check.py`。
+- 完成任务后至少更新 `docs/CURRENT_STATE.md`、`docs/BACKLOG.md`、`docs/CHANGELOG_AGENT.md`，运行 `python3 scripts/agent_changelog_archive.py` 刷新近期历史，再运行 `python3 scripts/agent_doc_check.py`。

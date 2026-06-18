@@ -21,7 +21,8 @@ Inspired by Anthropic's `doc-coauthoring` workflow, rewritten for this repositor
 - Current execution state: `docs/CURRENT_STATE.md`
 - Task pool: `docs/BACKLOG.md`
 - Handoff: `docs/HANDOFF.md`, `docs/NEXT_CHAT_PROMPT.md`
-- Development history: `docs/CHANGELOG_AGENT.md`
+- Recent history: `docs/RECENT_HISTORY.md`
+- Full development history: `docs/CHANGELOG_AGENT.md`, `docs/changelog/`
 - Decisions: `docs/DECISION_LOG.md`
 
 ## Workflow
@@ -30,7 +31,7 @@ Inspired by Anthropic's `doc-coauthoring` workflow, rewritten for this repositor
 2. Read the target document and any directly related docs. Do not infer product changes from memory alone.
 3. Make the smallest durable change that keeps the docs internally consistent.
 4. If the edit changes scope, architecture, data model, API behavior, workflow rules, or external-service policy, update `docs/DECISION_LOG.md`.
-5. If the edit reflects completed work or a new handoff state, update `docs/CURRENT_STATE.md`, `docs/HANDOFF.md`, `docs/NEXT_CHAT_PROMPT.md`, and `docs/CHANGELOG_AGENT.md` as appropriate.
+5. If the edit reflects completed work or a new handoff state, update `docs/CURRENT_STATE.md`, `docs/HANDOFF.md`, `docs/NEXT_CHAT_PROMPT.md`, and `docs/CHANGELOG_AGENT.md` as appropriate, then run `python3 scripts/agent_changelog_archive.py`.
 6. Check references after editing with `rg` so renamed tasks, files, or claims do not drift.
 
 ## Writing Rules

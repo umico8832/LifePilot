@@ -80,5 +80,5 @@ When behavior changes, update the relevant docs:
 
 - `docs/API_DESIGN.md` for endpoints and response shape.
 - `docs/DB_DESIGN.md` for schema/model changes.
-- `docs/CURRENT_STATE.md`, `docs/BACKLOG.md`, `docs/HANDOFF.md`, and `docs/CHANGELOG_AGENT.md` for task state.
+- `docs/CURRENT_STATE.md` and `docs/BACKLOG.md` for task state; append history to `docs/CHANGELOG_AGENT.md` and refresh `docs/RECENT_HISTORY.md` with `python3 scripts/agent_changelog_archive.py`.
 - `docs/DECISION_LOG.md` for notable architecture, schema, or security decisions.

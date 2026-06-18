@@ -10,7 +10,7 @@
 - `git push`
 - 提交、更改提交信息、暂存、推送、发布
 
-提交信息生成后，必须在执行提交前自检一次：格式符合 `<type>(<可选作用域>): <中文简短描述>`，且简短描述为中文。
+提交信息生成后，必须在执行提交前自检一次：格式符合 `<type>(<可选作用域>): <中文描述>`，且描述为中文。
 
 ## 密钥和环境文件
 
@@ -24,6 +24,9 @@
 - 每次提交聚焦一个主题。
 - 提交前检查 `git status --short`。
 - 不回滚用户未要求回滚的改动。
+- 默认不主动提交；只有用户明确要求提交，或明确进入自主开发模式时，才允许按 `docs/AUTO_DEV_PROTOCOL.md` 的半自主提交规则自动提交。
+- 自动提交只允许在完成一个完整 backlog 任务、验证与文档同步完成、且工作区没有无关用户改动时执行。
+- Agent 不自动 push、force push、rebase、reset、删除分支或删除 tag。
 
 ## 提交前检查
 
@@ -32,6 +35,8 @@
 ```bash
 git status --short
 git diff --check
+python3 scripts/agent_changelog_archive.py
+python3 scripts/agent_doc_check.py
 ```
 
 涉及代码、配置、依赖、构建、数据库迁移、前端资源或运行行为的改动，还必须执行：
@@ -45,7 +50,7 @@ cd frontend && npm run build
 
 - 本次仅修改文档。
 - 跳过了哪些代码验证命令。
-- 已执行哪些文档或格式检查。
+- 已执行哪些文档、归档或格式检查。
 
 ## Commit Message 规范
 
@@ -58,7 +63,6 @@ cd frontend && npm run build
 <可选：Closes #42>
 ```
 
-大多数提交一行即可。
 
 `type` 只能使用：
 

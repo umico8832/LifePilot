@@ -27,7 +27,8 @@ P1-017 增加前端关键测试。
 - 后端 `./mvnw test`：通过，88 tests passed（含 22 项 AiControllerTests）。
 - 前端 `npm run build`：通过（vue-tsc + vite build）。
 - Flyway 迁移 V1-V8 在 H2 测试数据库上通过。
-- 文档一致性检查：待运行。
+- 文档归档脚本 `python3 scripts/agent_changelog_archive.py`：通过。
+- 文档一致性检查 `python3 scripts/agent_doc_check.py`：通过。
 
 ## 注意事项
 

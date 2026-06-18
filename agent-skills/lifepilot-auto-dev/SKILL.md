@@ -16,7 +16,9 @@ Read these first, in order:
 3. `docs/CURRENT_STATE.md`
 4. `docs/BACKLOG.md`
 5. `docs/HANDOFF.md`
-6. `docs/CHANGELOG_AGENT.md`
+6. `docs/RECENT_HISTORY.md`
+
+Read `docs/CHANGELOG_AGENT.md` and `docs/changelog/` only when you need older historical detail.
 
 Then read task-specific docs:
 
@@ -48,6 +50,7 @@ Then read task-specific docs:
 - `docs/BACKLOG.md`: task status
 - `docs/CURRENT_STATE.md`: current phase, completed work, blockers, next task, verification
 - `docs/CHANGELOG_AGENT.md`: append a dated entry
+- `docs/RECENT_HISTORY.md`: refresh via `python3 scripts/agent_changelog_archive.py`
 - `docs/HANDOFF.md`: keep handoff current
 - `docs/NEXT_CHAT_PROMPT.md`: keep continuation prompt current
 - Related design docs and `docs/DECISION_LOG.md` when behavior or architecture changes

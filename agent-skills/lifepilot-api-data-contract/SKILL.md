@@ -65,4 +65,4 @@ Before finishing contract work, verify:
 - `docs/DB_DESIGN.md` matches migrations.
 - Frontend API clients call real backend paths.
 - Tests cover unauthorized and forbidden access where applicable.
-- `docs/CURRENT_STATE.md`, `docs/HANDOFF.md`, and `docs/CHANGELOG_AGENT.md` reflect the real state.
+- `docs/CURRENT_STATE.md` and `docs/BACKLOG.md` reflect the real state; `docs/CHANGELOG_AGENT.md` records the completed work and `docs/RECENT_HISTORY.md` is refreshed by `python3 scripts/agent_changelog_archive.py`.
