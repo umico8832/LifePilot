@@ -2,17 +2,18 @@
 
 ## 当前阶段
 
-P1-016 完成。Phase 0-16 全部完成。
+P2-001 完成。Phase 0-17 全部完成，Phase 14（AI provider 配置骨架）完成。
 
 ## 当前最高优先级任务
 
-P1-017 增加前端关键测试。
+无剩余 todo 任务。可新增 P2 任务继续开发。
 
 ## 最近完成任务
 
 - P0-001～P0-013：全部完成。
-- P1-001～P1-016：全部完成。
-- P1-016 前端分类管理 UI 集成：FinanceView 新增分类管理对话框（支出/收入分类列表、创建新分类含图标、删除分类）+ 记账表单新增分类选择器（按类型自动筛选分类、切换类型时清空不匹配分类）+ 交易列表表格新增分类列 + 记账创建/编辑/确认 payload 携带 categoryId。
+- P1-001～P1-017：全部完成。
+- P1-017 增加前端关键测试：接入 Vitest 4 + jsdom + @vue/test-utils；auth store 测试（9 项）、space store 测试（10 项）、http interceptor 测试（5 项），共 24 项测试全部通过。
+- P2-001 规划真实 AI provider 配置骨架：ARCHITECTURE.md 新增 Provider 接口与当前实现、Provider 切换策略、OpenAI-compatible 配置项、安全边界和扩展点；API_DESIGN.md 新增 AI Provider 配置环境变量表和安全规则；DECISION_LOG.md 新增 provider 配置骨架决策记录。
 
 ## 当前阻塞项
 
@@ -20,11 +21,12 @@ P1-017 增加前端关键测试。
 
 ## 下一项自动任务
 
-P1-017 增加前端关键测试。
+无剩余 todo 任务。
 
 ## 最近验证结果
 
 - 后端 `./mvnw test`：通过，88 tests passed（含 22 项 AiControllerTests）。
+- 前端 `npm test`：通过，3 个测试文件共 24 项测试全部通过。
 - 前端 `npm run build`：通过（vue-tsc + vite build）。
 - Flyway 迁移 V1-V8 在 H2 测试数据库上通过。
 - 文档归档脚本 `python3 scripts/agent_changelog_archive.py`：通过。

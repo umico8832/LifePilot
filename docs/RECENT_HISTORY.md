@@ -5,11 +5,11 @@
 
 ## 最近完成
 
+- 2026-06-18 22:23 Asia/Shanghai：P1-017 增加前端关键测试；验证：前端 `npm test` 通过，3 个测试文件共 24 项测试全部通过；前端 `npm run build` 通过（vue-tsc + vite build）；下一步：P2-001 规划真实 AI provider 配置骨架
 - 2026-06-18 21:39 Asia/Shanghai：升级 Agent 文档为近期历史与机器化工作流；验证：`python3 scripts/agent_changelog_archive.py` 通过；`python3 scripts/agent_doc_check.py` 通过；`git diff --check` 通过；下一步：P1-017 增加前端关键测试
 - 2026-06-18 21:06 Asia/Shanghai：P1-016 前端分类管理 UI 集成；验证：后端 `./mvnw test` 通过，88 tests passed（含 22 项 AiControllerTests）；前端 `npm run build` 通过（vue-tsc + vite build）；下一步：P1-017 增加前端关键测试
 - 2026-06-18 20:51 Asia/Shanghai：P1-015 增加更多统计接口；验证：后端 `./mvnw test` 通过，88 tests passed（含 22 项 AiControllerTests）；前端 `npm run build` 通过（vue-tsc + vite build）；下一步：P1-016 前端分类管理 UI 集成
 - 2026-06-18 20:35 Asia/Shanghai：P1-014 扩展 AI mock provider：月报草稿；验证：后端 `./mvnw test` 通过，88 tests passed（含 22 项 AiControllerTests）；前端 `npm run build` 通过（vue-tsc + vite build）；下一步：P1-015 增加更多统计接口
-- 2026-06-18 20:28 Asia/Shanghai：P1-013 扩展 AI mock provider：待办草稿；验证：后端 `./mvnw test` 通过，86 tests passed（含 20 项 AiControllerTests）；前端 `npm run build` 通过（vue-tsc + vite build）；下一步：P1-014 扩展 AI mock provider：月报草稿
 
 ## 维护规则
 

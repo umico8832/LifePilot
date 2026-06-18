@@ -116,12 +116,34 @@
 
 ## AI 接口
 
-- `POST /api/ai/parse-transaction`
-- `POST /api/ai/create-shopping-list-draft`
-- `POST /api/ai/create-todo-draft`
-- `POST /api/ai/monthly-report-draft`
+- `POST /api/ai/spaces/{spaceId}/parse-transaction` ✅
+- `POST /api/ai/spaces/{spaceId}/parse-shopping` ✅
+- `POST /api/ai/spaces/{spaceId}/parse-todo` ✅
+- `GET /api/ai/spaces/{spaceId}/monthly-report?year=&month=` ✅
 
 AI 接口返回草稿，用户确认后再调用业务写入接口。
+
+### AI Provider 配置
+
+通过环境变量控制 AI provider 行为：
+
+| 环境变量 | 默认值 | 说明 |
+|---|---|---|
+| `AI_PROVIDER` | `mock` | Provider 类型：`mock`（本地确定性解析）或 `openai`（调用外部 API） |
+| `OPENAI_API_KEY` | 空 | OpenAI API Key，`provider=openai` 时必填 |
+| `OPENAI_BASE_URL` | `https://api.openai.com/v1` | OpenAI-compatible API 基础 URL |
+| `OPENAI_MODEL` | `gpt-4o-mini` | 使用的模型名称 |
+| `OPENAI_TEMPERATURE` | `0.2` | 生成温度 |
+| `OPENAI_MAX_TOKENS` | `1024` | 最大输出 token 数 |
+| `OPENAI_TIMEOUT` | `30` | 请求超时（秒） |
+| `OPENAI_RETRY_MAX` | `2` | 最大重试次数 |
+
+**Mock 回退机制**：当 `AI_PROVIDER=openai` 但 `OPENAI_API_KEY` 为空时，自动回退到 `MockAiProvider` 并打印警告日志。
+
+**安全规则**：
+- API Key 只通过环境变量注入，禁止写入代码或配置文件。
+- `.gitignore` 已包含 `.env`，不得提交真实密钥。
+- AI 请求/响应日志必须脱敏。
 
 ## 统计接口
 

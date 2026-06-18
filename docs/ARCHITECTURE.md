@@ -42,6 +42,59 @@ LifePilot 使用前后端分离架构：
 
 后端应定义 `AiProvider` 接口，默认实现 `MockAiProvider`。AI 输出尽量结构化 JSON，用户确认后再写入业务数据。真实 provider 通过环境变量启用，API Key 不能写入代码或提交仓库。
 
+### Provider 接口与当前实现
+
+`AiProvider` 接口位于 `backend/ai/AiProvider.java`，当前定义三个解析方法：
+
+- `parseTransaction(String text)`：自然语言 → 记账草稿
+- `parseShoppingList(String text)`：自然语言 → 购物清单草稿
+- `parseTodo(String text)`：自然语言 → 待办草稿
+
+月度报告由 `AiService.generateMonthlyReport` 直接聚合业务数据生成，不经过 `AiProvider` 接口，未来可将文本润色和建议生成委托给真实 provider。
+
+### Provider 切换策略
+
+通过 `lifepilot.ai.provider` 配置项选择实现：
+
+| 值 | 对应实现 | 说明 |
+|---|---|---|
+| `mock`（默认） | `MockAiProvider` | 确定性本地解析，不依赖外部服务，适合开发和测试 |
+| `openai` | `OpenAiProvider` | 调用 OpenAI-compatible API（Chat Completions），需要配置 API Key 和 Base URL |
+
+切换机制使用 Spring `@ConditionalOnProperty` 或手动 `@Bean` 条件注入。未识别的 provider 值应用启动失败并给出明确日志。
+
+### OpenAI-compatible Provider 配置
+
+```yaml
+lifepilot:
+  ai:
+    provider: ${AI_PROVIDER:mock}
+    openai:
+      api-key: ${OPENAI_API_KEY:}          # 必填，真实 provider 启用时不能为空
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+      model: ${OPENAI_MODEL:gpt-4o-mini}
+      temperature: ${OPENAI_TEMPERATURE:0.2}
+      max-tokens: ${OPENAI_MAX_TOKENS:1024}
+      timeout-seconds: ${OPENAI_TIMEOUT:30}
+      retry-max-attempts: ${OPENAI_RETRY_MAX:2}
+```
+
+### 安全边界
+
+1. **API Key 不入代码**：`OPENAI_API_KEY` 只通过环境变量注入，不得写入代码、配置文件默认值或提交历史。`.gitignore` 已包含 `.env`。
+2. **Mock 回退**：当 `provider=openai` 但 API Key 为空时，自动回退到 `MockAiProvider` 并打印警告日志。不会因缺少密钥导致服务不可用。
+3. **请求超时和重试**：外部 API 调用必须有超时（默认 30s）和有限重试（默认 2 次），避免阻塞请求线程。
+4. **输出结构化**：真实 provider 的 System Prompt 要求返回与 `TransactionDraftResponse` / `ShoppingDraftResponse` / `TodoDraftResponse` 一致的 JSON 结构，后端反序列化后标记 `needsReview=true` 供用户确认。
+5. **日志脱敏**：AI 请求/响应日志不得包含 API Key 或用户敏感信息。
+6. **费用控制**：文档明确默认模型为成本较低的 `gpt-4o-mini`，生产环境可配置更强大模型但需评估成本。
+
+### 扩展点
+
+- 未来可增加更多 provider 实现（如 Azure OpenAI、Anthropic、Ollama 本地模型）。
+- `parseTransaction` / `parseShoppingList` / `parseTodo` 可统一改为异步流式返回（当前设计为同步）。
+- 月度报告的文本润色和建议生成可委托给真实 provider，当前由 `AiService` 硬编码模板。
+- 后续可增加 `AiCallLog` 记录每次外部调用的 token 用量、耗时和结果摘要。
+
 ## 权限模型
 
 - 用户通过 JWT 鉴权。
