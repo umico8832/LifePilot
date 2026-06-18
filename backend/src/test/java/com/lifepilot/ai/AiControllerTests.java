@@ -158,6 +158,202 @@ class AiControllerTests {
     }
 
     @Test
+    void parseShoppingListWithMultipleItems() throws Exception {
+        String body = """
+                { "text": "买苹果、牛奶、面包、鸡蛋" }
+                """;
+
+        mockMvc.perform(post("/api/ai/spaces/" + spaceId + "/parse-shopping")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.listName").value("购物清单"))
+                .andExpect(jsonPath("$.data.items.length()").value(4))
+                .andExpect(jsonPath("$.data.items[0].name").value("苹果"))
+                .andExpect(jsonPath("$.data.items[0].quantity").value(1))
+                .andExpect(jsonPath("$.data.items[1].name").value("牛奶"))
+                .andExpect(jsonPath("$.data.items[2].name").value("面包"))
+                .andExpect(jsonPath("$.data.items[3].name").value("鸡蛋"))
+                .andExpect(jsonPath("$.data.rawInput").exists());
+    }
+
+    @Test
+    void parseShoppingListWithContextKeyword() throws Exception {
+        String body = """
+                { "text": "去超市买2斤苹果、3瓶牛奶、一包纸巾" }
+                """;
+
+        mockMvc.perform(post("/api/ai/spaces/" + spaceId + "/parse-shopping")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.listName").value("超市购物清单"))
+                .andExpect(jsonPath("$.data.items[0].name").value("苹果"))
+                .andExpect(jsonPath("$.data.items[0].quantity").value(2))
+                .andExpect(jsonPath("$.data.items[0].unit").value("斤"))
+                .andExpect(jsonPath("$.data.items[1].name").value("牛奶"))
+                .andExpect(jsonPath("$.data.items[1].quantity").value(3))
+                .andExpect(jsonPath("$.data.items[1].unit").value("瓶"));
+    }
+
+    @Test
+    void parseShoppingListWithFruitContext() throws Exception {
+        String body = """
+                { "text": "水果：苹果、香蕉、橙子" }
+                """;
+
+        mockMvc.perform(post("/api/ai/spaces/" + spaceId + "/parse-shopping")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.listName").value("水果清单"))
+                .andExpect(jsonPath("$.data.items.length()").value(3));
+    }
+
+    @Test
+    void parseShoppingListEmptyTextReturns400() throws Exception {
+        String body = """
+                { "text": "" }
+                """;
+
+        mockMvc.perform(post("/api/ai/spaces/" + spaceId + "/parse-shopping")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+    }
+
+    @Test
+    void parseShoppingListRequiresAuth() throws Exception {
+        String body = """
+                { "text": "买苹果" }
+                """;
+
+        mockMvc.perform(post("/api/ai/spaces/" + spaceId + "/parse-shopping")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void parseShoppingListSingleItemNeedsReview() throws Exception {
+        String body = """
+                { "text": "随便买点东西" }
+                """;
+
+        mockMvc.perform(post("/api/ai/spaces/" + spaceId + "/parse-shopping")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.items.length()").value(1))
+                .andExpect(jsonPath("$.data.needsReview").value(true))
+                .andExpect(jsonPath("$.data.validationMessage").exists());
+    }
+
+    @Test
+    void parseTodoMultipleItems() throws Exception {
+        String body = """
+                { "text": "买菜、打扫房间、交水电费" }
+                """;
+
+        mockMvc.perform(post("/api/ai/spaces/" + spaceId + "/parse-todo")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.items.length()").value(3))
+                .andExpect(jsonPath("$.data.items[0].title").value("买菜"))
+                .andExpect(jsonPath("$.data.items[1].title").value("打扫房间"))
+                .andExpect(jsonPath("$.data.items[2].title").value("交水电费"))
+                .andExpect(jsonPath("$.data.rawInput").exists());
+    }
+
+    @Test
+    void parseTodoWithPriorityKeyword() throws Exception {
+        String body = """
+                { "text": "紧急处理客户投诉" }
+                """;
+
+        mockMvc.perform(post("/api/ai/spaces/" + spaceId + "/parse-todo")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.items.length()").value(1))
+                .andExpect(jsonPath("$.data.items[0].title").value("处理客户投诉"))
+                .andExpect(jsonPath("$.data.items[0].priority").value("urgent"));
+    }
+
+    @Test
+    void parseTodoWithDueDateHint() throws Exception {
+        String body = """
+                { "text": "明天去医院做体检" }
+                """;
+
+        mockMvc.perform(post("/api/ai/spaces/" + spaceId + "/parse-todo")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.items[0].title").value("去医院做体检"))
+                .andExpect(jsonPath("$.data.items[0].dueAt").exists());
+    }
+
+    @Test
+    void parseTodoEmptyTextReturns400() throws Exception {
+        String body = """
+                { "text": "" }
+                """;
+
+        mockMvc.perform(post("/api/ai/spaces/" + spaceId + "/parse-todo")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+    }
+
+    @Test
+    void parseTodoRequiresAuth() throws Exception {
+        String body = """
+                { "text": "买菜" }
+                """;
+
+        mockMvc.perform(post("/api/ai/spaces/" + spaceId + "/parse-todo")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void parseTodoWithLowPriority() throws Exception {
+        String body = """
+                { "text": "有空整理书架" }
+                """;
+
+        mockMvc.perform(post("/api/ai/spaces/" + spaceId + "/parse-todo")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.items[0].title").value("整理书架"))
+                .andExpect(jsonPath("$.data.items[0].priority").value("low"));
+    }
+
+    @Test
     void parseDecimalAmount() throws Exception {
         String body = """
                 { "text": "超市购物120.50元" }
@@ -187,6 +383,37 @@ class AiControllerTests {
                 .andExpect(jsonPath("$.data.type").value("expense"))
                 .andExpect(jsonPath("$.data.amount").value(25))
                 .andExpect(jsonPath("$.data.categoryName").value("交通"));
+    }
+
+    @Test
+    void monthlyReportReturnsEmptyData() throws Exception {
+        int year = java.time.Year.now().getValue();
+        int month = java.time.LocalDate.now().getMonthValue();
+
+        mockMvc.perform(get("/api/ai/spaces/" + spaceId + "/monthly-report")
+                        .header("Authorization", "Bearer " + token)
+                        .param("year", String.valueOf(year))
+                        .param("month", String.valueOf(month)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.year").value(year))
+                .andExpect(jsonPath("$.data.month").value(month))
+                .andExpect(jsonPath("$.data.finance.totalIncome").value(0))
+                .andExpect(jsonPath("$.data.finance.totalExpense").value(0))
+                .andExpect(jsonPath("$.data.finance.balance").value(0))
+                .andExpect(jsonPath("$.data.inventory.totalItems").value(0))
+                .andExpect(jsonPath("$.data.shopping.listCount").value(0))
+                .andExpect(jsonPath("$.data.todo.totalCount").value(0))
+                .andExpect(jsonPath("$.data.reportText").isNotEmpty())
+                .andExpect(jsonPath("$.data.suggestions").isArray());
+    }
+
+    @Test
+    void monthlyReportRequiresAuth() throws Exception {
+        mockMvc.perform(get("/api/ai/spaces/" + spaceId + "/monthly-report")
+                        .param("year", "2026")
+                        .param("month", "6"))
+                .andExpect(status().isForbidden());
     }
 
     private static org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder get(String url) {

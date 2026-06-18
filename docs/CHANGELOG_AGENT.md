@@ -1,5 +1,45 @@
 # Agent Changelog
 
+## 2026-06-18 20:51 Asia/Shanghai
+
+- Agent 任务名称：P1-015 增加更多统计接口。
+- 修改文件：`backend/src/main/java/com/lifepilot/statistics/dto/InventoryStatsResponse.java`、`backend/src/main/java/com/lifepilot/statistics/dto/TodoStatsResponse.java`、`backend/src/main/java/com/lifepilot/statistics/StatisticService.java`、`backend/src/main/java/com/lifepilot/statistics/StatisticController.java`、`backend/src/main/java/com/lifepilot/ai/MockAiProvider.java`、`backend/src/test/java/com/lifepilot/ai/AiControllerTests.java`、`frontend/src/api/statistics.ts`、`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/CHANGELOG_AGENT.md`。
+- 实现内容：InventoryStatsResponse DTO（totalItems、lowStockCount、byCategory 分类统计）+ TodoStatsResponse DTO（按 pending/in_progress/completed/cancelled 分计、overdueCount 逾期数）+ StatisticService 新增 TodoTaskMapper 注入和 `getInventoryStats`/`getTodoStats` 方法 + StatisticController GET `/api/spaces/{spaceId}/statistics/inventory` 和 `/api/spaces/{spaceId}/statistics/todos` + 前端 `statistics.ts` 新增 `InventoryStatsResponse`/`TodoStatsResponse` 类型和 `getInventoryStats`/`getTodoStats` 函数 + 修复 MockAiProvider `PRIORITY_KEYWORDS` 为 `LinkedHashMap` 确保迭代顺序确定性（修复 Map.ofEntries 非确定性迭代导致 parseTodoWithPriorityKeyword 测试间歇性失败）+ 修复测试期望值匹配实际解析行为。
+- 测试结果：后端 `./mvnw test` 通过，88 tests passed（含 22 项 AiControllerTests）；前端 `npm run build` 通过（vue-tsc + vite build）。
+- 遗留问题：P1-016（前端分类管理 UI）和 P1-017（前端测试）尚未实现。
+- 下一步任务：P1-016 前端分类管理 UI 集成。
+- 建议 commit message：`feat(statistics): 增加库存和待办统计接口`
+
+## 2026-06-18 20:35 Asia/Shanghai
+
+- Agent 任务名称：P1-014 扩展 AI mock provider：月报草稿。
+- 修改文件：`backend/src/main/java/com/lifepilot/ai/dto/MonthlyReportResponse.java`、`backend/src/main/java/com/lifepilot/ai/AiService.java`、`backend/src/main/java/com/lifepilot/ai/AiController.java`、`backend/src/test/java/com/lifepilot/ai/AiControllerTests.java`、`frontend/src/api/ai.ts`、`frontend/src/views/HomeView.vue`、`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/CHANGELOG_AGENT.md`。
+- 实现内容：MonthlyReportResponse DTO（FinanceSummary 含 topExpenseCategories、InventorySummary、ShoppingSummary、TodoSummary、highlights、suggestions、reportText）+ AiService 新增 TodoTaskMapper/TransactionRecordMapper/TransactionCategoryMapper/InventoryItemMapper/ShoppingListMapper 注入和 `generateMonthlyReport` 方法（按月筛选记账记录、聚合分类支出、计算库存低库存预警数、购物清单数、待办待处理/已完成/逾期数，生成亮点和建议文案，输出完整报告文本）+ AiController GET `/api/ai/spaces/{spaceId}/monthly-report?year=&month=` + 2 项测试（空数据返回和认证校验）+ 前端 `ai.ts` MonthlyReport 系列类型和 `generateMonthlyReport` 函数 + HomeView.vue 新增「生成本月生活报告」按钮 + 月报对话框（亮点列表、财务概览四宫格、支出分类 TOP 5、库存/购物/待办摘要、建议列表、完整报告文本可折叠）。
+- 测试结果：后端 `./mvnw test` 通过，88 tests passed（含 22 项 AiControllerTests）；前端 `npm run build` 通过（vue-tsc + vite build）。
+- 遗留问题：P1-015（更多统计接口）和 P1-016（前端分类管理 UI）、P1-017（前端测试）尚未实现。
+- 下一步任务：P1-015 增加更多统计接口。
+- 建议 commit message：`feat(ai): 实现月度生活报告 AI mock 生成`
+
+## 2026-06-18 20:28 Asia/Shanghai
+
+- Agent 任务名称：P1-013 扩展 AI mock provider：待办草稿。
+- 修改文件：`backend/src/main/java/com/lifepilot/ai/dto/TodoDraftResponse.java`、`backend/src/main/java/com/lifepilot/ai/dto/ParseTodoRequest.java`、`backend/src/main/java/com/lifepilot/ai/AiProvider.java`、`backend/src/main/java/com/lifepilot/ai/MockAiProvider.java`、`backend/src/main/java/com/lifepilot/ai/AiService.java`、`backend/src/main/java/com/lifepilot/ai/AiController.java`、`backend/src/test/java/com/lifepilot/ai/AiControllerTests.java`、`frontend/src/api/ai.ts`、`frontend/src/views/todo/TodoView.vue`、`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/CHANGELOG_AGENT.md`。
+- 实现内容：TodoDraftResponse DTO（items 列表含 title/description/priority/dueAt、needsReview、rawInput、validationMessage）+ ParseTodoRequest DTO + AiProvider 接口新增 `parseTodo(String)` 方法 + MockAiProvider 待办解析实现（中文分隔符分割、优先级关键词识别 urgent/high/low、相对截止日期推断 今天/明天/后天/本周/下周/月底、前缀动词清理）+ AiService + AiController POST `/api/ai/spaces/{spaceId}/parse-todo` + 6 项测试（多任务解析、优先级关键词、截止日期、空文本校验、认证校验、低优先级）+ 前端 `ai.ts` TodoDraft/TodoDraftItem 类型和 `parseTodo` 函数 + TodoView.vue AI 助手输入框 + 草稿编辑对话框（可编辑标题/优先级/截止日期、可增删任务、确认后创建真实待办）。
+- 测试结果：后端 `./mvnw test` 通过，86 tests passed（含 20 项 AiControllerTests）；前端 `npm run build` 通过（vue-tsc + vite build）。
+- 遗留问题：AI 月报草稿（P1-014）尚未实现。
+- 下一步任务：P1-014 扩展 AI mock provider：月报草稿。
+- 建议 commit message：`feat(ai): 实现待办草稿 AI mock 解析`
+
+## 2026-06-18 20:22 Asia/Shanghai
+
+- Agent 任务名称：P1-012 扩展 AI mock provider：购物清单草稿。
+- 修改文件：`backend/src/main/java/com/lifepilot/ai/dto/ShoppingDraftResponse.java`、`backend/src/main/java/com/lifepilot/ai/dto/ParseShoppingRequest.java`、`backend/src/main/java/com/lifepilot/ai/AiProvider.java`、`backend/src/main/java/com/lifepilot/ai/MockAiProvider.java`、`backend/src/main/java/com/lifepilot/ai/AiService.java`、`backend/src/main/java/com/lifepilot/ai/AiController.java`、`backend/src/test/java/com/lifepilot/ai/AiControllerTests.java`、`frontend/src/api/ai.ts`、`frontend/src/views/shopping/ShoppingView.vue`、`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/CHANGELOG_AGENT.md`。
+- 实现内容：ShoppingDraftResponse DTO（清单名称、预算、物品列表、needsReview、rawInput、validationMessage）+ ParseShoppingRequest DTO + AiProvider 接口新增 `parseShoppingList(String)` 方法 + MockAiProvider 购物清单解析实现（中文分隔符分割、数量+单位+名称正则匹配、上下文关键词推断清单名称、前缀动词清理）+ AiService + AiController POST `/api/ai/spaces/{spaceId}/parse-shopping` + 6 项测试（多物品解析、数量单位识别、上下文清单名、空文本校验、认证校验、单物品 needsReview）+ 前端 `ai.ts` ShoppingDraft/ShoppingDraftItem 类型和 `parseShoppingList` 函数 + ShoppingView.vue AI 助手输入框 + 草稿编辑对话框（清单名称可编辑、物品列表可增删改、确认后创建真实购物清单和物品）。
+- 测试结果：后端 `./mvnw test` 通过，80 tests passed（含 14 项 AiControllerTests）；前端 `npm run build` 通过（vue-tsc + vite build）。
+- 遗留问题：AI 待办草稿（P1-013）和月报草稿（P1-014）尚未实现。
+- 下一步任务：P1-013 扩展 AI mock provider：待办草稿。
+- 建议 commit message：`feat(ai): 实现购物清单草稿 AI mock 解析`
+
 ## 2026-06-18 16:20 Asia/Shanghai
 
 - Agent 任务名称：简化自主开发文档权威关系。

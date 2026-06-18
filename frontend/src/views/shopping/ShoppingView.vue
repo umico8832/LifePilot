@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, reactive } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { ShoppingCart, AlertCircle, RefreshCw } from '@lucide/vue'
+import { ShoppingCart, AlertCircle, RefreshCw, Sparkles, Plus, Delete } from '@lucide/vue'
 
 import AppShell from '@/layouts/AppShell.vue'
 import { useSpaceStore } from '@/stores/space'
@@ -17,6 +17,7 @@ import {
   type ShoppingListResponse,
   type ShoppingItemResponse,
 } from '@/api/shopping'
+import { parseShoppingList, type ShoppingDraft, type ShoppingDraftItem } from '@/api/ai'
 
 const spaceStore = useSpaceStore()
 const shoppingLists = ref<ShoppingListResponse[]>([])
@@ -27,6 +28,16 @@ const listDialogVisible = ref(false)
 const itemDialogVisible = ref(false)
 const editingListId = ref<number | null>(null)
 const editingItemId = ref<number | null>(null)
+
+// ---- AI shopping draft ----
+const aiInput = ref('')
+const aiParsing = ref(false)
+const aiDraftDialogVisible = ref(false)
+const aiDraft = ref<ShoppingDraft | null>(null)
+const editableDraft = reactive({
+  listName: '',
+  items: [] as Array<{ name: string; quantity: number; unit: string; estimatedPrice: number | null }>,
+})
 
 const listForm = ref({
   name: '',
@@ -77,6 +88,82 @@ async function openListDetail(list: ShoppingListResponse) {
 
 function backToList() {
   activeList.value = null
+}
+
+// ---- AI shopping draft ----
+
+async function handleAiParse() {
+  if (!spaceStore.currentSpace) return
+  const text = aiInput.value.trim()
+  if (!text) {
+    ElMessage.warning('请输入描述，如"买苹果、牛奶、面包"')
+    return
+  }
+  aiParsing.value = true
+  try {
+    const draft = await parseShoppingList(spaceStore.currentSpace.id, text)
+    aiDraft.value = draft
+    editableDraft.listName = draft.listName
+    editableDraft.items = draft.items.map((item) => ({
+      name: item.name,
+      quantity: item.quantity,
+      unit: item.unit || '',
+      estimatedPrice: item.estimatedPrice,
+    }))
+    aiDraftDialogVisible.value = true
+  } catch {
+    ElMessage.error('AI 解析失败，请重试')
+  } finally {
+    aiParsing.value = false
+  }
+}
+
+function addDraftItem() {
+  editableDraft.items.push({ name: '', quantity: 1, unit: '', estimatedPrice: null })
+}
+
+function removeDraftItem(index: number) {
+  editableDraft.items.splice(index, 1)
+}
+
+async function confirmDraft() {
+  if (!spaceStore.currentSpace) return
+  const validItems = editableDraft.items.filter((item) => item.name.trim())
+  if (!editableDraft.listName.trim()) {
+    ElMessage.warning('清单名称不能为空')
+    return
+  }
+  if (validItems.length === 0) {
+    ElMessage.warning('至少添加一个购物物品')
+    return
+  }
+
+  try {
+    // Create shopping list
+    const list = await createShoppingList(spaceStore.currentSpace.id, {
+      name: editableDraft.listName,
+    })
+
+    // Add all items
+    for (const item of validItems) {
+      await addShoppingItem(spaceStore.currentSpace.id, list.id, {
+        name: item.name,
+        quantity: item.quantity,
+        unit: item.unit || undefined,
+        estimatedPrice: item.estimatedPrice && item.estimatedPrice > 0 ? item.estimatedPrice : undefined,
+      })
+    }
+
+    ElMessage.success('购物清单已创建')
+    aiDraftDialogVisible.value = false
+    aiInput.value = ''
+    aiDraft.value = null
+    await loadLists()
+    // Open the newly created list
+    await openListDetail(list)
+  } catch {
+    ElMessage.error('创建购物清单失败')
+  }
 }
 
 // ---- List CRUD ----
@@ -224,6 +311,28 @@ function getStatusLabel(status: string) {
         <h1>购物清单</h1>
         <p class="page-desc">管理你的购物清单和采购计划。</p>
 
+        <!-- AI shopping assistant -->
+        <div v-if="spaceStore.currentSpace" class="ai-section">
+          <div class="ai-input-row">
+            <el-input
+              v-model="aiInput"
+              placeholder='用自然语言描述要买的东西，如"买苹果、2斤牛奶、面包"'
+              :disabled="aiParsing"
+              clearable
+              @keyup.enter="handleAiParse"
+            />
+            <el-button
+              type="primary"
+              :loading="aiParsing"
+              @click="handleAiParse"
+            >
+              <Sparkles :size="14" />
+              AI 生成
+            </el-button>
+          </div>
+          <p class="ai-hint">AI 助手 · 自动解析购物物品并创建清单</p>
+        </div>
+
         <div class="toolbar">
           <el-select
             v-if="spaceStore.spaces.length > 0"
@@ -293,7 +402,7 @@ function getStatusLabel(status: string) {
           <div v-if="!loading && shoppingLists.length === 0" class="empty-state">
             <ShoppingCart :size="48" class="empty-icon" />
             <p class="empty-title">暂无购物清单</p>
-            <p class="empty-desc">点击「新建清单」创建你的第一个购物计划。</p>
+            <p class="empty-desc">点击「新建清单」或使用 AI 助手创建你的第一个购物计划。</p>
           </div>
         </template>
       </template>
@@ -393,6 +502,75 @@ function getStatusLabel(status: string) {
           <el-button type="primary" @click="handleItemSubmit">{{ editingItemId ? '更新' : '添加' }}</el-button>
         </template>
       </el-dialog>
+
+      <!-- AI draft review dialog -->
+      <el-dialog v-model="aiDraftDialogVisible" title="AI 生成购物清单" width="550px">
+        <div v-if="aiDraft" class="ai-draft-content">
+          <p v-if="aiDraft.validationMessage" class="ai-draft-warning">
+            {{ aiDraft.validationMessage }}
+          </p>
+          <el-form label-width="80px">
+            <el-form-item label="清单名称">
+              <el-input v-model="editableDraft.listName" />
+            </el-form-item>
+          </el-form>
+
+          <div class="draft-items-header">
+            <span>购物物品（{{ editableDraft.items.length }} 项）</span>
+            <el-button size="small" text type="primary" @click="addDraftItem">
+              <Plus :size="14" />
+              添加
+            </el-button>
+          </div>
+
+          <div v-if="editableDraft.items.length === 0" class="draft-empty">
+            暂无物品，请手动添加。
+          </div>
+
+          <div
+            v-for="(item, index) in editableDraft.items"
+            :key="index"
+            class="draft-item-row"
+          >
+            <el-input
+              v-model="item.name"
+              placeholder="物品名称"
+              style="flex: 2"
+            />
+            <el-input-number
+              v-model="item.quantity"
+              :min="0.01"
+              :precision="2"
+              :step="1"
+              size="default"
+              style="flex: 1"
+              controls-position="right"
+            />
+            <el-input
+              v-model="item.unit"
+              placeholder="单位"
+              style="flex: 0.8"
+            />
+            <el-button
+              text
+              type="danger"
+              size="small"
+              @click="removeDraftItem(index)"
+              :disabled="editableDraft.items.length <= 1"
+            >
+              <Delete :size="14" />
+            </el-button>
+          </div>
+
+          <p class="ai-draft-note">
+            以上内容由 AI mock 解析生成，请检查后确认创建。
+          </p>
+        </div>
+        <template #footer>
+          <el-button @click="aiDraftDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="confirmDraft">确认创建</el-button>
+        </template>
+      </el-dialog>
     </div>
   </AppShell>
 </template>
@@ -464,5 +642,90 @@ function getStatusLabel(status: string) {
   font-size: 13px;
   color: var(--color-muted, #888);
   margin: 0 0 16px;
+}
+
+/* ---- AI section ---- */
+
+.ai-section {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: var(--el-fill-color-light, #f5f7fa);
+  border-radius: 8px;
+  border: 1px solid var(--el-border-color-lighter, #e4e7ed);
+}
+
+.ai-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.ai-hint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--color-muted, #999);
+}
+
+/* ---- AI draft dialog ---- */
+
+.ai-draft-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ai-draft-warning {
+  margin: 0;
+  padding: 8px 12px;
+  background: var(--el-color-warning-light-9, #fdf6ec);
+  border-radius: 4px;
+  color: var(--el-color-warning, #e6a23c);
+  font-size: 13px;
+}
+
+.draft-items-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text, #333);
+  margin-top: 4px;
+}
+
+.draft-empty {
+  padding: 20px;
+  text-align: center;
+  color: var(--color-muted, #999);
+  font-size: 13px;
+}
+
+.draft-item-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.ai-draft-note {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--color-muted, #999);
+  text-align: center;
+}
+
+@media (max-width: 600px) {
+  .ai-input-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .draft-item-row {
+    flex-wrap: wrap;
+  }
+
+  .draft-item-row .el-input,
+  .draft-item-row .el-input-number {
+    min-width: 0;
+  }
 }
 </style>

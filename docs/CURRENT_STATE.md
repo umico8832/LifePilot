@@ -2,17 +2,17 @@
 
 ## 当前阶段
 
-P1-011 完成。Phase 0-11 全部完成。
+P1-015 完成。Phase 0-15 全部完成。
 
 ## 当前最高优先级任务
 
-P1-012 扩展 AI mock provider：购物清单草稿。
+P1-016 前端分类管理 UI 集成。
 
 ## 最近完成任务
 
 - P0-001～P0-013：全部完成。
-- P1-001～P1-010：全部完成。
-- P1-011 实现票据与文件管理 CRUD（Phase 11）：Flyway V8 迁移 `document_record` 表 + DocumentRecord 实体 + MyBatis-Plus Mapper + DocumentService（类型校验 + 按类型筛选 + 即将过期标识）+ DocumentController `/api/spaces/{spaceId}/documents` + 7 项测试 + 前端 API 客户端 `document.ts` + DocumentView.vue（类型筛选、到期提醒标识、空态/错误态）+ 路由 `/document` + AppShell 导航文档入口。
+- P1-001～P1-015：全部完成。
+- P1-015 增加更多统计接口：InventoryStatsResponse DTO（totalItems、lowStockCount、byCategory）+ TodoStatsResponse DTO（按状态分计数、overdueCount）+ StatisticService 新增 TodoTaskMapper 注入和 `getInventoryStats`/`getTodoStats` 方法 + StatisticController GET `/statistics/inventory` 和 `/statistics/todos` + 前端 `statistics.ts` 新增类型和函数 + 修复 MockAiProvider PRIORITY_KEYWORDS 为 LinkedHashMap 确保迭代顺序确定性 + 修复 parseTodoWithPriorityKeyword 测试。
 
 ## 当前阻塞项
 
@@ -20,14 +20,14 @@ P1-012 扩展 AI mock provider：购物清单草稿。
 
 ## 下一项自动任务
 
-P1-012 扩展 AI mock provider：购物清单草稿。
+P1-016 前端分类管理 UI 集成。
 
 ## 最近验证结果
 
-- 后端 `./mvnw test`：通过，74 tests passed（含 7 项 DocumentControllerTests）。
+- 后端 `./mvnw test`：通过，88 tests passed（含 22 项 AiControllerTests）。
 - 前端 `npm run build`：通过（vue-tsc + vite build）。
 - Flyway 迁移 V1-V8 在 H2 测试数据库上通过。
-- 文档一致性检查 `python3 scripts/agent_doc_check.py`：通过。
+- 文档一致性检查：待运行。
 
 ## 注意事项
 

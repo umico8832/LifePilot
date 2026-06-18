@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, computed } from 'vue'
+import { onMounted, ref } from 'vue'
 import {
   CircleCheck,
   CircleX,
@@ -10,11 +10,13 @@ import {
   LogIn,
   LogOut,
   RefreshCw,
+  FileText,
 } from '@lucide/vue'
 import { useRouter } from 'vue-router'
 
 import { fetchHealth } from '@/api/health'
 import { getOverview, type OverviewResponse } from '@/api/statistics'
+import { generateMonthlyReport, type MonthlyReport } from '@/api/ai'
 import AppShell from '@/layouts/AppShell.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useSpaceStore } from '@/stores/space'
@@ -28,6 +30,11 @@ const spaceStore = useSpaceStore()
 const overview = ref<OverviewResponse | null>(null)
 const overviewLoading = ref(false)
 const overviewError = ref('')
+
+// Monthly report
+const reportLoading = ref(false)
+const reportDialogVisible = ref(false)
+const monthlyReport = ref<MonthlyReport | null>(null)
 
 async function loadHealth() {
   healthStatus.value = 'checking'
@@ -53,6 +60,22 @@ async function loadOverview() {
     overviewError.value = '统计数据加载失败'
   } finally {
     overviewLoading.value = false
+  }
+}
+
+async function handleGenerateReport() {
+  if (!spaceStore.currentSpace) return
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = now.getMonth() + 1
+  reportLoading.value = true
+  try {
+    monthlyReport.value = await generateMonthlyReport(spaceStore.currentSpace.id, year, month)
+    reportDialogVisible.value = true
+  } catch {
+    // handled silently
+  } finally {
+    reportLoading.value = false
   }
 }
 
@@ -176,6 +199,19 @@ onMounted(async () => {
       </div>
     </section>
 
+    <!-- Monthly report action -->
+    <section v-if="authStore.isAuthenticated && spaceStore.currentSpace" class="report-section">
+      <el-button
+        type="primary"
+        :loading="reportLoading"
+        @click="handleGenerateReport"
+      >
+        <FileText :size="14" />
+        生成本月生活报告
+      </el-button>
+      <p class="report-hint">AI 助手 · 聚合财务、库存、购物和待办数据生成月度报告</p>
+    </section>
+
     <section class="module-grid" aria-label="LifePilot modules">
       <article class="module-panel" :class="{ clickable: authStore.isAuthenticated }" @click="authStore.isAuthenticated && router.push('/spaces')">
         <h2>生活空间</h2>
@@ -193,11 +229,100 @@ onMounted(async () => {
         <h2>家庭库存</h2>
         <p>食品、日用品、常备物品、位置和临期提醒。</p>
       </article>
+      <article class="module-panel" :class="{ clickable: authStore.isAuthenticated }" @click="authStore.isAuthenticated && router.push('/todo')">
+        <h2>生活待办</h2>
+        <p>日常任务、状态流转、优先级和截止日期管理。</p>
+      </article>
       <article class="module-panel">
         <h2>AI 生活助手</h2>
         <p>结构化解析、生活总结和温和优化建议。</p>
       </article>
     </section>
+
+    <!-- Monthly report dialog -->
+    <el-dialog v-model="reportDialogVisible" title="AI 月度生活报告" width="600px">
+      <div v-if="monthlyReport" class="report-content">
+        <div class="report-highlights">
+          <p class="report-section-title">📊 本月亮点</p>
+          <ul>
+            <li v-for="(h, i) in monthlyReport.highlights" :key="i">{{ h }}</li>
+          </ul>
+        </div>
+
+        <div class="report-finance-summary">
+          <div class="report-stat">
+            <span class="stat-label">收入</span>
+            <span class="stat-value income">¥{{ formatAmount(monthlyReport.finance.totalIncome) }}</span>
+          </div>
+          <div class="report-stat">
+            <span class="stat-label">支出</span>
+            <span class="stat-value expense">¥{{ formatAmount(monthlyReport.finance.totalExpense) }}</span>
+          </div>
+          <div class="report-stat">
+            <span class="stat-label">结余</span>
+            <span class="stat-value" :class="monthlyReport.finance.balance >= 0 ? 'income' : 'expense'">
+              ¥{{ formatAmount(monthlyReport.finance.balance) }}
+            </span>
+          </div>
+          <div class="report-stat">
+            <span class="stat-label">交易</span>
+            <span class="stat-value">{{ monthlyReport.finance.transactionCount }} 笔</span>
+          </div>
+        </div>
+
+        <div v-if="monthlyReport.finance.topExpenseCategories.length > 0" class="report-categories">
+          <p class="report-section-title">💸 支出分类 TOP</p>
+          <div
+            v-for="cat in monthlyReport.finance.topExpenseCategories.slice(0, 5)"
+            :key="cat.name"
+            class="category-row"
+          >
+            <span class="cat-name">{{ cat.name }}</span>
+            <span class="cat-amount">¥{{ formatAmount(cat.amount) }}</span>
+            <span class="cat-count">{{ cat.count }} 笔</span>
+          </div>
+        </div>
+
+        <div class="report-summary-grid">
+          <div class="report-stat">
+            <span class="stat-label">📦 库存</span>
+            <span class="stat-value">{{ monthlyReport.inventory.totalItems }} 件</span>
+          </div>
+          <div v-if="monthlyReport.inventory.lowStockCount > 0" class="report-stat">
+            <span class="stat-label">⚠️ 低库存</span>
+            <span class="stat-value alert">{{ monthlyReport.inventory.lowStockCount }} 件</span>
+          </div>
+          <div class="report-stat">
+            <span class="stat-label">🛒 购物清单</span>
+            <span class="stat-value">{{ monthlyReport.shopping.listCount }} 个</span>
+          </div>
+          <div class="report-stat">
+            <span class="stat-label">✅ 待办</span>
+            <span class="stat-value">{{ monthlyReport.todo.pendingCount }} 待处理 / {{ monthlyReport.todo.completedCount }} 已完成</span>
+          </div>
+          <div v-if="monthlyReport.todo.overdueCount > 0" class="report-stat">
+            <span class="stat-label">⏰ 逾期</span>
+            <span class="stat-value alert">{{ monthlyReport.todo.overdueCount }} 项</span>
+          </div>
+        </div>
+
+        <div class="report-suggestions">
+          <p class="report-section-title">💡 建议</p>
+          <ul>
+            <li v-for="(s, i) in monthlyReport.suggestions" :key="i">{{ s }}</li>
+          </ul>
+        </div>
+
+        <el-collapse>
+          <el-collapse-item title="查看完整报告文本">
+            <pre class="report-text">{{ monthlyReport.reportText }}</pre>
+          </el-collapse-item>
+        </el-collapse>
+      </div>
+      <template #footer>
+        <el-button @click="reportDialogVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
   </AppShell>
 </template>
 
@@ -264,5 +389,141 @@ onMounted(async () => {
 
 .status-error {
   color: var(--color-text-muted);
+}
+
+/* ---- Report section ---- */
+
+.report-section {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: var(--el-fill-color-light, #f5f7fa);
+  border-radius: 8px;
+  border: 1px solid var(--el-border-color-lighter, #e4e7ed);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.report-hint {
+  font-size: 12px;
+  color: var(--color-muted, #999);
+  margin: 0;
+}
+
+/* ---- Report dialog ---- */
+
+.report-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.report-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 8px;
+  color: var(--color-text, #333);
+}
+
+.report-highlights ul,
+.report-suggestions ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.report-highlights li,
+.report-suggestions li {
+  font-size: 13px;
+  margin-bottom: 4px;
+  color: var(--color-text, #333);
+}
+
+.report-finance-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+  padding: 12px;
+  background: var(--el-fill-color-light, #f5f7fa);
+  border-radius: 8px;
+}
+
+.report-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px;
+}
+
+.report-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--color-muted, #888);
+}
+
+.stat-value {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.stat-value.income {
+  color: #16a34a;
+}
+
+.stat-value.expense {
+  color: #dc2626;
+}
+
+.stat-value.alert {
+  color: #f59e0b;
+}
+
+.report-categories {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.category-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.cat-name {
+  flex: 1;
+  font-weight: 500;
+}
+
+.cat-amount {
+  font-weight: 600;
+  color: var(--color-text, #333);
+}
+
+.cat-count {
+  color: var(--color-muted, #888);
+  font-size: 12px;
+  min-width: 40px;
+  text-align: right;
+}
+
+.report-text {
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--color-text, #333);
+  margin: 0;
+  font-family: inherit;
+}
+
+@media (max-width: 600px) {
+  .report-section {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 </style>
