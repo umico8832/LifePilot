@@ -59,9 +59,17 @@ cd frontend && npm run build
 ```text
 <type>(<可选作用域>): <中文简短描述>
 
-<可选：详细说明>
+<可选：中文 bullet 详细说明>
 <可选：Closes #42>
 ```
+
+### 详细度规则
+
+- 小提交可以只写一行 subject，例如纯文档小修、单点 bug、配置微调。
+- 中型提交建议写 body：涉及多个文件但仍聚焦一个主题时，用 3-5 条中文 bullet 概括主要改动。
+- 大型提交必须写 body：涉及前后端联动、数据库迁移、AI 能力、CI、测试体系、文档框架或多个模块协作时，用中文 bullet 说明核心变化和验证结果。
+- body 只写摘要级信息，不复制完整 changelog，不写无关实现流水账。
+- body 优先覆盖：新增能力、关键文件/模块、兼容性或安全边界、测试/构建结果。
 
 
 `type` 只能使用：
@@ -97,6 +105,19 @@ docs(roadmap): 更新项目阶段进度
 
 ```text
 fix(question): 修复题目选项保存失败问题
+```
+
+中大型提交示例：
+
+```text
+feat(ai): 实现购物清单、待办草稿和月报 AI mock 解析
+
+- 新增购物清单草稿解析：ShoppingDraftResponse + parseShoppingList 端点
+- 新增待办草稿解析：TodoDraftResponse + parseTodo 端点
+- 新增月度生活报告生成：MonthlyReportResponse + monthly-report 端点
+- MockAiProvider 支持中文分隔符、优先级关键词和截止日期推断
+- 前端 ShoppingView/TodoView/HomeView 新增 AI 助手 UI
+- 新增 AI 端点测试，后端测试通过
 ```
 
 ## 处理冲突

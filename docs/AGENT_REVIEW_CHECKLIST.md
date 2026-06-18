@@ -14,4 +14,5 @@
 - 是否需要更新 `docs/CURRENT_STATE.md`、`docs/BACKLOG.md`、`docs/CHANGELOG_AGENT.md`？
 - 是否运行 `python3 scripts/agent_changelog_archive.py` 刷新 `docs/RECENT_HISTORY.md` 并自动归档旧历史？
 - 是否运行 `python3 scripts/agent_doc_check.py` 并通过？
+- 若提交涉及多文件、多模块、前后端联动、数据库、CI、AI 或测试体系，commit message 是否包含中文 bullet body？
 - 是否可以继续下一项任务？

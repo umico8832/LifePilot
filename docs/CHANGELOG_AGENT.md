@@ -12,6 +12,26 @@ python3 scripts/agent_changelog_archive.py --keep 10
 
 脚本默认保留最近 10 条完整记录，并刷新 `docs/RECENT_HISTORY.md`。
 
+## 2026-06-18 22:53 Asia/Shanghai
+
+- Agent 任务名称：修复 changelog 归档排序并明确决策日志职责。
+- 修改文件：`scripts/agent_changelog_archive.py`、`docs/DECISION_LOG.md`、`docs/CHANGELOG_AGENT.md`、`docs/RECENT_HISTORY.md`、`docs/changelog/2026-06.md`。
+- 实现内容：归档脚本新增条目时间解析和倒序排序；每次运行都会规范化已有 `docs/changelog/*.md` 归档文件；`docs/changelog/2026-06.md` 重新生成为按时间倒序；Decision Log 顶部补充职责边界，明确只记录长期决策和原因，不记录普通开发流水。
+- 测试结果：`python3 scripts/agent_changelog_archive.py` 通过；`python3 -m py_compile scripts/agent_changelog_archive.py scripts/agent_doc_check.py` 通过；`python3 scripts/agent_doc_check.py` 通过；`git diff --check` 通过；后端 `mvn test` 通过，88 tests passed；前端 `npm run build` 通过。
+- 遗留问题：无。
+- 下一步任务：P2-003 增加后端 Service 层单元测试。
+- 建议 commit message：`docs(agent): 完善提交说明和历史归档规则`
+
+## 2026-06-18 22:37 Asia/Shanghai
+
+- Agent 任务名称：完善 Commit Message 详细度规则。
+- 修改文件：`docs/AGENT_GIT_RULES.md`、`docs/AGENT_REVIEW_CHECKLIST.md`、`docs/DECISION_LOG.md`、`docs/CHANGELOG_AGENT.md`。
+- 实现内容：Git 规则新增按提交复杂度决定 message body 的规范；小提交允许一行，中型提交建议使用 3-5 条中文 bullet，大型提交必须写中文 bullet body；新增中大型提交示例；自审清单增加 commit body 检查项；决策日志记录该规则的原因。
+- 测试结果：`python3 scripts/agent_changelog_archive.py` 通过；`python3 scripts/agent_doc_check.py` 通过；`git diff --check` 通过。
+- 遗留问题：未自动 amend 既有提交，避免改写最新历史。
+- 下一步任务：P2-003 增加后端 Service 层单元测试。
+- 建议 commit message：`docs(git): 完善提交信息详细度规则`
+
 ## 2026-06-18 22:32 Asia/Shanghai
 
 - Agent 任务名称：新增 P2 任务并执行 P2-002 CI 增加前端测试步骤。
@@ -91,43 +111,3 @@ python3 scripts/agent_changelog_archive.py --keep 10
 - 遗留问题：AI 月报草稿（P1-014）尚未实现。
 - 下一步任务：P1-014 扩展 AI mock provider：月报草稿。
 - 建议 commit message：`feat(ai): 实现待办草稿 AI mock 解析`
-
-## 2026-06-18 20:22 Asia/Shanghai
-
-- Agent 任务名称：P1-012 扩展 AI mock provider：购物清单草稿。
-- 修改文件：`backend/src/main/java/com/lifepilot/ai/dto/ShoppingDraftResponse.java`、`backend/src/main/java/com/lifepilot/ai/dto/ParseShoppingRequest.java`、`backend/src/main/java/com/lifepilot/ai/AiProvider.java`、`backend/src/main/java/com/lifepilot/ai/MockAiProvider.java`、`backend/src/main/java/com/lifepilot/ai/AiService.java`、`backend/src/main/java/com/lifepilot/ai/AiController.java`、`backend/src/test/java/com/lifepilot/ai/AiControllerTests.java`、`frontend/src/api/ai.ts`、`frontend/src/views/shopping/ShoppingView.vue`、`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/CHANGELOG_AGENT.md`。
-- 实现内容：ShoppingDraftResponse DTO（清单名称、预算、物品列表、needsReview、rawInput、validationMessage）+ ParseShoppingRequest DTO + AiProvider 接口新增 `parseShoppingList(String)` 方法 + MockAiProvider 购物清单解析实现（中文分隔符分割、数量+单位+名称正则匹配、上下文关键词推断清单名称、前缀动词清理）+ AiService + AiController POST `/api/ai/spaces/{spaceId}/parse-shopping` + 6 项测试（多物品解析、数量单位识别、上下文清单名、空文本校验、认证校验、单物品 needsReview）+ 前端 `ai.ts` ShoppingDraft/ShoppingDraftItem 类型和 `parseShoppingList` 函数 + ShoppingView.vue AI 助手输入框 + 草稿编辑对话框（清单名称可编辑、物品列表可增删改、确认后创建真实购物清单和物品）。
-- 测试结果：后端 `./mvnw test` 通过，80 tests passed（含 14 项 AiControllerTests）；前端 `npm run build` 通过（vue-tsc + vite build）。
-- 遗留问题：AI 待办草稿（P1-013）和月报草稿（P1-014）尚未实现。
-- 下一步任务：P1-013 扩展 AI mock provider：待办草稿。
-- 建议 commit message：`feat(ai): 实现购物清单草稿 AI mock 解析`
-
-## 2026-06-18 16:20 Asia/Shanghai
-
-- Agent 任务名称：简化自主开发文档权威关系。
-- 修改文件：`AGENTS.md`、`docs/AUTO_DEV_PROTOCOL.md`、`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/HANDOFF.md`、`docs/NEXT_CHAT_PROMPT.md`、`docs/CHANGELOG_AGENT.md`、`docs/DECISION_LOG.md`、`docs/TESTING.md`、`docs/AGENT_REVIEW_CHECKLIST.md`、`scripts/agent_doc_check.py`。
-- 实现内容：明确 `CURRENT_STATE` 为唯一当前状态源、`BACKLOG` 为唯一任务源、`CHANGELOG_AGENT` 为历史源；将 `HANDOFF` 收敛为稳定运行手册，将 `NEXT_CHAT_PROMPT` 收敛为极简入口；新增 P1-012～P1-017 和 P2-001 后续任务；新增文档一致性检查脚本。
-- 测试结果：`python3 scripts/agent_doc_check.py` 通过；`git diff --check` 通过。
-- 遗留问题：无。
-- 下一步任务：P1-012 扩展 AI mock provider：购物清单草稿。
-- 建议 commit message：`docs(agent): 简化自主开发文档权威关系`
-
-## 2026-06-18 15:41 Asia/Shanghai
-
-- Agent 任务名称：P1-011 实现票据与文件管理 CRUD（Phase 11）。
-- 修改文件：`backend/src/main/resources/db/migration/V8__create_document_record.sql`、`backend/src/main/java/com/lifepilot/document/**`（DocumentRecord 实体、DocumentRecordMapper、DTOs、DocumentService、DocumentController）、`backend/src/test/java/com/lifepilot/document/DocumentControllerTests.java`、`frontend/src/api/document.ts`、`frontend/src/views/document/DocumentView.vue`、`frontend/src/router/index.ts`、`frontend/src/layouts/AppShell.vue`、`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/CHANGELOG_AGENT.md`、`docs/API_DESIGN.md`。
-- 实现内容：Flyway V8 迁移创建 `document_record` 表（含 title、type、issuer、document_date、expire_at、storage_location、metadata_json 字段）；后端 `document` 模块实现文档 CRUD（POST/GET/PATCH/DELETE `/api/spaces/{spaceId}/documents`），类型校验（invoice/receipt/warranty/contract/manual/certificate/other），支持按类型筛选（`?type=invoice`），`DocumentResponse` 自动计算 `expiringSoon` 布尔值（30 天内到期标识）；前端新增 `document.ts` API 客户端、DocumentView.vue（空间选择器 + 类型筛选 + 摘要栏（总数 + 即将过期数）+ 文档列表表格（类型标签、标题、签发方、文档日期、到期日、存放位置）+ 创建/编辑对话框 + 空态/错误态）、路由 `/document`、AppShell 导航新增「文档」入口（FileText 图标）。
-- 测试结果：后端 `./mvnw test` 通过，74 tests passed（含 7 项 DocumentControllerTests：创建+列表、按 ID 查询、更新+删除、按类型筛选、非成员权限校验、认证校验、无效类型校验）；前端 `npm run build` 通过（vue-tsc + vite build）；Flyway V1-V8 在 H2 测试数据库迁移通过。
-- 遗留问题：AI 其他端点（create-shopping-list-draft、create-todo-draft、monthly-report-draft）尚未实现；更多统计接口（分类统计、库存统计、待办统计）尚未实现。
-- 下一步任务：P1-012 待定。
-- 建议 commit message：`feat(document): 实现票据与文件管理 CRUD`
-
-## 2026-06-18 14:27 Asia/Shanghai
-
-- Agent 任务名称：P1-010 实现菜谱管理 CRUD（Phase 8）。
-- 修改文件：`backend/src/main/resources/db/migration/V7__create_recipe.sql`、`backend/src/main/java/com/lifepilot/recipe/**`（Recipe 实体、RecipeMapper、DTOs、RecipeService、RecipeController）、`backend/src/test/java/com/lifepilot/recipe/RecipeControllerTests.java`、`frontend/src/api/recipe.ts`、`frontend/src/views/recipe/RecipeView.vue`、`frontend/src/router/index.ts`、`frontend/src/layouts/AppShell.vue`、`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/CHANGELOG_AGENT.md`、`docs/API_DESIGN.md`。
-- 实现内容：Flyway V7 迁移创建 `recipe` 表（含 household_id、name、description、ingredients_json、steps_json、created_by 字段）；后端 `recipe` 模块实现菜谱 CRUD（POST/GET/PATCH/DELETE `/api/spaces/{spaceId}/recipes`），所有接口需要空间成员权限；前端新增 `recipe.ts` API 客户端、RecipeView.vue（空间选择器 + 菜谱列表表格（名称、描述、食材解析显示、创建日期）+ 创建/编辑对话框（名称、描述、食材 JSON、步骤 JSON）+ 空态/错误态）、路由 `/recipe`、AppShell 导航新增「菜谱」入口（ChefHat 图标）。
-- 测试结果：后端 `./mvnw test` 通过，67 tests passed（含 7 项 RecipeControllerTests：创建+列表、按 ID 查询、更新+删除、非成员权限校验、认证校验、创建校验、404 校验）；前端 `npm run build` 通过（vue-tsc + vite build）；Flyway V1-V7 在 H2 测试数据库迁移通过。
-- 遗留问题：AI 其他端点尚未实现；Phase 11（票据与文件管理）尚未实现。
-- 下一步任务：P1-011 待定。
-- 建议 commit message：`feat(recipe): 实现菜谱管理 CRUD`

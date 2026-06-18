@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import re
 from collections import defaultdict
+from datetime import datetime
 from pathlib import Path
 
 
@@ -40,6 +41,19 @@ def entry_month(entry: str) -> str:
 
 def entry_key(entry: str) -> str:
     return entry.splitlines()[0].strip()
+
+
+def entry_datetime(entry: str) -> datetime:
+    heading = entry_key(entry).replace("## ", "", 1).strip()
+    timestamp = heading[:16]
+    try:
+        return datetime.strptime(timestamp, "%Y-%m-%d %H:%M")
+    except ValueError as exc:
+        raise ValueError(f"Entry heading does not contain a supported timestamp: {heading}") from exc
+
+
+def sort_entries_newest_first(entries: list[str]) -> list[str]:
+    return sorted(entries, key=entry_datetime, reverse=True)
 
 
 def refresh_changelog(header: str, kept_entries: list[str], keep: int) -> str:
@@ -121,12 +135,35 @@ def archive_entries(entries: list[str]) -> None:
         combined: dict[str, str] = {entry_key(entry): entry for entry in existing_entries}
         for entry in month_entries:
             combined.setdefault(entry_key(entry), entry)
+        sorted_entries = sort_entries_newest_first(list(combined.values()))
 
         archive_text = (
             f"# Agent Changelog Archive: {month}\n\n"
             "本文件由 `scripts/agent_changelog_archive.py` 自动维护。"
-            "默认接手不要全文读取，按需追溯具体历史。\n\n"
-            + "\n\n".join(entry.rstrip() for entry in combined.values()).rstrip()
+            "默认接手不要全文读取，按需追溯具体历史。"
+            "条目按时间倒序排列。\n\n"
+            + "\n\n".join(entry.rstrip() for entry in sorted_entries).rstrip()
+            + "\n"
+        )
+        archive_path.write_text(archive_text, encoding="utf-8")
+
+
+def normalize_archives() -> None:
+    if not ARCHIVE_DIR.exists():
+        return
+
+    for archive_path in sorted(ARCHIVE_DIR.glob("*.md")):
+        month = archive_path.stem
+        _, existing_entries = read_archive_entries(archive_path)
+        if not existing_entries:
+            continue
+        sorted_entries = sort_entries_newest_first(existing_entries)
+        archive_text = (
+            f"# Agent Changelog Archive: {month}\n\n"
+            "本文件由 `scripts/agent_changelog_archive.py` 自动维护。"
+            "默认接手不要全文读取，按需追溯具体历史。"
+            "条目按时间倒序排列。\n\n"
+            + "\n\n".join(entry.rstrip() for entry in sorted_entries).rstrip()
             + "\n"
         )
         archive_path.write_text(archive_text, encoding="utf-8")
@@ -144,14 +181,16 @@ def main() -> int:
         raise SystemExit("--recent-keep must be positive")
 
     header, entries = split_entries(CHANGELOG.read_text(encoding="utf-8"))
-    kept_entries = entries[: args.keep]
-    archived_entries = entries[args.keep :]
+    sorted_entries = sort_entries_newest_first(entries)
+    kept_entries = sorted_entries[: args.keep]
+    archived_entries = sorted_entries[args.keep :]
 
     if archived_entries:
         archive_entries(archived_entries)
+    normalize_archives()
 
     CHANGELOG.write_text(refresh_changelog(header, kept_entries, args.keep), encoding="utf-8")
-    RECENT_HISTORY.write_text(refresh_recent_history(entries, args.recent_keep), encoding="utf-8")
+    RECENT_HISTORY.write_text(refresh_recent_history(sorted_entries, args.recent_keep), encoding="utf-8")
 
     print(f"[OK] Kept {len(kept_entries)} changelog entries.")
     print(f"[OK] Archived {len(archived_entries)} changelog entries.")

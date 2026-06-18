@@ -1,5 +1,9 @@
 # Decision Log
 
+本文件只记录会影响未来 Agent 判断的长期决策和原因，不记录普通开发流水。功能完成、修改文件和验证结果写入 `docs/CHANGELOG_AGENT.md`；当前状态写入 `docs/CURRENT_STATE.md`。
+
+适合写入本文件的内容包括：架构方向、数据模型策略、API 契约策略、AI provider / 外部服务 / 安全边界、Git 与自主开发流程、文档权威关系等长期约定。
+
 ## 2026-06-16：采用建议技术栈
 
 - 决策：空项目采用 Java 17 target、Spring Boot 3、Spring Security、MyBatis-Plus、MySQL、Flyway、Maven；前端采用 Vue 3、TypeScript、Vite、Element Plus、Pinia、Vue Router、Axios、ECharts。
@@ -84,3 +88,8 @@
 
 - 决策：普通对话默认不自动提交；用户明确要求提交，或明确进入自主开发 / 继续开发 / 按 backlog 执行模式时，Agent 可在完成一个完整 backlog 任务并验证、同步文档后自动提交一次。Agent 永远不能自动 push、force push、rebase、reset 或删除分支。
 - 原因：自主开发需要减少每个任务后的等待，但普通协作不能让 Agent 随意制造提交；半自主模式能平衡连续开发效率和 Git 安全边界。
+
+## 2026-06-18：按提交复杂度编写 Commit Body
+
+- 决策：小提交允许一行 subject；中型提交建议写中文 bullet body；大型提交必须写中文 bullet body，概括新增能力、关键模块、安全边界和验证结果。
+- 原因：LifePilot 主要由 AI Agent 长期接手开发，较详细的 commit body 可以帮助后续 Agent 快速理解提交意图和影响范围，同时避免把完整 changelog 复制进 Git 历史造成噪音。
