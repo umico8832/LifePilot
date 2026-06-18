@@ -2,17 +2,17 @@
 
 ## 当前阶段
 
-P1-015 完成。Phase 0-15 全部完成。
+P1-016 完成。Phase 0-16 全部完成。
 
 ## 当前最高优先级任务
 
-P1-016 前端分类管理 UI 集成。
+P1-017 增加前端关键测试。
 
 ## 最近完成任务
 
 - P0-001～P0-013：全部完成。
-- P1-001～P1-015：全部完成。
-- P1-015 增加更多统计接口：InventoryStatsResponse DTO（totalItems、lowStockCount、byCategory）+ TodoStatsResponse DTO（按状态分计数、overdueCount）+ StatisticService 新增 TodoTaskMapper 注入和 `getInventoryStats`/`getTodoStats` 方法 + StatisticController GET `/statistics/inventory` 和 `/statistics/todos` + 前端 `statistics.ts` 新增类型和函数 + 修复 MockAiProvider PRIORITY_KEYWORDS 为 LinkedHashMap 确保迭代顺序确定性 + 修复 parseTodoWithPriorityKeyword 测试。
+- P1-001～P1-016：全部完成。
+- P1-016 前端分类管理 UI 集成：FinanceView 新增分类管理对话框（支出/收入分类列表、创建新分类含图标、删除分类）+ 记账表单新增分类选择器（按类型自动筛选分类、切换类型时清空不匹配分类）+ 交易列表表格新增分类列 + 记账创建/编辑/确认 payload 携带 categoryId。
 
 ## 当前阻塞项
 
@@ -20,7 +20,7 @@ P1-016 前端分类管理 UI 集成。
 
 ## 下一项自动任务
 
-P1-016 前端分类管理 UI 集成。
+P1-017 增加前端关键测试。
 
 ## 最近验证结果
 

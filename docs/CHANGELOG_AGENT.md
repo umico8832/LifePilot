@@ -1,5 +1,15 @@
 # Agent Changelog
 
+## 2026-06-18 21:06 Asia/Shanghai
+
+- Agent 任务名称：P1-016 前端分类管理 UI 集成。
+- 修改文件：`frontend/src/views/finance/FinanceView.vue`、`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/CHANGELOG_AGENT.md`。
+- 实现内容：FinanceView 脚本新增分类状态（categories、categoriesLoading、categoriesError、categoryDialogVisible、newCategoryForm、filteredCategories）+ 新增 `loadCategories`（空间切换时并行加载）、`getCategoryName`、`openCategoryDialog`、`handleCreateCategory`（含类型参数）、`handleDeleteCategory`（含确认对话框和关联清理）函数 + `watch` 表单 type 变化自动清空不匹配分类 + `onMounted` 和 `handleSpaceChange` 并行加载交易和分类 + 记账表单（创建/编辑）新增分类选择器（el-select 按类型筛选 + clearable + 图标显示 + 空分类提示）+ 记账 payload 适配 `categoryId: null → undefined` 转换 + 交易列表表格新增「分类」列（显示分类 Tag 或「-」）+ 工具栏新增「分类管理」按钮（Tags 图标）+ 分类管理对话框（支出/收入分组列表 + 创建表单含图标输入 + 删除按钮 + 加载/错误态 + el-divider 分隔 + 增加按钮区分支出/收入类型）+ AI 草稿手动编辑预填 categoryId: null + 新增 CSS 类（.no-category、.category-hint、.category-section、.category-section-title、.category-empty、.category-list、.category-item、.category-item-name、.category-loading、.add-category-form、.add-category-input）。
+- 测试结果：后端 `./mvnw test` 通过，88 tests passed（含 22 项 AiControllerTests）；前端 `npm run build` 通过（vue-tsc + vite build）。
+- 遗留问题：P1-017（前端测试）和 P2-001（AI provider 配置骨架）尚未实现。
+- 下一步任务：P1-017 增加前端关键测试。
+- 建议 commit message：`feat(finance): 集成前端分类管理 UI`
+
 ## 2026-06-18 20:51 Asia/Shanghai
 
 - Agent 任务名称：P1-015 增加更多统计接口。

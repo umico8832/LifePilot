@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { onMounted, ref, computed } from 'vue'
+import { onMounted, ref, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { RefreshCw, FileText, AlertCircle } from '@lucide/vue'
+import { RefreshCw, FileText, AlertCircle, Plus, Trash2, Tags } from '@lucide/vue'
 
 import AppShell from '@/layouts/AppShell.vue'
 import { useSpaceStore } from '@/stores/space'
@@ -11,6 +11,10 @@ import {
   updateTransaction,
   deleteTransaction,
   type TransactionResponse,
+  listCategories,
+  createCategory,
+  deleteCategory,
+  type CategoryResponse,
 } from '@/api/transaction'
 import { parseTransaction, type TransactionDraft } from '@/api/ai'
 
@@ -26,7 +30,19 @@ const form = ref({
   type: 'expense',
   merchant: '',
   note: '',
+  categoryId: null as number | null,
 })
+
+// ---- Category management ----
+const categories = ref<CategoryResponse[]>([])
+const categoriesLoading = ref(false)
+const categoriesError = ref(false)
+const categoryDialogVisible = ref(false)
+const newCategoryForm = ref({ name: '', icon: '', color: '' })
+
+const filteredCategories = computed(() =>
+  categories.value.filter((c) => c.type === form.value.type),
+)
 
 // ---- AI parse flow ----
 const aiDialogVisible = ref(false)
@@ -56,10 +72,20 @@ const totalIncome = computed(() =>
     .reduce((sum, t) => sum + t.amount, 0),
 )
 
+// Watch type change to clear category if it doesn't match
+watch(() => form.value.type, () => {
+  if (form.value.categoryId) {
+    const cat = categories.value.find(c => c.id === form.value.categoryId)
+    if (cat && cat.type !== form.value.type) {
+      form.value.categoryId = null
+    }
+  }
+})
+
 onMounted(async () => {
   await spaceStore.fetchSpaces()
   if (spaceStore.currentSpace) {
-    await loadTransactions()
+    await Promise.all([loadTransactions(), loadCategories()])
   }
 })
 
@@ -78,12 +104,12 @@ async function loadTransactions() {
 }
 
 async function handleSpaceChange() {
-  await loadTransactions()
+  await Promise.all([loadTransactions(), loadCategories()])
 }
 
 function openCreateDialog() {
   editingId.value = null
-  form.value = { amount: 0, type: 'expense', merchant: '', note: '' }
+  form.value = { amount: 0, type: 'expense', merchant: '', note: '', categoryId: null }
   dialogVisible.value = true
 }
 
@@ -94,6 +120,7 @@ function openEditDialog(tx: TransactionResponse) {
     type: tx.type,
     merchant: tx.merchant || '',
     note: tx.note || '',
+    categoryId: tx.categoryId ?? null,
   }
   dialogVisible.value = true
 }
@@ -105,11 +132,18 @@ async function handleSubmit() {
     return
   }
   try {
+    const payload = {
+      amount: form.value.amount,
+      type: form.value.type,
+      merchant: form.value.merchant || undefined,
+      note: form.value.note || undefined,
+      categoryId: form.value.categoryId ?? undefined,
+    }
     if (editingId.value) {
-      await updateTransaction(spaceStore.currentSpace.id, editingId.value, form.value)
+      await updateTransaction(spaceStore.currentSpace.id, editingId.value, payload)
       ElMessage.success('记录已更新')
     } else {
-      await createTransaction(spaceStore.currentSpace.id, form.value)
+      await createTransaction(spaceStore.currentSpace.id, payload)
       ElMessage.success('记录已创建')
     }
     dialogVisible.value = false
@@ -133,6 +167,69 @@ async function handleDelete(tx: TransactionResponse) {
 
 function formatAmount(amount: number, type: string) {
   return (type === 'expense' ? '-' : '+') + '¥' + amount.toFixed(2)
+}
+
+// ---- Category management functions ----
+
+async function loadCategories() {
+  if (!spaceStore.currentSpace) return
+  categoriesLoading.value = true
+  categoriesError.value = false
+  try {
+    categories.value = await listCategories(spaceStore.currentSpace.id)
+  } catch {
+    categoriesError.value = true
+    categories.value = []
+  } finally {
+    categoriesLoading.value = false
+  }
+}
+
+function getCategoryName(id: number | null): string {
+  if (!id) return ''
+  const cat = categories.value.find((c) => c.id === id)
+  return cat ? cat.name : ''
+}
+
+function openCategoryDialog() {
+  newCategoryForm.value = { name: '', icon: '', color: '' }
+  categoryDialogVisible.value = true
+}
+
+async function handleCreateCategory(type: string) {
+  if (!spaceStore.currentSpace) return
+  if (!newCategoryForm.value.name.trim()) {
+    ElMessage.warning('分类名称不能为空')
+    return
+  }
+  try {
+    const created = await createCategory(spaceStore.currentSpace.id, {
+      name: newCategoryForm.value.name.trim(),
+      type,
+      icon: newCategoryForm.value.icon.trim() || undefined,
+      color: newCategoryForm.value.color.trim() || undefined,
+    })
+    categories.value.push(created)
+    ElMessage.success(`分类「${created.name}」已创建`)
+    newCategoryForm.value = { name: '', icon: '', color: '' }
+  } catch {
+    ElMessage.error('创建分类失败')
+  }
+}
+
+async function handleDeleteCategory(cat: CategoryResponse) {
+  if (!spaceStore.currentSpace) return
+  try {
+    await ElMessageBox.confirm(`确定删除分类「${cat.name}」？`, '删除确认', { type: 'warning' })
+    await deleteCategory(spaceStore.currentSpace.id, cat.id)
+    categories.value = categories.value.filter((c) => c.id !== cat.id)
+    if (form.value.categoryId === cat.id) {
+      form.value.categoryId = null
+    }
+    ElMessage.success('分类已删除')
+  } catch {
+    // cancelled or error
+  }
 }
 
 // ---- AI parse flow ----
@@ -205,6 +302,7 @@ function handleAiEdit() {
     type: aiDraftForm.value.type,
     merchant: aiDraftForm.value.merchant,
     note: aiDraftForm.value.note,
+    categoryId: null,
   }
   dialogVisible.value = true
 }
@@ -232,6 +330,10 @@ function handleAiEdit() {
             :value="s.id"
           />
         </el-select>
+        <el-button @click="openCategoryDialog">
+          <Tags :size="14" />
+          分类管理
+        </el-button>
         <el-button @click="openAiDialog">🤖 AI 记账</el-button>
         <el-button type="primary" @click="openCreateDialog">记一笔</el-button>
       </div>
@@ -288,6 +390,14 @@ function handleAiEdit() {
               </span>
             </template>
           </el-table-column>
+          <el-table-column label="分类" width="100">
+            <template #default="{ row }">
+              <el-tag v-if="row.categoryId" size="small" type="info">
+                {{ getCategoryName(row.categoryId) }}
+              </el-tag>
+              <span v-else class="no-category">-</span>
+            </template>
+          </el-table-column>
           <el-table-column prop="merchant" label="商家" />
           <el-table-column prop="note" label="备注" />
           <el-table-column prop="occurredAt" label="时间" width="180" />
@@ -320,6 +430,29 @@ function handleAiEdit() {
           <el-form-item label="金额">
             <el-input-number v-model="form.amount" :min="0.01" :precision="2" :step="10" style="width: 100%" />
           </el-form-item>
+          <el-form-item label="分类">
+            <el-select
+              v-model="form.categoryId"
+              placeholder="选择分类（可选）"
+              clearable
+              style="width: 100%"
+            >
+              <el-option
+                v-for="cat in filteredCategories"
+                :key="cat.id"
+                :label="cat.name"
+                :value="cat.id"
+              >
+                <span>
+                  <span v-if="cat.icon" style="margin-right: 4px">{{ cat.icon }}</span>
+                  {{ cat.name }}
+                </span>
+              </el-option>
+            </el-select>
+            <p v-if="filteredCategories.length === 0" class="category-hint">
+              暂无{{ form.type === 'expense' ? '支出' : '收入' }}分类，请在「分类管理」中添加。
+            </p>
+          </el-form-item>
           <el-form-item label="商家">
             <el-input v-model="form.merchant" placeholder="商家名称（可选）" />
           </el-form-item>
@@ -330,6 +463,80 @@ function handleAiEdit() {
         <template #footer>
           <el-button @click="dialogVisible = false">取消</el-button>
           <el-button type="primary" @click="handleSubmit">{{ editingId ? '更新' : '创建' }}</el-button>
+        </template>
+      </el-dialog>
+
+      <!-- Category management dialog -->
+      <el-dialog v-model="categoryDialogVisible" title="分类管理" width="520px">
+        <div v-if="categoriesLoading" class="category-loading">加载中...</div>
+        <div v-else-if="categoriesError" class="category-loading">加载分类失败，请重试。</div>
+        <template v-else>
+          <div class="category-section">
+            <h4 class="category-section-title">支出分类</h4>
+            <div v-if="categories.filter(c => c.type === 'expense').length === 0" class="category-empty">
+              暂无支出分类
+            </div>
+            <div v-else class="category-list">
+              <div
+                v-for="cat in categories.filter(c => c.type === 'expense')"
+                :key="cat.id"
+                class="category-item"
+              >
+                <span class="category-item-name">
+                  <span v-if="cat.icon" style="margin-right: 4px">{{ cat.icon }}</span>
+                  {{ cat.name }}
+                </span>
+                <el-button size="small" text type="danger" @click="handleDeleteCategory(cat)">
+                  <Trash2 :size="14" />
+                </el-button>
+              </div>
+            </div>
+          </div>
+          <div class="category-section">
+            <h4 class="category-section-title">收入分类</h4>
+            <div v-if="categories.filter(c => c.type === 'income').length === 0" class="category-empty">
+              暂无收入分类
+            </div>
+            <div v-else class="category-list">
+              <div
+                v-for="cat in categories.filter(c => c.type === 'income')"
+                :key="cat.id"
+                class="category-item"
+              >
+                <span class="category-item-name">
+                  <span v-if="cat.icon" style="margin-right: 4px">{{ cat.icon }}</span>
+                  {{ cat.name }}
+                </span>
+                <el-button size="small" text type="danger" @click="handleDeleteCategory(cat)">
+                  <Trash2 :size="14" />
+                </el-button>
+              </div>
+            </div>
+          </div>
+          <el-divider />
+          <div class="add-category-form">
+            <el-input
+              v-model="newCategoryForm.name"
+              placeholder="新分类名称"
+              size="default"
+              class="add-category-input"
+              @keydown.enter="handleCreateCategory('expense')"
+            />
+            <el-input
+              v-model="newCategoryForm.icon"
+              placeholder="图标"
+              size="default"
+              style="width: 80px"
+            />
+            <el-button type="primary" @click="handleCreateCategory('expense')">
+              <Plus :size="14" />
+              支出
+            </el-button>
+            <el-button type="success" @click="handleCreateCategory('income')">
+              <Plus :size="14" />
+              收入
+            </el-button>
+          </div>
         </template>
       </el-dialog>
 
@@ -533,5 +740,70 @@ function handleAiEdit() {
   font-size: 13px;
   color: var(--color-muted, #888);
   margin: 0 0 16px;
+}
+
+.no-category {
+  color: var(--color-muted, #ccc);
+  font-size: 13px;
+}
+
+.category-hint {
+  font-size: 12px;
+  color: var(--color-muted, #aaa);
+  margin-top: 4px;
+}
+
+.category-section {
+  margin-bottom: 16px;
+}
+
+.category-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text, #333);
+  margin: 0 0 8px;
+}
+
+.category-empty {
+  font-size: 13px;
+  color: var(--color-muted, #aaa);
+  padding: 8px 0;
+}
+
+.category-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.category-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px solid var(--el-border-color-lighter, #e4e7ed);
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.category-item-name {
+  color: var(--color-text, #333);
+}
+
+.category-loading {
+  text-align: center;
+  padding: 24px 0;
+  color: var(--color-muted, #888);
+  font-size: 14px;
+}
+
+.add-category-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.add-category-input {
+  flex: 1;
 }
 </style>
