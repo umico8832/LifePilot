@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import {
   CircleCheck,
   CircleX,
@@ -15,9 +15,17 @@ import {
 import { useRouter } from 'vue-router'
 
 import { fetchHealth } from '@/api/health'
-import { getOverview, type OverviewResponse } from '@/api/statistics'
+import {
+  getOverview,
+  getFinanceMonthly,
+  getTodoStats,
+  type OverviewResponse,
+  type FinanceMonthlyResponse,
+  type TodoStatsResponse,
+} from '@/api/statistics'
 import { generateMonthlyReport, type MonthlyReport } from '@/api/ai'
 import AppShell from '@/layouts/AppShell.vue'
+import EChart from '@/components/EChart.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useSpaceStore } from '@/stores/space'
 
@@ -30,6 +38,11 @@ const spaceStore = useSpaceStore()
 const overview = ref<OverviewResponse | null>(null)
 const overviewLoading = ref(false)
 const overviewError = ref('')
+
+// Chart data
+const financeMonthly = ref<FinanceMonthlyResponse | null>(null)
+const todoStats = ref<TodoStatsResponse | null>(null)
+const chartsLoading = ref(false)
 
 // Monthly report
 const reportLoading = ref(false)
@@ -63,6 +76,106 @@ async function loadOverview() {
   }
 }
 
+async function loadCharts() {
+  if (!authStore.isAuthenticated || !spaceStore.currentSpace) return
+  chartsLoading.value = true
+  try {
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = now.getMonth() + 1
+    const [fm, ts] = await Promise.all([
+      getFinanceMonthly(spaceStore.currentSpace.id, year, month),
+      getTodoStats(spaceStore.currentSpace.id),
+    ])
+    financeMonthly.value = fm
+    todoStats.value = ts
+  } catch {
+    // chart data load failure is non-blocking
+  } finally {
+    chartsLoading.value = false
+  }
+}
+
+const pieChartOption = computed(() => {
+  if (!financeMonthly.value || financeMonthly.value.categories.length === 0) return null
+  return {
+    tooltip: { trigger: 'item' as const, formatter: '{b}: ¥{c} ({d}%)' },
+    legend: { orient: 'vertical' as const, left: 'left', top: 'middle' },
+    series: [
+      {
+        type: 'pie' as const,
+        radius: ['40%', '70%'],
+        avoidLabelOverlap: false,
+        itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
+        label: { show: false },
+        emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' as const } },
+        labelLine: { show: false },
+        data: financeMonthly.value.categories.map((c) => ({
+          name: c.categoryName,
+          value: c.amount,
+        })),
+      },
+    ],
+  }
+})
+
+const barChartOption = computed(() => {
+  if (!financeMonthly.value) return null
+  return {
+    tooltip: { trigger: 'axis' as const },
+    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+    xAxis: {
+      type: 'category' as const,
+      data: ['收入', '支出', '结余'],
+    },
+    yAxis: { type: 'value' as const },
+    series: [
+      {
+        type: 'bar' as const,
+        barWidth: '40%',
+        data: [
+          { value: financeMonthly.value.totalIncome, itemStyle: { color: '#16a34a' } },
+          { value: financeMonthly.value.totalExpense, itemStyle: { color: '#dc2626' } },
+          {
+            value: financeMonthly.value.netBalance,
+            itemStyle: { color: financeMonthly.value.netBalance >= 0 ? '#16a34a' : '#dc2626' },
+          },
+        ],
+      },
+    ],
+  }
+})
+
+const todoChartOption = computed(() => {
+  if (!todoStats.value || todoStats.value.totalCount === 0) return null
+  const items = [
+    { name: '待处理', value: todoStats.value.pendingCount, color: '#f59e0b' },
+    { name: '进行中', value: todoStats.value.inProgressCount, color: '#3b82f6' },
+    { name: '已完成', value: todoStats.value.completedCount, color: '#16a34a' },
+    { name: '已取消', value: todoStats.value.cancelledCount, color: '#9ca3af' },
+  ]
+  return {
+    tooltip: { trigger: 'item' as const, formatter: '{b}: {c} ({d}%)' },
+    legend: { orient: 'vertical' as const, left: 'left', top: 'middle' },
+    series: [
+      {
+        type: 'pie' as const,
+        radius: ['40%', '70%'],
+        avoidLabelOverlap: false,
+        itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
+        label: { show: false },
+        emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' as const } },
+        labelLine: { show: false },
+        data: items.map((i) => ({
+          name: i.name,
+          value: i.value,
+          itemStyle: { color: i.color },
+        })),
+      },
+    ],
+  }
+})
+
 async function handleGenerateReport() {
   if (!spaceStore.currentSpace) return
   const now = new Date()
@@ -91,7 +204,7 @@ onMounted(async () => {
   await Promise.all([loadHealth(), authStore.loadCurrentUser()])
   if (authStore.isAuthenticated) {
     await spaceStore.fetchSpaces()
-    await loadOverview()
+    await Promise.all([loadOverview(), loadCharts()])
   }
 })
 </script>
@@ -195,6 +308,24 @@ onMounted(async () => {
         <div>
           <p class="overview-label">库存预警</p>
           <p class="overview-amount alert">{{ overview.inventoryAlertCount }} 项</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Charts section -->
+    <section v-if="authStore.isAuthenticated && spaceStore.currentSpace && !chartsLoading" class="charts-section">
+      <div class="chart-grid">
+        <div v-if="barChartOption" class="chart-card">
+          <h3 class="chart-title">📊 本月收支概览</h3>
+          <EChart :option="barChartOption" height="260px" />
+        </div>
+        <div v-if="pieChartOption" class="chart-card">
+          <h3 class="chart-title">💸 支出分类占比</h3>
+          <EChart :option="pieChartOption" height="260px" />
+        </div>
+        <div v-if="todoChartOption" class="chart-card">
+          <h3 class="chart-title">✅ 待办状态分布</h3>
+          <EChart :option="todoChartOption" height="260px" />
         </div>
       </div>
     </section>
@@ -389,6 +520,38 @@ onMounted(async () => {
 
 .status-error {
   color: var(--color-text-muted);
+}
+
+/* ---- Charts section ---- */
+
+.charts-section {
+  margin-bottom: 24px;
+}
+
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.chart-card {
+  background: var(--color-surface, #fff);
+  border-radius: 12px;
+  border: 1px solid var(--color-border, #e4e7ed);
+  padding: 16px;
+}
+
+.chart-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 8px;
+  color: var(--color-text, #333);
+}
+
+@media (max-width: 640px) {
+  .chart-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ---- Report section ---- */
