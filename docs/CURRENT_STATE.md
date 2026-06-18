@@ -6,15 +6,15 @@ P2-001 完成。Phase 0-17 全部完成，Phase 14（AI provider 配置骨架）
 
 ## 当前最高优先级任务
 
-P2-003 增加后端 Service 层单元测试。
+P2-004 实现 OpenAI provider 代码骨架。
 
 ## 最近完成任务
 
 - P0-001～P0-013：全部完成。
 - P1-001～P1-017：全部完成。
 - P2-001 规划真实 AI provider 配置骨架。
-- P2-002 CI 增加前端测试步骤：ci.yml 前端 job 在 `npm run build` 之前新增 `npm test` 步骤。
-- 已新增 P2-002～P2-004 到 backlog。
+- P2-002 CI 增加前端测试步骤。
+- P2-003 增加后端 Service 层单元测试：AiServiceTests（9 项：parseTransaction/parseShoppingList/parseTodo 各正常路径、null 返回、非成员权限）+ StatisticServiceTests（8 项：getOverview 空数据/收支计算/低库存检测、getInventoryStats 空数据/分类分组、getTodoStats 空数据/状态计数+逾期/已完成不计逾期），共 17 项新测试全部通过。
 
 ## 当前阻塞项
 
@@ -22,11 +22,11 @@ P2-003 增加后端 Service 层单元测试。
 
 ## 下一项自动任务
 
-P2-003 增加后端 Service 层单元测试。
+P2-004 实现 OpenAI provider 代码骨架。
 
 ## 最近验证结果
 
-- 后端 `./mvnw test`：通过，88 tests passed（含 22 项 AiControllerTests）。
+- 后端 `./mvnw test`：通过，105 tests passed（含 22 项 AiControllerTests、9 项 AiServiceTests、8 项 StatisticServiceTests）。
 - 前端 `npm test`：通过，3 个测试文件共 24 项测试全部通过。
 - 前端 `npm run build`：通过（vue-tsc + vite build）。
 - Flyway 迁移 V1-V8 在 H2 测试数据库上通过。

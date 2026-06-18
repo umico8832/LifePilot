@@ -12,6 +12,16 @@ python3 scripts/agent_changelog_archive.py --keep 10
 
 脚本默认保留最近 10 条完整记录，并刷新 `docs/RECENT_HISTORY.md`。
 
+## 2026-06-18 23:02 Asia/Shanghai
+
+- Agent 任务名称：P2-003 增加后端 Service 层单元测试。
+- 修改文件：`backend/src/test/java/com/lifepilot/ai/AiServiceTests.java`、`backend/src/test/java/com/lifepilot/statistics/StatisticServiceTests.java`、`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/CHANGELOG_AGENT.md`。
+- 实现内容：AiServiceTests（Mockito 单元测试，mock AiProvider + HouseholdService + 各 Mapper）覆盖 parseTransaction/parseShoppingList/parseTodo 各三种路径（正常返回、null 返回 needsReview、非成员抛 BusinessException），共 9 项；StatisticServiceTests 覆盖 getOverview 空数据零值/收支计算/低库存检测、getInventoryStats 空数据/分类分组+低库存、getTodoStats 空数据/四种状态计数+逾期判定/已完成不计逾期，共 8 项。
+- 测试结果：后端 `./mvnw test` 通过，105 tests passed（原有 88 + 新增 9 AiServiceTests + 8 StatisticServiceTests）；前端 `npm test` 通过（24 项）。
+- 遗留问题：P2-004（OpenAI provider 代码骨架）尚未实现。
+- 下一步任务：P2-004 实现 OpenAI provider 代码骨架。
+- 建议 commit message：`test(backend): 增加 AiService 和 StatisticService 单元测试`
+
 ## 2026-06-18 22:53 Asia/Shanghai
 
 - Agent 任务名称：修复 changelog 归档排序并明确决策日志职责。
