@@ -22,8 +22,12 @@ import com.lifepilot.shopping.ShoppingItemMapper;
 import com.lifepilot.shopping.ShoppingList;
 import com.lifepilot.shopping.ShoppingListMapper;
 import com.lifepilot.space.HouseholdService;
+import com.lifepilot.todo.TodoTask;
+import com.lifepilot.todo.TodoTaskMapper;
 import com.lifepilot.statistics.dto.FinanceMonthlyResponse;
+import com.lifepilot.statistics.dto.InventoryStatsResponse;
 import com.lifepilot.statistics.dto.OverviewResponse;
+import com.lifepilot.statistics.dto.TodoStatsResponse;
 
 @Service
 public class StatisticService {
@@ -34,19 +38,22 @@ public class StatisticService {
     private final InventoryItemMapper inventoryItemMapper;
     private final ShoppingListMapper shoppingListMapper;
     private final ShoppingItemMapper shoppingItemMapper;
+    private final TodoTaskMapper todoTaskMapper;
 
     public StatisticService(HouseholdService householdService,
                             TransactionRecordMapper transactionRecordMapper,
                             TransactionCategoryMapper transactionCategoryMapper,
                             InventoryItemMapper inventoryItemMapper,
                             ShoppingListMapper shoppingListMapper,
-                            ShoppingItemMapper shoppingItemMapper) {
+                            ShoppingItemMapper shoppingItemMapper,
+                            TodoTaskMapper todoTaskMapper) {
         this.householdService = householdService;
         this.transactionRecordMapper = transactionRecordMapper;
         this.transactionCategoryMapper = transactionCategoryMapper;
         this.inventoryItemMapper = inventoryItemMapper;
         this.shoppingListMapper = shoppingListMapper;
         this.shoppingItemMapper = shoppingItemMapper;
+        this.todoTaskMapper = todoTaskMapper;
     }
 
     /**
@@ -156,5 +163,57 @@ public class StatisticService {
                 totalIncome.subtract(totalExpense),
                 categories
         );
+    }
+
+    /**
+     * Inventory statistics: total items, low stock count, breakdown by category.
+     */
+    public InventoryStatsResponse getInventoryStats(Long userId, Long spaceId) {
+        householdService.requireSpaceMembership(userId, spaceId);
+
+        List<InventoryItem> items = inventoryItemMapper.selectList(
+                new LambdaQueryWrapper<InventoryItem>()
+                        .eq(InventoryItem::getHouseholdId, spaceId));
+
+        long lowStockCount = items.stream()
+                .filter(item -> item.getLowStockThreshold() != null
+                        && item.getQuantity() != null
+                        && item.getQuantity().compareTo(item.getLowStockThreshold()) < 0)
+                .count();
+
+        // Group by category
+        Map<String, Long> byCategory = items.stream()
+                .collect(Collectors.groupingBy(
+                        item -> item.getCategory() != null ? item.getCategory() : "未分类",
+                        Collectors.counting()));
+
+        List<InventoryStatsResponse.CategoryCount> categoryCounts = byCategory.entrySet().stream()
+                .map(e -> new InventoryStatsResponse.CategoryCount(e.getKey(), e.getValue()))
+                .sorted((a, b) -> Long.compare(b.count(), a.count()))
+                .collect(Collectors.toList());
+
+        return new InventoryStatsResponse(items.size(), lowStockCount, categoryCounts);
+    }
+
+    /**
+     * Todo task statistics: counts by status, overdue count.
+     */
+    public TodoStatsResponse getTodoStats(Long userId, Long spaceId) {
+        householdService.requireSpaceMembership(userId, spaceId);
+
+        List<TodoTask> tasks = todoTaskMapper.selectList(
+                new LambdaQueryWrapper<TodoTask>()
+                        .eq(TodoTask::getHouseholdId, spaceId));
+
+        long pending = tasks.stream().filter(t -> "pending".equals(t.getStatus())).count();
+        long inProgress = tasks.stream().filter(t -> "in_progress".equals(t.getStatus())).count();
+        long completed = tasks.stream().filter(t -> "completed".equals(t.getStatus())).count();
+        long cancelled = tasks.stream().filter(t -> "cancelled".equals(t.getStatus())).count();
+        long overdue = tasks.stream().filter(t -> {
+            if (!"pending".equals(t.getStatus()) && !"in_progress".equals(t.getStatus())) return false;
+            return t.getDueAt() != null && t.getDueAt().isBefore(LocalDateTime.now());
+        }).count();
+
+        return new TodoStatsResponse(tasks.size(), pending, inProgress, completed, cancelled, overdue);
     }
 }

@@ -11,7 +11,9 @@ import com.lifepilot.common.ApiResponse;
 import com.lifepilot.common.BusinessException;
 import com.lifepilot.security.CurrentUserPrincipal;
 import com.lifepilot.statistics.dto.FinanceMonthlyResponse;
+import com.lifepilot.statistics.dto.InventoryStatsResponse;
 import com.lifepilot.statistics.dto.OverviewResponse;
+import com.lifepilot.statistics.dto.TodoStatsResponse;
 
 @RestController
 @RequestMapping("/api/spaces/{spaceId}/statistics")
@@ -39,6 +41,22 @@ public class StatisticController {
             @RequestParam int month) {
         requireAuth(principal);
         return ApiResponse.ok(statisticService.getFinanceMonthly(principal.id(), spaceId, year, month));
+    }
+
+    @GetMapping("/inventory")
+    public ApiResponse<InventoryStatsResponse> inventoryStats(
+            @AuthenticationPrincipal CurrentUserPrincipal principal,
+            @PathVariable Long spaceId) {
+        requireAuth(principal);
+        return ApiResponse.ok(statisticService.getInventoryStats(principal.id(), spaceId));
+    }
+
+    @GetMapping("/todos")
+    public ApiResponse<TodoStatsResponse> todoStats(
+            @AuthenticationPrincipal CurrentUserPrincipal principal,
+            @PathVariable Long spaceId) {
+        requireAuth(principal);
+        return ApiResponse.ok(statisticService.getTodoStats(principal.id(), spaceId));
     }
 
     private void requireAuth(CurrentUserPrincipal principal) {
