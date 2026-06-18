@@ -6,7 +6,7 @@ P1-011 完成。Phase 0-11 全部完成。
 
 ## 当前最高优先级任务
 
-待确定（从 BACKLOG 中选取下一个 P1 任务）。剩余 P1 任务包括：AI mock provider 扩展（待办/购物清单/月报）、更多统计接口、前端交互优化等。
+P1-012 扩展 AI mock provider：购物清单草稿。
 
 ## 最近完成任务
 
@@ -20,13 +20,14 @@ P1-011 完成。Phase 0-11 全部完成。
 
 ## 下一项自动任务
 
-待确定：从 `docs/BACKLOG.md` 选取下一个最高优先级 P1 todo 任务。
+P1-012 扩展 AI mock provider：购物清单草稿。
 
 ## 最近验证结果
 
 - 后端 `./mvnw test`：通过，74 tests passed（含 7 项 DocumentControllerTests）。
 - 前端 `npm run build`：通过（vue-tsc + vite build）。
 - Flyway 迁移 V1-V8 在 H2 测试数据库上通过。
+- 文档一致性检查 `python3 scripts/agent_doc_check.py`：通过。
 
 ## 注意事项
 

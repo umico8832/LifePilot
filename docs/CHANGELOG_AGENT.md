@@ -1,5 +1,15 @@
 # Agent Changelog
 
+## 2026-06-18 16:20 Asia/Shanghai
+
+- Agent 任务名称：简化自主开发文档权威关系。
+- 修改文件：`AGENTS.md`、`docs/AUTO_DEV_PROTOCOL.md`、`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/HANDOFF.md`、`docs/NEXT_CHAT_PROMPT.md`、`docs/CHANGELOG_AGENT.md`、`docs/DECISION_LOG.md`、`docs/TESTING.md`、`docs/AGENT_REVIEW_CHECKLIST.md`、`scripts/agent_doc_check.py`。
+- 实现内容：明确 `CURRENT_STATE` 为唯一当前状态源、`BACKLOG` 为唯一任务源、`CHANGELOG_AGENT` 为历史源；将 `HANDOFF` 收敛为稳定运行手册，将 `NEXT_CHAT_PROMPT` 收敛为极简入口；新增 P1-012～P1-017 和 P2-001 后续任务；新增文档一致性检查脚本。
+- 测试结果：`python3 scripts/agent_doc_check.py` 通过；`git diff --check` 通过。
+- 遗留问题：无。
+- 下一步任务：P1-012 扩展 AI mock provider：购物清单草稿。
+- 建议 commit message：`docs(agent): 简化自主开发文档权威关系`
+
 ## 2026-06-18 15:41 Asia/Shanghai
 
 - Agent 任务名称：P1-011 实现票据与文件管理 CRUD（Phase 11）。

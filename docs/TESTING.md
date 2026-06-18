@@ -27,14 +27,15 @@
 ## 构建验证
 
 ```bash
-cd backend && mvn test
+cd backend && ./mvnw test
 cd frontend && npm install && npm run build
+python3 scripts/agent_doc_check.py
 ```
 
 ## 每类任务至少应该跑什么验证
 
-- 文档任务：检查文件存在、Markdown 结构、交叉引用。
-- 后端接口任务：`mvn test`，必要时手动 curl。
+- 文档任务：检查文件存在、Markdown 结构、交叉引用，并运行 `python3 scripts/agent_doc_check.py`。
+- 后端接口任务：`./mvnw test`，必要时手动 curl。
 - 前端页面任务：`npm run build`，必要时浏览器检查。
 - 数据库任务：迁移执行验证。
 - AI 任务：结构化输出测试和降级路径测试。
@@ -47,4 +48,3 @@ cd frontend && npm install && npm run build
 - 无法运行的原因。
 - 已完成的替代验证。
 - 后续需要补跑的验证。
-

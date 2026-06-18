@@ -1,9 +1,13 @@
 # Handoff
 
+本文件是稳定接手手册，只记录长期有效的运行、测试和接手信息。
+
+当前阶段、下一任务、阻塞项和最近验证结果以 `docs/CURRENT_STATE.md` 为准。任务池和任务状态以 `docs/BACKLOG.md` 为准。历史记录以 `docs/CHANGELOG_AGENT.md` 为准。
+
 ## 项目基本信息
 
 - 项目名称：LifePilot
-- 项目定位：AI 个人生活管家平台
+- 项目定位：AI 个人生活管家平台。
 - 一句话目标：统一管理记账、购物清单、家庭库存、饮食计划、生活待办、票据文件和 AI 生活分析。
 
 ## 技术栈
@@ -13,30 +17,14 @@
 - 基础设施：Docker Compose、MySQL、`.env.example`。
 - AI：先使用 mock provider，后续再接 OpenAI-compatible provider。
 
-## 当前阶段
+## 接手流程
 
-P1-008 完成。Phase 0-6, 9-10, 12, P1-001～P1-008 全部完成（文档、骨架、鉴权、空间、记账+分类、购物清单、库存、AI mock provider、首页统计面板、统一异常处理、GitHub Actions CI、OpenAPI 文档、前端空态/错误态、路由守卫、路由懒加载、AppShell 导航栏、前端视口适配）。
-
-## 已完成内容
-
-- Phase 0-1：文档体系、项目骨架、Spring Boot 配置、Vue 3 配置。
-- Phase 2：用户注册登录、JWT 鉴权、当前用户接口。
-- Phase 3：生活空间模型（Household、HouseholdMember、成员权限、注册自动创建个人空间）。
-- Phase 4：支出记录 CRUD、收入记录 CRUD（共用 transaction_record）、消费分类管理（CategoryService/CategoryController）。
-- Phase 5：购物清单和清单项 CRUD（ShoppingList/ShoppingItem/ShoppingService/ShoppingController）。
-- Phase 6：库存物品 CRUD 和低库存提醒（InventoryItem/InventoryService/InventoryController）。
-- Phase 9：AI mock provider 自然语言记账（AiProvider/MockAiProvider/AiService/AiController）。
-- Phase 10：首页统计面板（StatisticService/StatisticController，overview + finance/monthly 两个端点）。
-- P1-001：完善错误码和异常处理（GlobalExceptionHandler 统一处理 8 类异常，所有错误响应使用 ApiResponse.error 结构）。
-- P1-002：GitHub Actions CI（`.github/workflows/ci.yml`，后端 Maven test + 前端 npm build 并行 jobs）；Maven wrapper（`backend/mvnw`）。
-- P1-003：OpenAPI 文档（springdoc-openapi 2.8.6 + OpenApiConfig + SecurityConfig 放行 swagger 路径），可通过 `/swagger-ui.html` 访问。
-- P1-004：前端空态和错误态（FinanceView / ShoppingView / InventoryView / SpaceView 增加 no-space、error、empty 状态和引导文案）。
-- P1-005：前端路由守卫和未登录重定向（`router.beforeEach` + `requiresAuth` / `guestOnly` meta + 401 响应拦截器自动登出）。
-- P1-006：前端大 chunk 分包（所有路由改为 `() => import(...)` 懒加载）。
-- P1-007：AppShell 导航栏（路由链接 + 当前路由高亮 + lucide 图标 + 用户名 + 退出按钮）。
-- P1-008：前端视口宽度适配（4 断点响应式：1024px 双列 grid、900px 侧边栏→水平导航、768px 双栏→单栏、560px 手机图标导航、`.table-scroll`、Dialog 自适应宽度）。
-- 前端页面：AuthView、HomeView（统计仪表盘）、SpaceView、FinanceView（含 AI 记账）、ShoppingView、InventoryView。
-- 项目 Agent skills 体系（7 个 skills）。
+1. 读 `AGENTS.md`。
+2. 读 `docs/AUTO_DEV_PROTOCOL.md`。
+3. 读 `docs/CURRENT_STATE.md` 获取当前状态和下一任务。
+4. 读 `docs/BACKLOG.md` 获取任务池和验收标准。
+5. 读 `docs/CHANGELOG_AGENT.md` 了解最近历史。
+6. 按任务类型读取对应设计文档和 `agent-skills/*/SKILL.md`。
 
 ## 运行方式
 
@@ -67,26 +55,34 @@ BACKEND_PROXY_TARGET=http://localhost:18081 npm run dev
 ## 测试方式
 
 ```bash
-cd backend && mvn test
+cd backend && ./mvnw test
 cd frontend && npm install && npm run build
 cd frontend && npm audit --audit-level=high
+python3 scripts/agent_doc_check.py
 ```
 
-## 当前遗留问题
+如果 Maven wrapper 不可用，可临时使用：
 
-- 待办模块尚未实现。
-- AI 其他端点（create-shopping-list-draft、create-todo-draft、monthly-report-draft）尚未实现。
-- 前端分类管理 UI 尚未集成到 FinanceView。
-- CI 需 push 到 GitHub 后才能在 GitHub Actions 面板验证。
+```bash
+cd backend && mvn test
+```
 
-## 下一步建议任务
+## 常用入口
 
-从 `docs/BACKLOG.md` 选取下一个最高优先级 P1 todo 任务。
+- 前端开发服务：`http://localhost:5173`
+- 后端健康检查：`/api/health`
+- Swagger UI：`/swagger-ui.html`
+- OpenAPI JSON：`/v3/api-docs`
 
-## 接手注意事项
+## 安全边界
 
-- 先读 `AGENTS.md` 和 `docs/AUTO_DEV_PROTOCOL.md`。
-- 任务匹配时读取 `agent-skills/*/SKILL.md`。
-- 按 `docs/BACKLOG.md` 自动取下一项未完成任务。
-- 不要接入真实密钥、支付、短信、邮件、第三方登录或真实 OCR 付费服务。
-- 本机 `8080` 和 `3306` 端口被占用，当前开发服务使用后端 `18081`、MySQL `3307` 和前端 `5173`。
+- 不提交真实 `.env`、真实密钥、数据库密码或外部服务凭据。
+- 不接入支付、短信、邮件、第三方登录或真实 OCR 付费服务，除非用户明确作出新阶段决策。
+- AI provider 默认 mock；真实 provider 只能通过环境变量配置，不把 API Key 写入代码。
+- 不做医疗诊断、药品剂量、投资建议、法律判断、自动购买或自动下单。
+
+## 交接注意事项
+
+- `docs/HANDOFF.md` 不记录当前阶段和下一任务，避免和 `docs/CURRENT_STATE.md` 漂移。
+- `docs/NEXT_CHAT_PROMPT.md` 只保留极简入口，避免复制状态。
+- 完成任务后至少更新 `docs/CURRENT_STATE.md`、`docs/BACKLOG.md`、`docs/CHANGELOG_AGENT.md`，并运行 `python3 scripts/agent_doc_check.py`。

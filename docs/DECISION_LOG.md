@@ -49,3 +49,8 @@
 
 - 决策：继续在 `agent-skills/` 中新增后端模块、API/数据契约、AI mock provider 三个工程向 skills。
 - 原因：LifePilot 后续 P0 任务高度重复地涉及空间权限、REST 合约、Flyway 迁移、前端 API 类型和 AI 草稿确认流程；将这些流程抽成 skills 比引入通用艺术、Artifact、Claude API 或文档格式 skills 更贴合当前阶段。
+
+## 2026-06-18：收敛 Agent 文档权威关系
+
+- 决策：将 `docs/CURRENT_STATE.md` 作为唯一当前状态源，`docs/BACKLOG.md` 作为唯一任务源，`docs/CHANGELOG_AGENT.md` 作为历史记录；`docs/HANDOFF.md` 改为稳定运行手册，`docs/NEXT_CHAT_PROMPT.md` 改为极简入口。
+- 原因：多份文档重复记录当前阶段和下一任务会产生漂移，影响新 Agent 接手；收敛权威关系并增加文档检查脚本，可以降低自主开发收尾成本。

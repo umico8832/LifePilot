@@ -16,9 +16,10 @@ LifePilot 的目标是让 AI Agent 可以长期、连续、自主地维护和开
 3. 阅读相关设计文档。
 4. 实施最小可验证变更。
 5. 运行任务要求的测试或构建验证。
-6. 更新 `docs/CURRENT_STATE.md`、`docs/CHANGELOG_AGENT.md`，必要时更新设计文档。
-7. 自审 `docs/AGENT_REVIEW_CHECKLIST.md`。
-8. 未触发停止条件时，继续选择下一项任务。
+6. 更新 `docs/CURRENT_STATE.md`、`docs/BACKLOG.md`、`docs/CHANGELOG_AGENT.md`，必要时更新设计文档。
+7. 运行文档一致性检查（当前为 `python3 scripts/agent_doc_check.py`）。
+8. 自审 `docs/AGENT_REVIEW_CHECKLIST.md`。
+9. 未触发停止条件时，继续选择下一项任务。
 
 ## 任务选择规则
 
@@ -27,10 +28,11 @@ LifePilot 的目标是让 AI Agent 可以长期、连续、自主地维护和开
 - 优先选择能解锁后续工作的任务。
 - 不做与产品定位冲突的功能。
 - 不为了演示做长期假接口；mock 只能用于明确标记的 AI provider 或开发占位。
+- 如果 `docs/BACKLOG.md` 中没有 `todo` 任务，必须触发停止条件，等待用户补充任务或确认新阶段。
 
 ## 继续开发规则
 
-- 完成一个任务后，必须更新状态和日志。
+- 完成一个任务后，必须更新状态、任务池和日志。
 - 如果未触发停止条件，自动继续下一项任务。
 - 当前任务足够明确时，合理默认决策并继续。
 - 遇到普通实现细节，不频繁询问用户。
@@ -66,10 +68,11 @@ LifePilot 的目标是让 AI Agent 可以长期、连续、自主地维护和开
 ## 文档维护规则
 
 - `AGENTS.md` 只保留长期协作入口，不写临时进度。
-- `docs/CURRENT_STATE.md` 记录当前阶段、阻塞项、最近验证和下一任务。
-- `docs/BACKLOG.md` 记录可执行任务池。
-- `docs/CHANGELOG_AGENT.md` 每完成任务追加记录，不清空历史。
-- `docs/HANDOFF.md` 保持可接手。
+- `docs/CURRENT_STATE.md` 是唯一当前状态源，只在这里记录当前阶段、阻塞项、最近验证和下一任务。
+- `docs/BACKLOG.md` 是唯一任务源，只在这里记录任务状态、优先级、验收标准和后续任务建议。
+- `docs/CHANGELOG_AGENT.md` 是历史记录，每完成任务追加记录，不作为当前状态来源。
+- `docs/HANDOFF.md` 是稳定运行手册，只保留项目定位、技术栈、运行/测试方式、端口注意事项和接手流程；不要复制当前阶段、下一任务或已完成清单。
+- `docs/NEXT_CHAT_PROMPT.md` 是极简新对话入口，只引用权威文档；不要复制当前阶段、下一任务或长篇状态。
 - 设计改变时更新对应设计文档和 `docs/DECISION_LOG.md`。
 
 ## 测试与验证规则
@@ -102,4 +105,3 @@ LifePilot 的目标是让 AI Agent 可以长期、连续、自主地维护和开
 7. 如果未触发停止条件，下一项自动任务是什么。
 8. 如果上下文接近上限，说明 `docs/NEXT_CHAT_PROMPT.md` 已生成。
 9. 建议 commit message。
-
