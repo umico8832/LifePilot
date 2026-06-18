@@ -12,6 +12,48 @@ python3 scripts/agent_changelog_archive.py --keep 10
 
 脚本默认保留最近 10 条完整记录，并刷新 `docs/RECENT_HISTORY.md`。
 
+## 2026-06-18 23:48 Asia/Shanghai P3-002 实现分类财务统计接口
+
+**任务**：P3-002 实现分类财务统计接口
+
+**改动**：
+- 新增 `FinanceCategoriesResponse` DTO：返回 `year`、`month`、`totalIncome`、`totalExpense`、`expenseCategories`、`incomeCategories`，分类列表按金额降序。
+- `StatisticService` 新增 `getFinanceCategories` 方法：查询当月 `TransactionRecord`，按收入/支出分别汇总分类，使用 `buildCategoryDetails` 统一组装排序结果。
+- `StatisticController` 新增 `GET /api/spaces/{spaceId}/statistics/finance/categories?year=&month=`。
+- 前端 `statistics.ts` 新增 `CategoryDetail`、`FinanceCategoriesResponse` 类型以及 `getFinanceCategories` API 方法。
+- `docs/API_DESIGN.md` 为 `/statistics/finance/categories` 标记 ✅。
+
+**验证**：
+- 后端 `./mvnw test`：118 tests passed，无回归。
+- 前端 `npm run build` + `npm test`：24 tests passed，无回归。
+
+**文档更新**：
+- `docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/API_DESIGN.md`、`docs/CHANGELOG_AGENT.md`：本条。
+
+## 2026-06-18 23:44 Asia/Shanghai P3-001 前端首页统计图表可视化
+
+**任务**：P3-001 前端首页统计图表可视化
+
+**改动**：
+- 新建 `frontend/src/components/EChart.vue`：通用 ECharts 包装组件，基于 echarts/core tree-shaking 导入（BarChart、LineChart、PieChart + TooltipComponent、LegendComponent、GridComponent、CanvasRenderer），支持 `option` prop 深度监听和窗口 resize 自动适配，组件卸载时 dispose 释放资源。
+- 更新 `frontend/src/views/HomeView.vue`：
+  - 新增 `loadCharts()` 方法，调用 `getFinanceMonthly` 和 `getTodoStats` 获取当月财务分类和待办状态数据。
+  - 新增 3 个 computed 图表 option：`barChartOption`（月度收支概览柱状图）、`pieChartOption`（支出分类饼图）、`todoChartOption`（待办状态饼图）。
+  - 模板新增 charts-section 区域，3 个 chart-card 渲染 EChart 组件。
+  - 新增 chart-grid/chart-card/chart-title 样式，支持响应式布局。
+  - 空数据时图表自动隐藏（computed 返回 null）。
+- 同步规划 P3 阶段任务（P3-001～P3-005）写入 BACKLOG。
+
+**验证**：
+- 后端 `./mvnw test`：118 tests passed，无回归。
+- 前端 `npm test`：24 tests passed，无回归。
+- 前端 `npm run build`：通过，ECharts chunk 超 500kB 警告为已知（ECharts 库本身体积）。
+
+**文档更新**：
+- `docs/BACKLOG.md`：P3-001 标记 done，新增 P3-002～P3-005 任务。
+- `docs/CURRENT_STATE.md`：更新当前阶段和下一项任务。
+- `docs/CHANGELOG_AGENT.md`：本条。
+
 ## 2026-06-18 23:28 Asia/Shanghai P2-004 实现 OpenAI provider 代码骨架
 
 **任务**：P2-004 实现 OpenAI provider 代码骨架
@@ -118,23 +160,3 @@ python3 scripts/agent_changelog_archive.py --keep 10
 - 遗留问题：未接入 Git hook；后续框架稳定后再考虑抽成通用模板。
 - 下一步任务：P1-017 增加前端关键测试。
 - 建议 commit message：`docs(agent): 完善 Agent 文档工作流`
-
-## 2026-06-18 21:06 Asia/Shanghai
-
-- Agent 任务名称：P1-016 前端分类管理 UI 集成。
-- 修改文件：`frontend/src/views/finance/FinanceView.vue`、`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/CHANGELOG_AGENT.md`。
-- 实现内容：FinanceView 脚本新增分类状态（categories、categoriesLoading、categoriesError、categoryDialogVisible、newCategoryForm、filteredCategories）+ 新增 `loadCategories`（空间切换时并行加载）、`getCategoryName`、`openCategoryDialog`、`handleCreateCategory`（含类型参数）、`handleDeleteCategory`（含确认对话框和关联清理）函数 + `watch` 表单 type 变化自动清空不匹配分类 + `onMounted` 和 `handleSpaceChange` 并行加载交易和分类 + 记账表单（创建/编辑）新增分类选择器（el-select 按类型筛选 + clearable + 图标显示 + 空分类提示）+ 记账 payload 适配 `categoryId: null → undefined` 转换 + 交易列表表格新增「分类」列（显示分类 Tag 或「-」）+ 工具栏新增「分类管理」按钮（Tags 图标）+ 分类管理对话框（支出/收入分组列表 + 创建表单含图标输入 + 删除按钮 + 加载/错误态 + el-divider 分隔 + 增加按钮区分支出/收入类型）+ AI 草稿手动编辑预填 categoryId: null + 新增 CSS 类（.no-category、.category-hint、.category-section、.category-section-title、.category-empty、.category-list、.category-item、.category-item-name、.category-loading、.add-category-form、.add-category-input）。
-- 测试结果：后端 `./mvnw test` 通过，88 tests passed（含 22 项 AiControllerTests）；前端 `npm run build` 通过（vue-tsc + vite build）。
-- 遗留问题：P1-017（前端测试）和 P2-001（AI provider 配置骨架）尚未实现。
-- 下一步任务：P1-017 增加前端关键测试。
-- 建议 commit message：`feat(finance): 集成前端分类管理 UI`
-
-## 2026-06-18 20:51 Asia/Shanghai
-
-- Agent 任务名称：P1-015 增加更多统计接口。
-- 修改文件：`backend/src/main/java/com/lifepilot/statistics/dto/InventoryStatsResponse.java`、`backend/src/main/java/com/lifepilot/statistics/dto/TodoStatsResponse.java`、`backend/src/main/java/com/lifepilot/statistics/StatisticService.java`、`backend/src/main/java/com/lifepilot/statistics/StatisticController.java`、`backend/src/main/java/com/lifepilot/ai/MockAiProvider.java`、`backend/src/test/java/com/lifepilot/ai/AiControllerTests.java`、`frontend/src/api/statistics.ts`、`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/CHANGELOG_AGENT.md`。
-- 实现内容：InventoryStatsResponse DTO（totalItems、lowStockCount、byCategory 分类统计）+ TodoStatsResponse DTO（按 pending/in_progress/completed/cancelled 分计、overdueCount 逾期数）+ StatisticService 新增 TodoTaskMapper 注入和 `getInventoryStats`/`getTodoStats` 方法 + StatisticController GET `/api/spaces/{spaceId}/statistics/inventory` 和 `/api/spaces/{spaceId}/statistics/todos` + 前端 `statistics.ts` 新增 `InventoryStatsResponse`/`TodoStatsResponse` 类型和 `getInventoryStats`/`getTodoStats` 函数 + 修复 MockAiProvider `PRIORITY_KEYWORDS` 为 `LinkedHashMap` 确保迭代顺序确定性（修复 Map.ofEntries 非确定性迭代导致 parseTodoWithPriorityKeyword 测试间歇性失败）+ 修复测试期望值匹配实际解析行为。
-- 测试结果：后端 `./mvnw test` 通过，88 tests passed（含 22 项 AiControllerTests）；前端 `npm run build` 通过（vue-tsc + vite build）。
-- 遗留问题：P1-016（前端分类管理 UI）和 P1-017（前端测试）尚未实现。
-- 下一步任务：P1-016 前端分类管理 UI 集成。
-- 建议 commit message：`feat(statistics): 增加库存和待办统计接口`

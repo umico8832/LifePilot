@@ -2,20 +2,19 @@
 
 ## 当前阶段
 
-P2-004 完成。Phase 14（AI provider 真实实现）完成。
+P3-002 完成。Phase 10（分类财务统计接口）补充完成。
 
 ## 当前最高优先级任务
 
-待定（需从 BACKLOG 选择下一项）。
+P3-003 实现购物统计接口。
 
 ## 最近完成任务
 
 - P0-001～P0-013：全部完成。
 - P1-001～P1-017：全部完成。
-- P2-001 规划真实 AI provider 配置骨架。
-- P2-002 CI 增加前端测试步骤。
-- P2-003 增加后端 Service 层单元测试。
-- P2-004 实现 OpenAI provider 代码骨架：AiProviderProperties、AiProviderConfig 条件注入、OpenAiProvider（RestClient + JSON 反序列化 + 超时重试 + Mock 回退）；OpenAiProviderTest（8 项）+ AiProviderConfigTest（5 项），共 13 项新测试全部通过。
+- P2-001～P2-004：全部完成。
+- P3-001 前端首页统计图表可视化：新建 EChart.vue 通用组件，HomeView 集成 3 个 ECharts 图表。
+- P3-002 实现分类财务统计接口：新增 `FinanceCategoriesResponse` DTO（含 expenseCategories 和 incomeCategories 分组），`StatisticService.getFinanceCategories` 按月按类型分组统计分类汇总并按金额降序排列，`StatisticController` 新增 `GET /finance/categories?year=&month=` 端点，前端 `statistics.ts` 新增 `FinanceCategoriesResponse` 类型和 `getFinanceCategories` 函数。
 
 ## 当前阻塞项
 
@@ -23,13 +22,13 @@ P2-004 完成。Phase 14（AI provider 真实实现）完成。
 
 ## 下一项自动任务
 
-待定（BACKLOG 中 P2 任务已全部完成）。
+P3-003 实现购物统计接口。
 
 ## 最近验证结果
 
-- 后端 `./mvnw test`：通过，118 tests passed（含 22 项 AiControllerTests、9 项 AiServiceTests、8 项 StatisticServiceTests、5 项 AiProviderConfigTest、8 项 OpenAiProviderTest）。
+- 后端 `./mvnw test`：通过，118 tests passed。
 - 前端 `npm test`：通过，3 个测试文件共 24 项测试全部通过。
-- 前端 `npm run build`：通过（vue-tsc + vite build）。
+- 前端 `npm run build`：通过。
 - Flyway 迁移 V1-V8 在 H2 测试数据库上通过。
 - 文档归档脚本 `python3 scripts/agent_changelog_archive.py`：通过。
 - 文档一致性检查 `python3 scripts/agent_doc_check.py`：通过。
@@ -43,3 +42,4 @@ P2-004 完成。Phase 14（AI provider 真实实现）完成。
 - 本机 `8080` 和 `3306` 端口被占用，当前开发服务使用后端 `18081`、MySQL `3307` 和前端 `5173`。
 - Maven wrapper 已生成（`backend/mvnw`），CI 使用 `./mvnw test -B`。
 - Swagger UI 可通过 `/swagger-ui.html` 访问（无需认证），OpenAPI JSON 可通过 `/v3/api-docs` 获取。
+- ECharts 6.1.0 已安装，使用 tree-shaking 方式导入。
