@@ -6,14 +6,15 @@ P2-001 完成。Phase 0-17 全部完成，Phase 14（AI provider 配置骨架）
 
 ## 当前最高优先级任务
 
-无剩余 todo 任务。可新增 P2 任务继续开发。
+P2-003 增加后端 Service 层单元测试。
 
 ## 最近完成任务
 
 - P0-001～P0-013：全部完成。
 - P1-001～P1-017：全部完成。
-- P1-017 增加前端关键测试：接入 Vitest 4 + jsdom + @vue/test-utils；auth store 测试（9 项）、space store 测试（10 项）、http interceptor 测试（5 项），共 24 项测试全部通过。
-- P2-001 规划真实 AI provider 配置骨架：ARCHITECTURE.md 新增 Provider 接口与当前实现、Provider 切换策略、OpenAI-compatible 配置项、安全边界和扩展点；API_DESIGN.md 新增 AI Provider 配置环境变量表和安全规则；DECISION_LOG.md 新增 provider 配置骨架决策记录。
+- P2-001 规划真实 AI provider 配置骨架。
+- P2-002 CI 增加前端测试步骤：ci.yml 前端 job 在 `npm run build` 之前新增 `npm test` 步骤。
+- 已新增 P2-002～P2-004 到 backlog。
 
 ## 当前阻塞项
 
@@ -21,7 +22,7 @@ P2-001 完成。Phase 0-17 全部完成，Phase 14（AI provider 配置骨架）
 
 ## 下一项自动任务
 
-无剩余 todo 任务。
+P2-003 增加后端 Service 层单元测试。
 
 ## 最近验证结果
 
