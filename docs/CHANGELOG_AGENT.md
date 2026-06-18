@@ -1,5 +1,15 @@
 # Agent Changelog
 
+## 2026-06-18 14:27 Asia/Shanghai
+
+- Agent 任务名称：P1-010 实现菜谱管理 CRUD（Phase 8）。
+- 修改文件：`backend/src/main/resources/db/migration/V7__create_recipe.sql`、`backend/src/main/java/com/lifepilot/recipe/**`（Recipe 实体、RecipeMapper、DTOs、RecipeService、RecipeController）、`backend/src/test/java/com/lifepilot/recipe/RecipeControllerTests.java`、`frontend/src/api/recipe.ts`、`frontend/src/views/recipe/RecipeView.vue`、`frontend/src/router/index.ts`、`frontend/src/layouts/AppShell.vue`、`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/CHANGELOG_AGENT.md`、`docs/API_DESIGN.md`。
+- 实现内容：Flyway V7 迁移创建 `recipe` 表（含 household_id、name、description、ingredients_json、steps_json、created_by 字段）；后端 `recipe` 模块实现菜谱 CRUD（POST/GET/PATCH/DELETE `/api/spaces/{spaceId}/recipes`），所有接口需要空间成员权限；前端新增 `recipe.ts` API 客户端、RecipeView.vue（空间选择器 + 菜谱列表表格（名称、描述、食材解析显示、创建日期）+ 创建/编辑对话框（名称、描述、食材 JSON、步骤 JSON）+ 空态/错误态）、路由 `/recipe`、AppShell 导航新增「菜谱」入口（ChefHat 图标）。
+- 测试结果：后端 `./mvnw test` 通过，67 tests passed（含 7 项 RecipeControllerTests：创建+列表、按 ID 查询、更新+删除、非成员权限校验、认证校验、创建校验、404 校验）；前端 `npm run build` 通过（vue-tsc + vite build）；Flyway V1-V7 在 H2 测试数据库迁移通过。
+- 遗留问题：AI 其他端点尚未实现；Phase 11（票据与文件管理）尚未实现。
+- 下一步任务：P1-011 待定。
+- 建议 commit message：`feat(recipe): 实现菜谱管理 CRUD`
+
 ## 2026-06-18 01:08 Asia/Shanghai
 
 - Agent 任务名称：P1-009 实现生活待办 CRUD（Phase 7）。

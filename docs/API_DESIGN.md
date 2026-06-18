@@ -98,6 +98,14 @@
 - `PATCH /api/spaces/{spaceId}/todo-tasks/{id}` ✅
 - `DELETE /api/spaces/{spaceId}/todo-tasks/{id}` ✅
 
+## 菜谱接口 ✅
+
+- `GET /api/spaces/{spaceId}/recipes` ✅
+- `POST /api/spaces/{spaceId}/recipes` ✅
+- `GET /api/spaces/{spaceId}/recipes/{id}` ✅
+- `PATCH /api/spaces/{spaceId}/recipes/{id}` ✅
+- `DELETE /api/spaces/{spaceId}/recipes/{id}` ✅
+
 ## AI 接口
 
 - `POST /api/ai/parse-transaction`
