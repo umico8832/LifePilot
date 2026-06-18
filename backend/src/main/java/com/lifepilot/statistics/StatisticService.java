@@ -24,6 +24,7 @@ import com.lifepilot.shopping.ShoppingListMapper;
 import com.lifepilot.space.HouseholdService;
 import com.lifepilot.todo.TodoTask;
 import com.lifepilot.todo.TodoTaskMapper;
+import com.lifepilot.statistics.dto.FinanceCategoriesResponse;
 import com.lifepilot.statistics.dto.FinanceMonthlyResponse;
 import com.lifepilot.statistics.dto.InventoryStatsResponse;
 import com.lifepilot.statistics.dto.OverviewResponse;
@@ -163,6 +164,67 @@ public class StatisticService {
                 totalIncome.subtract(totalExpense),
                 categories
         );
+    }
+
+    /**
+     * Finance categories breakdown: expense and income grouped by category for a given month.
+     */
+    public FinanceCategoriesResponse getFinanceCategories(Long userId, Long spaceId, int year, int month) {
+        householdService.requireSpaceMembership(userId, spaceId);
+
+        YearMonth ym = YearMonth.of(year, month);
+        LocalDateTime start = ym.atDay(1).atStartOfDay();
+        LocalDateTime end = ym.plusMonths(1).atDay(1).atStartOfDay();
+
+        List<TransactionRecord> records = transactionRecordMapper.selectList(
+                new LambdaQueryWrapper<TransactionRecord>()
+                        .eq(TransactionRecord::getHouseholdId, spaceId)
+                        .ge(TransactionRecord::getOccurredAt, start)
+                        .lt(TransactionRecord::getOccurredAt, end));
+
+        List<TransactionCategory> allCategories = transactionCategoryMapper.selectList(
+                new LambdaQueryWrapper<TransactionCategory>()
+                        .eq(TransactionCategory::getHouseholdId, spaceId));
+        Map<Long, String> categoryNameMap = allCategories.stream()
+                .collect(Collectors.toMap(TransactionCategory::getId, TransactionCategory::getName));
+
+        BigDecimal totalIncome = BigDecimal.ZERO;
+        BigDecimal totalExpense = BigDecimal.ZERO;
+        for (TransactionRecord t : records) {
+            if ("income".equals(t.getType())) {
+                totalIncome = totalIncome.add(t.getAmount());
+            } else if ("expense".equals(t.getType())) {
+                totalExpense = totalExpense.add(t.getAmount());
+            }
+        }
+
+        List<FinanceCategoriesResponse.CategoryDetail> expenseCategories = buildCategoryDetails(
+                records, "expense", categoryNameMap);
+        List<FinanceCategoriesResponse.CategoryDetail> incomeCategories = buildCategoryDetails(
+                records, "income", categoryNameMap);
+
+        return new FinanceCategoriesResponse(year, month, totalIncome, totalExpense,
+                expenseCategories, incomeCategories);
+    }
+
+    private List<FinanceCategoriesResponse.CategoryDetail> buildCategoryDetails(
+            List<TransactionRecord> records, String type, Map<Long, String> categoryNameMap) {
+        Map<Long, List<TransactionRecord>> byCategory = records.stream()
+                .filter(t -> type.equals(t.getType()))
+                .collect(Collectors.groupingBy(TransactionRecord::getCategoryId));
+
+        List<FinanceCategoriesResponse.CategoryDetail> details = new ArrayList<>();
+        for (Map.Entry<Long, List<TransactionRecord>> entry : byCategory.entrySet()) {
+            Long catId = entry.getKey();
+            List<TransactionRecord> catRecords = entry.getValue();
+            BigDecimal catTotal = catRecords.stream()
+                    .map(TransactionRecord::getAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            String catName = catId != null ? categoryNameMap.getOrDefault(catId, "未分类") : "未分类";
+            details.add(new FinanceCategoriesResponse.CategoryDetail(catId, catName, catTotal, catRecords.size()));
+        }
+        details.sort((a, b) -> b.amount().compareTo(a.amount()));
+        return details;
     }
 
     /**

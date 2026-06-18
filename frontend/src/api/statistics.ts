@@ -57,6 +57,33 @@ export async function getFinanceMonthly(
   return res.data.data
 }
 
+export interface CategoryDetail {
+  categoryId: number | null
+  categoryName: string
+  amount: number
+  count: number
+}
+
+export interface FinanceCategoriesResponse {
+  year: number
+  month: number
+  totalIncome: number
+  totalExpense: number
+  expenseCategories: CategoryDetail[]
+  incomeCategories: CategoryDetail[]
+}
+
+export async function getFinanceCategories(
+  spaceId: number,
+  year: number,
+  month: number,
+): Promise<FinanceCategoriesResponse> {
+  const res = await http.get(`/api/spaces/${spaceId}/statistics/finance/categories`, {
+    params: { year, month },
+  })
+  return res.data.data
+}
+
 export async function getInventoryStats(spaceId: number): Promise<InventoryStatsResponse> {
   const res = await http.get(`/api/spaces/${spaceId}/statistics/inventory`)
   return res.data.data

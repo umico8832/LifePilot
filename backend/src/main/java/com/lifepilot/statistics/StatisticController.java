@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.lifepilot.common.ApiResponse;
 import com.lifepilot.common.BusinessException;
 import com.lifepilot.security.CurrentUserPrincipal;
+import com.lifepilot.statistics.dto.FinanceCategoriesResponse;
 import com.lifepilot.statistics.dto.FinanceMonthlyResponse;
 import com.lifepilot.statistics.dto.InventoryStatsResponse;
 import com.lifepilot.statistics.dto.OverviewResponse;
@@ -41,6 +42,16 @@ public class StatisticController {
             @RequestParam int month) {
         requireAuth(principal);
         return ApiResponse.ok(statisticService.getFinanceMonthly(principal.id(), spaceId, year, month));
+    }
+
+    @GetMapping("/finance/categories")
+    public ApiResponse<FinanceCategoriesResponse> financeCategories(
+            @AuthenticationPrincipal CurrentUserPrincipal principal,
+            @PathVariable Long spaceId,
+            @RequestParam int year,
+            @RequestParam int month) {
+        requireAuth(principal);
+        return ApiResponse.ok(statisticService.getFinanceCategories(principal.id(), spaceId, year, month));
     }
 
     @GetMapping("/inventory")
