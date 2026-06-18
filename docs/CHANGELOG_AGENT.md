@@ -1,5 +1,15 @@
 # Agent Changelog
 
+## 2026-06-18 01:08 Asia/Shanghai
+
+- Agent 任务名称：P1-009 实现生活待办 CRUD（Phase 7）。
+- 修改文件：`backend/src/main/resources/db/migration/V6__create_todo_task.sql`、`backend/src/main/java/com/lifepilot/todo/**`（TodoTask 实体、TodoTaskMapper、DTOs、TodoService、TodoController）、`backend/src/test/java/com/lifepilot/todo/TodoControllerTests.java`、`frontend/src/api/todo.ts`、`frontend/src/views/todo/TodoView.vue`、`frontend/src/router/index.ts`、`frontend/src/layouts/AppShell.vue`、`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/CHANGELOG_AGENT.md`。
+- 实现内容：Flyway V6 迁移创建 `todo_task` 表（含 title、description、status、priority、due_at、repeat_rule、assigned_to 字段）；后端 `todo` 模块实现待办任务 CRUD（POST/GET/PATCH/DELETE `/api/spaces/{spaceId}/todo-tasks`），支持按状态筛选（`?status=pending`），状态枚举（pending/in_progress/completed/cancelled）和优先级枚举（low/medium/high/urgent）校验，`TodoResponse` 自动计算 `overdue` 布尔值（pending 状态 + 已过截止日期）；前端新增 `todo.ts` API 客户端、TodoView.vue（空间选择器 + 状态筛选 + 摘要栏 + 待办列表表格 + 状态流转快捷按钮（开始/完成/取消）+ 创建/编辑对话框 + 空态/错误态）、路由 `/todo`、AppShell 导航新增「待办」入口（ListTodo 图标）。
+- 测试结果：后端 `./mvnw test` 通过，60 tests passed（含 7 项 TodoControllerTests：创建+列表、按 ID 查询、更新+删除、按状态筛选、非成员权限校验、认证校验、默认值校验）；前端 `npm run build` 通过（vue-tsc + vite build），TodoView chunk 8.84 kB；Flyway V1-V6 在 H2 测试数据库迁移通过。
+- 遗留问题：AI 其他端点尚未实现；Phase 8（饮食计划）和 Phase 11（票据与文件管理）尚未实现。
+- 下一步任务：P1-010 待定。
+- 建议 commit message：`feat(todo): 实现生活待办 CRUD 和状态流转`
+
 ## 2026-06-18 00:53 Asia/Shanghai
 
 - Agent 任务名称：P1-008 前端视口宽度适配完善。

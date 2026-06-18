@@ -90,13 +90,13 @@
 - `DELETE /api/spaces/{spaceId}/inventory-items/{id}`
 - `GET /api/spaces/{spaceId}/inventory-items/alerts`
 
-## 待办接口
+## 待办接口 ✅
 
-- `GET /api/spaces/{spaceId}/todo-tasks`
-- `POST /api/spaces/{spaceId}/todo-tasks`
-- `PATCH /api/spaces/{spaceId}/todo-tasks/{id}`
-- `DELETE /api/spaces/{spaceId}/todo-tasks/{id}`
-- `POST /api/spaces/{spaceId}/todo-tasks/{id}/complete`
+- `GET /api/spaces/{spaceId}/todo-tasks` ✅（支持 `?status=` 筛选）
+- `POST /api/spaces/{spaceId}/todo-tasks` ✅
+- `GET /api/spaces/{spaceId}/todo-tasks/{id}` ✅
+- `PATCH /api/spaces/{spaceId}/todo-tasks/{id}` ✅
+- `DELETE /api/spaces/{spaceId}/todo-tasks/{id}` ✅
 
 ## AI 接口
 

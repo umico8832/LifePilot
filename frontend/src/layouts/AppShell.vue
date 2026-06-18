@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Home, Receipt, ShoppingCart, Package, LogOut, LayoutGrid } from '@lucide/vue'
+import { Home, Receipt, ShoppingCart, Package, LogOut, LayoutGrid, ListTodo } from '@lucide/vue'
 
 import { useAuthStore } from '@/stores/auth'
 
@@ -24,6 +24,7 @@ const navItems: NavItem[] = [
   { label: '记账', routeName: 'finance', icon: Receipt },
   { label: '购物', routeName: 'shopping', icon: ShoppingCart },
   { label: '库存', routeName: 'inventory', icon: Package },
+  { label: '待办', routeName: 'todo', icon: ListTodo },
 ]
 
 function isActive(name: string) {
