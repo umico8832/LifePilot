@@ -8,8 +8,6 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.springframework.stereotype.Component;
-
 import com.lifepilot.ai.dto.ShoppingDraftResponse;
 import com.lifepilot.ai.dto.TodoDraftResponse;
 import com.lifepilot.ai.dto.TransactionDraftResponse;
@@ -30,7 +28,6 @@ import com.lifepilot.ai.dto.TransactionDraftResponse;
  *   - Category inference is keyword-based, not ML-based
  *   - Dates default to now (no date parsing in mock)
  */
-@Component
 public class MockAiProvider implements AiProvider {
 
     // Pattern: optional_type_hint + optional_merchant + amount + currency_unit

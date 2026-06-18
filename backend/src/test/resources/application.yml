@@ -11,4 +11,14 @@ lifepilot:
   jwt:
     secret: test-secret-with-enough-length
     expiration-minutes: 60
+  ai:
+    provider: mock
+    openai:
+      api-key: ""
+      base-url: https://api.openai.com/v1
+      model: gpt-4o-mini
+      temperature: 0.2
+      max-tokens: 1024
+      timeout-seconds: 30
+      retry-max-attempts: 2
 
