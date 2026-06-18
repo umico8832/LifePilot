@@ -12,6 +12,16 @@ python3 scripts/agent_changelog_archive.py --keep 10
 
 脚本默认保留最近 10 条完整记录，并刷新 `docs/RECENT_HISTORY.md`。
 
+## 2026-06-18 22:32 Asia/Shanghai
+
+- Agent 任务名称：新增 P2 任务并执行 P2-002 CI 增加前端测试步骤。
+- 修改文件：`.github/workflows/ci.yml`、`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/CHANGELOG_AGENT.md`。
+- 实现内容：BACKLOG 新增 P2-002（CI 前端测试）、P2-003（后端 Service 层单元测试）、P2-004（OpenAI provider 代码骨架）；ci.yml 前端 job 在 `npm run build` 步骤前新增 `npm test` 步骤，确保前端 Vitest 测试在每次 CI 提交时自动运行。
+- 测试结果：前端 `npm test` 通过（24 项）；后端 `./mvnw test` 通过（88 项）。
+- 遗留问题：P2-003（后端 Service 层单元测试）和 P2-004（OpenAI provider 代码骨架）尚未实现。
+- 下一步任务：P2-003 增加后端 Service 层单元测试。
+- 建议 commit message：`ci(frontend): CI 前端 job 增加 npm test 步骤`
+
 ## 2026-06-18 22:27 Asia/Shanghai
 
 - Agent 任务名称：P2-001 规划真实 AI provider 配置骨架。
