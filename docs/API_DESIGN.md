@@ -106,6 +106,14 @@
 - `PATCH /api/spaces/{spaceId}/recipes/{id}` ✅
 - `DELETE /api/spaces/{spaceId}/recipes/{id}` ✅
 
+## 文档接口 ✅
+
+- `GET /api/spaces/{spaceId}/documents` ✅（支持 `?type=` 筛选）
+- `POST /api/spaces/{spaceId}/documents` ✅
+- `GET /api/spaces/{spaceId}/documents/{id}` ✅
+- `PATCH /api/spaces/{spaceId}/documents/{id}` ✅
+- `DELETE /api/spaces/{spaceId}/documents/{id}` ✅
+
 ## AI 接口
 
 - `POST /api/ai/parse-transaction`

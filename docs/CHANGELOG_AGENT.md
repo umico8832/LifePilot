@@ -1,5 +1,15 @@
 # Agent Changelog
 
+## 2026-06-18 15:41 Asia/Shanghai
+
+- Agent 任务名称：P1-011 实现票据与文件管理 CRUD（Phase 11）。
+- 修改文件：`backend/src/main/resources/db/migration/V8__create_document_record.sql`、`backend/src/main/java/com/lifepilot/document/**`（DocumentRecord 实体、DocumentRecordMapper、DTOs、DocumentService、DocumentController）、`backend/src/test/java/com/lifepilot/document/DocumentControllerTests.java`、`frontend/src/api/document.ts`、`frontend/src/views/document/DocumentView.vue`、`frontend/src/router/index.ts`、`frontend/src/layouts/AppShell.vue`、`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/CHANGELOG_AGENT.md`、`docs/API_DESIGN.md`。
+- 实现内容：Flyway V8 迁移创建 `document_record` 表（含 title、type、issuer、document_date、expire_at、storage_location、metadata_json 字段）；后端 `document` 模块实现文档 CRUD（POST/GET/PATCH/DELETE `/api/spaces/{spaceId}/documents`），类型校验（invoice/receipt/warranty/contract/manual/certificate/other），支持按类型筛选（`?type=invoice`），`DocumentResponse` 自动计算 `expiringSoon` 布尔值（30 天内到期标识）；前端新增 `document.ts` API 客户端、DocumentView.vue（空间选择器 + 类型筛选 + 摘要栏（总数 + 即将过期数）+ 文档列表表格（类型标签、标题、签发方、文档日期、到期日、存放位置）+ 创建/编辑对话框 + 空态/错误态）、路由 `/document`、AppShell 导航新增「文档」入口（FileText 图标）。
+- 测试结果：后端 `./mvnw test` 通过，74 tests passed（含 7 项 DocumentControllerTests：创建+列表、按 ID 查询、更新+删除、按类型筛选、非成员权限校验、认证校验、无效类型校验）；前端 `npm run build` 通过（vue-tsc + vite build）；Flyway V1-V8 在 H2 测试数据库迁移通过。
+- 遗留问题：AI 其他端点（create-shopping-list-draft、create-todo-draft、monthly-report-draft）尚未实现；更多统计接口（分类统计、库存统计、待办统计）尚未实现。
+- 下一步任务：P1-012 待定。
+- 建议 commit message：`feat(document): 实现票据与文件管理 CRUD`
+
 ## 2026-06-18 14:27 Asia/Shanghai
 
 - Agent 任务名称：P1-010 实现菜谱管理 CRUD（Phase 8）。

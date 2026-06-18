@@ -52,6 +52,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/recipe/RecipeView.vue'),
     meta: { requiresAuth: true },
   },
+  {
+    path: '/document',
+    name: 'document',
+    component: () => import('@/views/document/DocumentView.vue'),
+    meta: { requiresAuth: true },
+  },
 ]
 
 const router = createRouter({
