@@ -36,12 +36,11 @@ Then read task-specific docs:
 3. Read relevant existing code before editing.
 4. Implement the smallest complete change that satisfies the acceptance criteria.
 5. Add or update tests proportional to the risk.
-6. Run required verification:
+6. Run required verification according to `docs/TESTING.md` and `docs/AGENT_GIT_RULES.md`.
 
-```bash
-cd backend && mvn test
-cd frontend && npm run build
-```
+   - Documentation-only tasks can use document/reference checks plus `python3 scripts/agent_doc_check.py`.
+   - Backend, frontend, database, configuration, dependency, build, or runtime behavior changes require the relevant backend/frontend verification.
+   - If any expected verification is skipped, explain why and record the residual risk.
 
 7. Use `lifepilot-webapp-testing` when the task changes meaningful UI or browser behavior.
 8. Update docs:
