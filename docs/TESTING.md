@@ -15,7 +15,9 @@
 ## 前端测试策略
 
 - 构建验证：`npm run build`。
-- 后续增加 Vitest 测试工具函数、Store 和关键组件。
+- 单元测试：`npm test`（Vitest + jsdom 环境）。
+- 覆盖范围：Store 逻辑（auth、space）、HTTP 拦截器行为。
+- 后续扩展：更多 Store、工具函数、关键组件交互测试。
 - 重要表单需要验证空态、错误态和提交状态。
 
 ## API 联调验证
@@ -29,6 +31,7 @@
 ```bash
 cd backend && ./mvnw test
 cd frontend && npm install && npm run build
+cd frontend && npm test
 python3 scripts/agent_changelog_archive.py
 python3 scripts/agent_doc_check.py
 ```
