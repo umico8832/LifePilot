@@ -12,6 +12,21 @@ python3 scripts/agent_changelog_archive.py --keep 10
 
 脚本默认保留最近 10 条完整记录，并刷新 `docs/RECENT_HISTORY.md`。
 
+## 2026-06-19 16:50 Asia/Shanghai P4-005 前端视图层组件测试
+
+- **任务**：P4-005 前端视图层组件测试
+- **改动**：
+  - 新建 `frontend/src/views/__tests__/` 目录
+  - 为 AuthView 新增 13 个组件测试：表单提交、登录/注册模式切换、错误消息显示、重定向逻辑、返回导航
+  - 为 FinanceView 新增 12 个组件测试：无空间状态、数据加载/失败/空态、汇总计算、工具栏按钮、空间选择器
+  - 前端总测试从 66 增长到 91（11 个测试文件）
+  - 更新 `docs/TESTING.md` 覆盖范围描述
+- **验证**：
+  - `cd frontend && npm test`：11 文件 91 tests passed
+  - `cd frontend && npm run build`：通过
+
+---
+
 ## 2026-06-19 15:53 Asia/Shanghai P4-004 购物预算估算功能
 
 - 任务：P4-004 购物预算估算功能
@@ -158,27 +173,3 @@ python3 scripts/agent_changelog_archive.py --keep 10
 
 **文档更新**：
 - `docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/API_DESIGN.md`、`docs/CHANGELOG_AGENT.md`：本条。
-
-## 2026-06-18 23:44 Asia/Shanghai P3-001 前端首页统计图表可视化
-
-**任务**：P3-001 前端首页统计图表可视化
-
-**改动**：
-- 新建 `frontend/src/components/EChart.vue`：通用 ECharts 包装组件，基于 echarts/core tree-shaking 导入（BarChart、LineChart、PieChart + TooltipComponent、LegendComponent、GridComponent、CanvasRenderer），支持 `option` prop 深度监听和窗口 resize 自动适配，组件卸载时 dispose 释放资源。
-- 更新 `frontend/src/views/HomeView.vue`：
-  - 新增 `loadCharts()` 方法，调用 `getFinanceMonthly` 和 `getTodoStats` 获取当月财务分类和待办状态数据。
-  - 新增 3 个 computed 图表 option：`barChartOption`（月度收支概览柱状图）、`pieChartOption`（支出分类饼图）、`todoChartOption`（待办状态饼图）。
-  - 模板新增 charts-section 区域，3 个 chart-card 渲染 EChart 组件。
-  - 新增 chart-grid/chart-card/chart-title 样式，支持响应式布局。
-  - 空数据时图表自动隐藏（computed 返回 null）。
-- 同步规划 P3 阶段任务（P3-001～P3-005）写入 BACKLOG。
-
-**验证**：
-- 后端 `./mvnw test`：118 tests passed，无回归。
-- 前端 `npm test`：24 tests passed，无回归。
-- 前端 `npm run build`：通过，ECharts chunk 超 500kB 警告为已知（ECharts 库本身体积）。
-
-**文档更新**：
-- `docs/BACKLOG.md`：P3-001 标记 done，新增 P3-002～P3-005 任务。
-- `docs/CURRENT_STATE.md`：更新当前阶段和下一项任务。
-- `docs/CHANGELOG_AGENT.md`：本条。

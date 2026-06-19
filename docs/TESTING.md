@@ -19,8 +19,9 @@
 
 - 构建验证：`npm run build`。
 - 单元测试：`npm test`（Vitest + jsdom 环境）。
-- 覆盖范围：Store 逻辑（auth、space）、HTTP 拦截器行为。
-- 后续扩展：更多 Store、工具函数、关键组件交互测试。
+- 覆盖范围：Store 逻辑（auth、space）、HTTP 拦截器行为、API 模块（statistics、shopping、inventory、todo、document、ai）、Vue 组件交互（AuthView、FinanceView）。
+- 组件测试使用 `@vue/test-utils` mount，mock router、store 和 API 层；Element Plus 组件使用轻量 stub。
+- 后续扩展：更多 Store、工具函数、更多页面组件交互测试。
 - 重要表单需要验证空态、错误态和提交状态。
 
 ## API 联调验证
