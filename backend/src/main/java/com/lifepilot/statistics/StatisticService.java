@@ -28,6 +28,7 @@ import com.lifepilot.statistics.dto.FinanceCategoriesResponse;
 import com.lifepilot.statistics.dto.FinanceMonthlyResponse;
 import com.lifepilot.statistics.dto.InventoryStatsResponse;
 import com.lifepilot.statistics.dto.OverviewResponse;
+import com.lifepilot.statistics.dto.ShoppingStatsResponse;
 import com.lifepilot.statistics.dto.TodoStatsResponse;
 
 @Service
@@ -225,6 +226,64 @@ public class StatisticService {
         }
         details.sort((a, b) -> b.amount().compareTo(a.amount()));
         return details;
+    }
+
+    /**
+     * Shopping statistics: list counts by status, item purchase ratio, 30-day trend.
+     */
+    public ShoppingStatsResponse getShoppingStats(Long userId, Long spaceId) {
+        householdService.requireSpaceMembership(userId, spaceId);
+
+        List<ShoppingList> lists = shoppingListMapper.selectList(
+                new LambdaQueryWrapper<ShoppingList>()
+                        .eq(ShoppingList::getHouseholdId, spaceId));
+
+        long activeLists = lists.stream()
+                .filter(l -> !"completed".equals(l.getStatus()) && !"cancelled".equals(l.getStatus()))
+                .count();
+        long completedLists = lists.stream()
+                .filter(l -> "completed".equals(l.getStatus()))
+                .count();
+
+        // Get all shopping items for these lists
+        List<Long> listIds = lists.stream().map(ShoppingList::getId).collect(Collectors.toList());
+        List<ShoppingItem> allItems = new ArrayList<>();
+        if (!listIds.isEmpty()) {
+            allItems = shoppingItemMapper.selectList(
+                    new LambdaQueryWrapper<ShoppingItem>()
+                            .in(ShoppingItem::getShoppingListId, listIds));
+        }
+
+        long purchasedItems = allItems.stream()
+                .filter(item -> Boolean.TRUE.equals(item.getPurchased()))
+                .count();
+
+        // 30-day trend: count lists created per day
+        LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(29).toLocalDate().atStartOfDay();
+        List<ShoppingList> recentLists = lists.stream()
+                .filter(l -> l.getCreatedAt() != null && !l.getCreatedAt().isBefore(thirtyDaysAgo))
+                .collect(Collectors.toList());
+
+        Map<String, Long> dailyCounts = recentLists.stream()
+                .collect(Collectors.groupingBy(
+                        l -> l.getCreatedAt().toLocalDate().toString(),
+                        Collectors.counting()));
+
+        List<ShoppingStatsResponse.DailyTrend> recent30Days = new ArrayList<>();
+        for (int i = 0; i < 30; i++) {
+            String date = thirtyDaysAgo.plusDays(i).toLocalDate().toString();
+            long count = dailyCounts.getOrDefault(date, 0L);
+            recent30Days.add(new ShoppingStatsResponse.DailyTrend(date, count));
+        }
+
+        return new ShoppingStatsResponse(
+                lists.size(),
+                activeLists,
+                completedLists,
+                allItems.size(),
+                purchasedItems,
+                recent30Days
+        );
     }
 
     /**

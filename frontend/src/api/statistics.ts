@@ -89,6 +89,20 @@ export async function getInventoryStats(spaceId: number): Promise<InventoryStats
   return res.data.data
 }
 
+export interface ShoppingStatsResponse {
+  totalLists: number
+  activeLists: number
+  completedLists: number
+  totalItems: number
+  purchasedItems: number
+  recent30Days: Array<{ date: string; count: number }>
+}
+
+export async function getShoppingStats(spaceId: number): Promise<ShoppingStatsResponse> {
+  const res = await http.get(`/api/spaces/${spaceId}/statistics/shopping`)
+  return res.data.data
+}
+
 export async function getTodoStats(spaceId: number): Promise<TodoStatsResponse> {
   const res = await http.get(`/api/spaces/${spaceId}/statistics/todos`)
   return res.data.data

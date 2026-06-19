@@ -14,6 +14,7 @@ import com.lifepilot.statistics.dto.FinanceCategoriesResponse;
 import com.lifepilot.statistics.dto.FinanceMonthlyResponse;
 import com.lifepilot.statistics.dto.InventoryStatsResponse;
 import com.lifepilot.statistics.dto.OverviewResponse;
+import com.lifepilot.statistics.dto.ShoppingStatsResponse;
 import com.lifepilot.statistics.dto.TodoStatsResponse;
 
 @RestController
@@ -52,6 +53,14 @@ public class StatisticController {
             @RequestParam int month) {
         requireAuth(principal);
         return ApiResponse.ok(statisticService.getFinanceCategories(principal.id(), spaceId, year, month));
+    }
+
+    @GetMapping("/shopping")
+    public ApiResponse<ShoppingStatsResponse> shoppingStats(
+            @AuthenticationPrincipal CurrentUserPrincipal principal,
+            @PathVariable Long spaceId) {
+        requireAuth(principal);
+        return ApiResponse.ok(statisticService.getShoppingStats(principal.id(), spaceId));
     }
 
     @GetMapping("/inventory")

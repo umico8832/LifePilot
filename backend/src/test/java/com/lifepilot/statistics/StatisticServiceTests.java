@@ -20,11 +20,14 @@ import com.lifepilot.finance.TransactionRecord;
 import com.lifepilot.finance.TransactionRecordMapper;
 import com.lifepilot.inventory.InventoryItem;
 import com.lifepilot.inventory.InventoryItemMapper;
+import com.lifepilot.shopping.ShoppingItem;
 import com.lifepilot.shopping.ShoppingItemMapper;
+import com.lifepilot.shopping.ShoppingList;
 import com.lifepilot.shopping.ShoppingListMapper;
 import com.lifepilot.space.HouseholdService;
 import com.lifepilot.statistics.dto.InventoryStatsResponse;
 import com.lifepilot.statistics.dto.OverviewResponse;
+import com.lifepilot.statistics.dto.ShoppingStatsResponse;
 import com.lifepilot.statistics.dto.TodoStatsResponse;
 import com.lifepilot.todo.TodoTask;
 import com.lifepilot.todo.TodoTaskMapper;
@@ -203,6 +206,97 @@ class StatisticServiceTests {
         assertEquals(1L, result.completedCount());
         assertEquals(1L, result.cancelledCount());
         assertEquals(1L, result.overdueCount()); // pending with past due date
+    }
+
+    // --- getShoppingStats ---
+
+    @Test
+    void getShoppingStats_empty_returnsZeroes() {
+        when(shoppingListMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of());
+
+        ShoppingStatsResponse result = statisticService.getShoppingStats(USER_ID, SPACE_ID);
+
+        assertEquals(0, result.totalLists());
+        assertEquals(0L, result.activeLists());
+        assertEquals(0L, result.completedLists());
+        assertEquals(0, result.totalItems());
+        assertEquals(0L, result.purchasedItems());
+        assertEquals(30, result.recent30Days().size());
+        assertTrue(result.recent30Days().stream().allMatch(d -> d.count() == 0L));
+    }
+
+    @Test
+    void getShoppingStats_countsByStatus() {
+        ShoppingList active = new ShoppingList();
+        active.setId(1L);
+        active.setStatus("active");
+        active.setCreatedAt(LocalDateTime.now().minusDays(2));
+
+        ShoppingList completed = new ShoppingList();
+        completed.setId(2L);
+        completed.setStatus("completed");
+        completed.setCreatedAt(LocalDateTime.now().minusDays(5));
+
+        ShoppingList cancelled = new ShoppingList();
+        cancelled.setId(3L);
+        cancelled.setStatus("cancelled");
+        cancelled.setCreatedAt(LocalDateTime.now().minusDays(10));
+
+        when(shoppingListMapper.selectList(any(LambdaQueryWrapper.class)))
+                .thenReturn(List.of(active, completed, cancelled));
+
+        ShoppingItem purchasedItem = new ShoppingItem();
+        purchasedItem.setShoppingListId(1L);
+        purchasedItem.setPurchased(true);
+
+        ShoppingItem unpurchasedItem = new ShoppingItem();
+        unpurchasedItem.setShoppingListId(2L);
+        unpurchasedItem.setPurchased(false);
+
+        when(shoppingItemMapper.selectList(any(LambdaQueryWrapper.class)))
+                .thenReturn(List.of(purchasedItem, unpurchasedItem));
+
+        ShoppingStatsResponse result = statisticService.getShoppingStats(USER_ID, SPACE_ID);
+
+        assertEquals(3, result.totalLists());
+        assertEquals(1L, result.activeLists()); // only "active" status (not completed, not cancelled)
+        assertEquals(1L, result.completedLists());
+        assertEquals(2, result.totalItems());
+        assertEquals(1L, result.purchasedItems());
+    }
+
+    @Test
+    void getShoppingStats_30DayTrend() {
+        ShoppingList recent1 = new ShoppingList();
+        recent1.setId(1L);
+        recent1.setStatus("active");
+        recent1.setCreatedAt(LocalDateTime.now().toLocalDate().atStartOfDay());
+
+        ShoppingList recent2 = new ShoppingList();
+        recent2.setId(2L);
+        recent2.setStatus("active");
+        recent2.setCreatedAt(LocalDateTime.now().toLocalDate().atStartOfDay());
+
+        ShoppingList old = new ShoppingList();
+        old.setId(3L);
+        old.setStatus("completed");
+        old.setCreatedAt(LocalDateTime.now().minusDays(60));
+
+        when(shoppingListMapper.selectList(any(LambdaQueryWrapper.class)))
+                .thenReturn(List.of(recent1, recent2, old));
+        when(shoppingItemMapper.selectList(any(LambdaQueryWrapper.class)))
+                .thenReturn(List.of());
+
+        ShoppingStatsResponse result = statisticService.getShoppingStats(USER_ID, SPACE_ID);
+
+        assertEquals(30, result.recent30Days().size());
+        // Today should have 2 lists
+        String today = LocalDateTime.now().toLocalDate().toString();
+        long todayCount = result.recent30Days().stream()
+                .filter(d -> d.date().equals(today))
+                .mapToLong(ShoppingStatsResponse.DailyTrend::count)
+                .sum();
+        assertEquals(2L, todayCount);
     }
 
     @Test

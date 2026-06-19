@@ -12,6 +12,26 @@ python3 scripts/agent_changelog_archive.py --keep 10
 
 脚本默认保留最近 10 条完整记录，并刷新 `docs/RECENT_HISTORY.md`。
 
+## 2026-06-19 11:46 Asia/Shanghai P3-003 实现购物统计接口
+
+**任务**：P3-003 实现购物统计接口
+
+**改动**：
+- 新增 `ShoppingStatsResponse` DTO：返回 `totalLists`、`activeLists`、`completedLists`、`totalItems`、`purchasedItems`、`recent30Days`（30 天每天创建清单数趋势），使用 Java record + 内嵌 `DailyTrend` record。
+- `StatisticService` 新增 `getShoppingStats` 方法：查询空间内所有 `ShoppingList`，按状态统计 active/completed；查询关联 `ShoppingItem` 统计已采购数量；按近 30 天日期聚合每日创建清单数。
+- `StatisticController` 新增 `GET /api/spaces/{spaceId}/statistics/shopping`。
+- 前端 `statistics.ts` 新增 `ShoppingStatsResponse` 类型和 `getShoppingStats` API 方法。
+- `StatisticServiceTests` 新增 3 个测试：空数据返回零值、按状态正确计数（active/completed/cancelled）、30 天趋势正确聚合。
+- `docs/API_DESIGN.md` 为 `/statistics/shopping` 标记 ✅。
+
+**验证**：
+- 后端 `./mvnw test`：121 tests passed，无回归。
+- 前端 `npm run build` + `npm test`：24 tests passed，无回归。
+
+**文档更新**：`BACKLOG.md`、`CURRENT_STATE.md`、`CHANGELOG_AGENT.md`、`API_DESIGN.md`。
+
+---
+
 ## 2026-06-18 23:48 Asia/Shanghai P3-002 实现分类财务统计接口
 
 **任务**：P3-002 实现分类财务统计接口
@@ -150,13 +170,3 @@ python3 scripts/agent_changelog_archive.py --keep 10
 - 遗留问题：无。
 - 下一步任务：P2-001 规划真实 AI provider 配置骨架。
 - 建议 commit message：`test(frontend): 接入 Vitest 并为 auth store、space store 和 http interceptor 增加测试`
-
-## 2026-06-18 21:39 Asia/Shanghai
-
-- Agent 任务名称：升级 Agent 文档为近期历史与机器化工作流。
-- 修改文件：`AGENTS.md`、`agent-skills/lifepilot-auto-dev/SKILL.md`、`agent-skills/lifepilot-doc-coauthoring/SKILL.md`、`agent-skills/lifepilot-backend-module/SKILL.md`、`agent-skills/lifepilot-api-data-contract/SKILL.md`、`docs/AUTO_DEV_PROTOCOL.md`、`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/ROADMAP.md`、`docs/AGENT_GIT_RULES.md`、`docs/AGENT_REVIEW_CHECKLIST.md`、`docs/TESTING.md`、`docs/HANDOFF.md`、`docs/NEXT_CHAT_PROMPT.md`、`docs/DECISION_LOG.md`、`docs/CHANGELOG_AGENT.md`、`docs/RECENT_HISTORY.md`、`docs/changelog/*`、`scripts/agent_changelog_archive.py`、`scripts/agent_doc_check.py`。
-- 实现内容：新增近期历史摘要和自动归档脚本；默认接手从完整 changelog 改为读取 `RECENT_HISTORY`；旧历史自动归档到 `docs/changelog/`；Backlog 开头声明机器化任务格式并为待办任务补充验证命令和完成后更新字段；自主开发协议新增半自主提交模式、分层文档更新规则和更明确停止条件；Git 规则同步自动提交边界和文档检查命令；文档一致性脚本开始检查近期历史和归档说明；相关项目 skills 同步当前状态、历史记录和近期历史的职责边界。
-- 测试结果：`python3 scripts/agent_changelog_archive.py` 通过；`python3 scripts/agent_doc_check.py` 通过；`git diff --check` 通过。
-- 遗留问题：未接入 Git hook；后续框架稳定后再考虑抽成通用模板。
-- 下一步任务：P1-017 增加前端关键测试。
-- 建议 commit message：`docs(agent): 完善 Agent 文档工作流`
