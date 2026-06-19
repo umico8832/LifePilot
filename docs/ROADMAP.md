@@ -163,3 +163,12 @@
 - 数据库任务：V9 创建 meal_plan 表。
 - AI 任务：后续可根据库存和饮食计划生成购物清单建议。
 - 验收标准：用户可在周历视图中规划每周饮食；支持按日期范围查询；导航栏显示"饮食计划"入口。
+
+## Phase 18：智能饮食推荐
+
+- 目标：AI 根据当前库存物品匹配菜谱食材，推荐可用现有食材制作的菜谱。
+- 后端任务：AiProvider 接口新增 `recommendRecipes`、MockAiProvider 关键词匹配评分、OpenAiProvider 委托 Mock、AiService 和 AiController 新增端点。
+- 前端任务：MealPlanView 新增"AI 菜谱推荐"面板（匹配百分比、已匹配/缺失食材、推荐理由、点击填入饮食计划）。
+- 数据库任务：无（使用已有 recipe 和 inventory 表）。
+- AI 任务：mock provider 使用确定性匹配算法，不接真实 AI；后续可替换为真实 LLM 推荐。
+- 验收标准：`GET /api/ai/spaces/{spaceId}/recommend-recipes` 返回推荐列表；前端推荐面板可展示和交互；后端单元测试通过。

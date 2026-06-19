@@ -104,3 +104,21 @@ export async function generateMonthlyReport(spaceId: number, year: number, month
   const res = await http.get(`/api/ai/spaces/${spaceId}/monthly-report`, { params: { year, month } })
   return res.data.data
 }
+
+export interface RecommendedRecipe {
+  recipeId: number
+  recipeName: string
+  matchedIngredients: string[]
+  missingIngredients: string[]
+  matchScore: number
+  reason: string
+}
+
+export interface RecipeRecommendation {
+  recipes: RecommendedRecipe[]
+}
+
+export async function recommendRecipes(spaceId: number): Promise<RecipeRecommendation> {
+  const res = await http.get(`/api/ai/spaces/${spaceId}/recommend-recipes`)
+  return res.data.data
+}

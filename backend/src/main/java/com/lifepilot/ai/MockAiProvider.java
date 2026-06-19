@@ -3,14 +3,22 @@ package com.lifepilot.ai;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lifepilot.ai.dto.RecipeRecommendationResponse;
 import com.lifepilot.ai.dto.ShoppingDraftResponse;
 import com.lifepilot.ai.dto.TodoDraftResponse;
 import com.lifepilot.ai.dto.TransactionDraftResponse;
+import com.lifepilot.inventory.InventoryItem;
+import com.lifepilot.recipe.Recipe;
 
 /**
  * Mock AI provider that parses natural language into transaction drafts
@@ -383,6 +391,119 @@ public class MockAiProvider implements AiProvider {
                 items, needsReview, trimmed,
                 needsReview ? "待办内容解析不确定，请检查后确认。" : null
         );
+    }
+
+    // ---- Recipe recommendation ----
+
+    private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+    private static final TypeReference<List<Map<String, Object>>> INGREDIENTS_TYPE = new TypeReference<>() {};
+
+    @Override
+    public RecipeRecommendationResponse recommendRecipes(List<InventoryItem> inventory, List<Recipe> recipes) {
+        if (recipes == null || recipes.isEmpty()) {
+            return new RecipeRecommendationResponse(List.of());
+        }
+
+        // Build inventory name set (lowercased for matching)
+        List<String> inventoryNames = inventory.stream()
+                .map(InventoryItem::getName)
+                .filter(n -> n != null && !n.isBlank())
+                .map(n -> n.toLowerCase().trim())
+                .collect(Collectors.toList());
+
+        List<RecipeRecommendationResponse.RecommendedRecipe> results = new ArrayList<>();
+
+        for (Recipe recipe : recipes) {
+            List<String> ingredientNames = extractIngredientNames(recipe.getIngredientsJson());
+            if (ingredientNames.isEmpty()) {
+                // Can't evaluate recipes with no ingredients
+                results.add(new RecipeRecommendationResponse.RecommendedRecipe(
+                        recipe.getId(), recipe.getName(),
+                        List.of(), List.of(), 0.0,
+                        "该菜谱没有食材信息"
+                ));
+                continue;
+            }
+
+            List<String> matched = new ArrayList<>();
+            List<String> missing = new ArrayList<>();
+
+            for (String ingredient : ingredientNames) {
+                boolean found = false;
+                String ingLower = ingredient.toLowerCase().trim();
+                for (String invName : inventoryNames) {
+                    // Bidirectional contains match
+                    if (invName.contains(ingLower) || ingLower.contains(invName)) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (found) {
+                    matched.add(ingredient);
+                } else {
+                    missing.add(ingredient);
+                }
+            }
+
+            double score = (double) matched.size() / ingredientNames.size();
+            String reason;
+            if (score >= 1.0) {
+                reason = "所有食材均可在库存中找到";
+            } else if (score >= 0.7) {
+                reason = "大部分食材已有，仅缺少" + missing.size() + "种";
+            } else if (score >= 0.3) {
+                reason = "部分食材可从库存中获取";
+            } else {
+                reason = "所需食材大部分不在库存中";
+            }
+
+            results.add(new RecipeRecommendationResponse.RecommendedRecipe(
+                    recipe.getId(), recipe.getName(),
+                    matched, missing, Math.round(score * 100.0) / 100.0,
+                    reason
+            ));
+        }
+
+        // Sort by score descending, then by missing count ascending
+        results.sort(Comparator
+                .comparingDouble(RecipeRecommendationResponse.RecommendedRecipe::matchScore).reversed()
+                .thenComparingInt(r -> r.missingIngredients().size()));
+
+        return new RecipeRecommendationResponse(results);
+    }
+
+    /**
+     * Parse ingredientsJson to extract ingredient names.
+     * Expected format: JSON array of objects with "name" field, e.g.
+     * [{"name":"鸡蛋","quantity":"2个"}, {"name":"番茄","quantity":"1个"}]
+     * Also supports simpler format: ["鸡蛋", "番茄"]
+     */
+    List<String> extractIngredientNames(String ingredientsJson) {
+        if (ingredientsJson == null || ingredientsJson.isBlank()) {
+            return List.of();
+        }
+        try {
+            List<Map<String, Object>> list = JSON_MAPPER.readValue(ingredientsJson, INGREDIENTS_TYPE);
+            return list.stream()
+                    .map(map -> {
+                        Object name = map.get("name");
+                        return name != null ? name.toString().trim() : null;
+                    })
+                    .filter(n -> n != null && !n.isEmpty())
+                    .collect(Collectors.toList());
+        } catch (JsonProcessingException e) {
+            // Try simpler format: plain string array
+            try {
+                List<String> names = JSON_MAPPER.readValue(ingredientsJson,
+                        new TypeReference<List<String>>() {});
+                return names.stream()
+                        .filter(n -> n != null && !n.isBlank())
+                        .map(String::trim)
+                        .collect(Collectors.toList());
+            } catch (JsonProcessingException e2) {
+                return List.of();
+            }
+        }
     }
 
     /**

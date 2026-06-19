@@ -22,8 +22,11 @@ import com.lifepilot.finance.TransactionCategory;
 import com.lifepilot.finance.TransactionCategoryMapper;
 import com.lifepilot.finance.TransactionRecord;
 import com.lifepilot.finance.TransactionRecordMapper;
+import com.lifepilot.ai.dto.RecipeRecommendationResponse;
 import com.lifepilot.inventory.InventoryItem;
 import com.lifepilot.inventory.InventoryItemMapper;
+import com.lifepilot.recipe.Recipe;
+import com.lifepilot.recipe.RecipeMapper;
 import com.lifepilot.shopping.ShoppingList;
 import com.lifepilot.shopping.ShoppingListMapper;
 import com.lifepilot.space.HouseholdService;
@@ -40,13 +43,15 @@ public class AiService {
     private final InventoryItemMapper inventoryItemMapper;
     private final ShoppingListMapper shoppingListMapper;
     private final TodoTaskMapper todoTaskMapper;
+    private final RecipeMapper recipeMapper;
 
     public AiService(AiProvider aiProvider, HouseholdService householdService,
                      TransactionRecordMapper transactionRecordMapper,
                      TransactionCategoryMapper transactionCategoryMapper,
                      InventoryItemMapper inventoryItemMapper,
                      ShoppingListMapper shoppingListMapper,
-                     TodoTaskMapper todoTaskMapper) {
+                     TodoTaskMapper todoTaskMapper,
+                     RecipeMapper recipeMapper) {
         this.aiProvider = aiProvider;
         this.householdService = householdService;
         this.transactionRecordMapper = transactionRecordMapper;
@@ -54,6 +59,7 @@ public class AiService {
         this.inventoryItemMapper = inventoryItemMapper;
         this.shoppingListMapper = shoppingListMapper;
         this.todoTaskMapper = todoTaskMapper;
+        this.recipeMapper = recipeMapper;
     }
 
     public TransactionDraftResponse parseTransaction(Long userId, Long spaceId, ParseTransactionRequest request) {
@@ -231,5 +237,21 @@ public class AiService {
                 year, month, finance, inventory, shopping, todo,
                 highlights, suggestions, sb.toString()
         );
+    }
+
+    public RecipeRecommendationResponse recommendRecipes(Long userId, Long spaceId) {
+        householdService.requireSpaceMembership(userId, spaceId);
+
+        // Query all inventory items in this space
+        List<InventoryItem> inventoryItems = inventoryItemMapper.selectList(
+                new LambdaQueryWrapper<InventoryItem>()
+                        .eq(InventoryItem::getHouseholdId, spaceId));
+
+        // Query all recipes in this space
+        List<Recipe> recipes = recipeMapper.selectList(
+                new LambdaQueryWrapper<Recipe>()
+                        .eq(Recipe::getHouseholdId, spaceId));
+
+        return aiProvider.recommendRecipes(inventoryItems, recipes);
     }
 }

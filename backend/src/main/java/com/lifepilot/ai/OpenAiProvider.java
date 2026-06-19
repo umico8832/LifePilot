@@ -9,9 +9,12 @@ import org.springframework.web.client.RestClient;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lifepilot.ai.dto.RecipeRecommendationResponse;
 import com.lifepilot.ai.dto.ShoppingDraftResponse;
 import com.lifepilot.ai.dto.TodoDraftResponse;
 import com.lifepilot.ai.dto.TransactionDraftResponse;
+import com.lifepilot.inventory.InventoryItem;
+import com.lifepilot.recipe.Recipe;
 
 /**
  * OpenAI-compatible AI provider that calls a Chat Completions API
@@ -118,6 +121,14 @@ public class OpenAiProvider implements AiProvider {
                 }
                 """;
         return callChatCompletion(systemPrompt, text, TodoDraftResponse.class);
+    }
+
+    @Override
+    public RecipeRecommendationResponse recommendRecipes(List<InventoryItem> inventory, List<Recipe> recipes) {
+        // Recipe recommendation is best done with local deterministic matching.
+        // For OpenAI provider, we delegate to a new MockAiProvider instance.
+        log.info("OpenAI provider: delegating recipe recommendation to local matching algorithm");
+        return new MockAiProvider().recommendRecipes(inventory, recipes);
     }
 
     // ---- Internal helpers ----

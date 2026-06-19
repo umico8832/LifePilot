@@ -1,8 +1,13 @@
 package com.lifepilot.ai;
 
+import java.util.List;
+
+import com.lifepilot.ai.dto.RecipeRecommendationResponse;
 import com.lifepilot.ai.dto.ShoppingDraftResponse;
 import com.lifepilot.ai.dto.TodoDraftResponse;
 import com.lifepilot.ai.dto.TransactionDraftResponse;
+import com.lifepilot.inventory.InventoryItem;
+import com.lifepilot.recipe.Recipe;
 
 /**
  * Interface for AI providers that parse natural language into structured data.
@@ -31,4 +36,11 @@ public interface AiProvider {
      * Returns null if the input cannot be parsed at all.
      */
     TodoDraftResponse parseTodo(String text);
+
+    /**
+     * Recommend recipes based on current inventory.
+     * Returns a list of recommended recipes sorted by match score (descending).
+     * Returns an empty list if no recipes can be recommended.
+     */
+    RecipeRecommendationResponse recommendRecipes(List<InventoryItem> inventory, List<Recipe> recipes);
 }

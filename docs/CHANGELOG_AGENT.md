@@ -12,6 +12,16 @@ python3 scripts/agent_changelog_archive.py --keep 10
 
 脚本默认保留最近 10 条完整记录，并刷新 `docs/RECENT_HISTORY.md`。
 
+## 2026-06-19 20:25 Asia/Shanghai P6-001 AI 根据库存推荐菜谱
+
+- **任务**：P6-001 AI 根据库存推荐菜谱
+- **改动**：
+  - 后端：`AiProvider` 接口新增 `recommendRecipes(List<InventoryItem>, List<Recipe>)` 方法；新增 `RecipeRecommendationResponse` DTO（含 `RecommendedRecipe` 子记录）；`MockAiProvider` 实现确定性关键词匹配评分逻辑（解析 `ingredientsJson` 中食材名称与库存双向包含匹配，按匹配度排序）；`OpenAiProvider` 委托 Mock 实现；`AiService.recommendRecipes()` 查询空间库存和菜谱后委托 provider 计算；`AiController` 新增 `GET /api/ai/spaces/{spaceId}/recommend-recipes` 端点；`AiService` 构造函数新增 `RecipeMapper` 依赖
+  - 前端：`ai.ts` 新增 `RecommendedRecipe`、`RecipeRecommendation` 类型和 `recommendRecipes()` API 方法；`MealPlanView.vue` 新增"AI 菜谱推荐"按钮和推荐面板（匹配百分比进度条、已匹配/缺失食材列表、推荐理由，点击可快速填入饮食计划）
+  - 测试：AiServiceTests 新增 4 个单元测试（`recommendRecipes_returnsProviderRecommendation`、`recommendRecipes_throwsWhenNotMember`、`recommendRecipes_passesInventoryAndRecipesToProvider`、`recommendRecipes_emptyRecipesWhenNoData`）
+- **验证**：`cd backend && ./mvnw test -B -Dtest="AiServiceTests"`：13 tests passed；`cd frontend && npm run build`：通过；`cd frontend && npm test`：91 tests passed
+- **文档更新**：BACKLOG.md、CURRENT_STATE.md、CHANGELOG_AGENT.md、ROADMAP.md
+
 ## 2026-06-19 17:26 Asia/Shanghai P5-001 实现一周饮食计划 CRUD
 
 - **任务**：P5-001 实现一周饮食计划 CRUD
@@ -149,23 +159,3 @@ python3 scripts/agent_changelog_archive.py --keep 10
 - `git diff --check`：通过。
 
 **文档更新**：`docs/API_DESIGN.md`、`docs/CURRENT_STATE.md`、`docs/ROADMAP.md`、`docs/RECENT_HISTORY.md`、`docs/CHANGELOG_AGENT.md`。
-
-## 2026-06-19 11:46 Asia/Shanghai P3-003 实现购物统计接口
-
-**任务**：P3-003 实现购物统计接口
-
-**改动**：
-- 新增 `ShoppingStatsResponse` DTO：返回 `totalLists`、`activeLists`、`completedLists`、`totalItems`、`purchasedItems`、`recent30Days`（30 天每天创建清单数趋势），使用 Java record + 内嵌 `DailyTrend` record。
-- `StatisticService` 新增 `getShoppingStats` 方法：查询空间内所有 `ShoppingList`，按状态统计 active/completed；查询关联 `ShoppingItem` 统计已采购数量；按近 30 天日期聚合每日创建清单数。
-- `StatisticController` 新增 `GET /api/spaces/{spaceId}/statistics/shopping`。
-- 前端 `statistics.ts` 新增 `ShoppingStatsResponse` 类型和 `getShoppingStats` API 方法。
-- `StatisticServiceTests` 新增 3 个测试：空数据返回零值、按状态正确计数（active/completed/cancelled）、30 天趋势正确聚合。
-- `docs/API_DESIGN.md` 为 `/statistics/shopping` 标记 ✅。
-
-**验证**：
-- 后端 `./mvnw test`：121 tests passed，无回归。
-- 前端 `npm run build` + `npm test`：24 tests passed，无回归。
-
-**文档更新**：`BACKLOG.md`、`CURRENT_STATE.md`、`CHANGELOG_AGENT.md`、`API_DESIGN.md`。
-
----

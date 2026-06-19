@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { CalendarDays, AlertCircle, RefreshCw, ChevronLeft, ChevronRight } from '@lucide/vue'
+import { CalendarDays, AlertCircle, RefreshCw, ChevronLeft, ChevronRight, Sparkles } from '@lucide/vue'
 
 import AppShell from '@/layouts/AppShell.vue'
 import { useSpaceStore } from '@/stores/space'
@@ -13,6 +13,7 @@ import {
   deleteMealPlan,
   type MealPlanResponse,
 } from '@/api/mealplan'
+import { recommendRecipes, type RecommendedRecipe } from '@/api/ai'
 
 const spaceStore = useSpaceStore()
 const mealPlans = ref<MealPlanResponse[]>([])
@@ -30,6 +31,10 @@ const mealTypeLabels: Record<string, string> = {
 }
 
 const mealTypeOrder = ['breakfast', 'lunch', 'dinner', 'snack']
+
+const recommendations = ref<RecommendedRecipe[]>([])
+const recommendLoading = ref(false)
+const showRecommendPanel = ref(false)
 
 const form = ref({
   recipeId: null as number | null,
@@ -207,6 +212,46 @@ function isToday(d: Date): boolean {
   const today = new Date()
   return d.toDateString() === today.toDateString()
 }
+
+async function loadRecommendations() {
+  if (!spaceStore.currentSpace) return
+  recommendLoading.value = true
+  showRecommendPanel.value = true
+  try {
+    const result = await recommendRecipes(spaceStore.currentSpace.id)
+    recommendations.value = result.recipes
+  } catch {
+    recommendations.value = []
+    ElMessage.error('获取推荐失败')
+  } finally {
+    recommendLoading.value = false
+  }
+}
+
+function useRecommendation(recipe: RecommendedRecipe) {
+  // Pre-fill the create dialog with the recommended recipe
+  const recipeObj = recipes.value.find(r => r.id === recipe.recipeId)
+  if (recipeObj) {
+    editingId.value = null
+    form.value = {
+      recipeId: recipe.recipeId,
+      plannedDate: formatDateStr(new Date()),
+      mealType: 'lunch',
+      note: `AI 推荐：${recipe.reason}`,
+    }
+    dialogVisible.value = true
+  }
+}
+
+function getScorePercent(score: number): number {
+  return Math.round(score * 100)
+}
+
+function getScoreColor(score: number): string {
+  if (score >= 0.7) return 'var(--el-color-success, #67c23a)'
+  if (score >= 0.3) return 'var(--el-color-warning, #e6a23c)'
+  return 'var(--el-color-danger, #f56c6c)'
+}
 </script>
 
 <template>
@@ -253,6 +298,56 @@ function isToday(d: Date): boolean {
 
       <!-- Calendar view -->
       <template v-else>
+        <!-- AI Recommend button -->
+        <div class="recommend-bar">
+          <el-button type="primary" :loading="recommendLoading" @click="loadRecommendations">
+            <Sparkles :size="14" style="margin-right: 4px" />
+            AI 菜谱推荐
+          </el-button>
+          <span class="recommend-hint">根据库存推荐可制作的菜谱</span>
+        </div>
+
+        <!-- Recommendation panel -->
+        <div v-if="showRecommendPanel" class="recommend-panel">
+          <div v-if="recommendLoading" class="recommend-loading">
+            <el-icon class="is-loading"><RefreshCw :size="16" /></el-icon>
+            正在分析库存和菜谱…
+          </div>
+          <div v-else-if="recommendations.length === 0" class="recommend-empty">
+            暂无推荐。请先添加库存物品和菜谱。
+          </div>
+          <div v-else class="recommend-list">
+            <div
+              v-for="rec in recommendations"
+              :key="rec.recipeId"
+              class="recommend-item"
+              @click="useRecommendation(rec)"
+            >
+              <div class="recommend-item-header">
+                <span class="recommend-name">{{ rec.recipeName }}</span>
+                <span class="recommend-score" :style="{ color: getScoreColor(rec.matchScore) }">
+                  {{ getScorePercent(rec.matchScore) }}% 匹配
+                </span>
+              </div>
+              <div class="recommend-bar-visual">
+                <div
+                  class="recommend-bar-fill"
+                  :style="{ width: getScorePercent(rec.matchScore) + '%', background: getScoreColor(rec.matchScore) }"
+                />
+              </div>
+              <div class="recommend-detail">
+                <span v-if="rec.matchedIngredients.length > 0" class="recommend-matched">
+                  ✓ {{ rec.matchedIngredients.join('、') }}
+                </span>
+                <span v-if="rec.missingIngredients.length > 0" class="recommend-missing">
+                  ✗ {{ rec.missingIngredients.join('、') }}
+                </span>
+              </div>
+              <div class="recommend-reason">{{ rec.reason }}</div>
+            </div>
+          </div>
+        </div>
+
         <div class="week-nav">
           <el-button text @click="prevWeek"><ChevronLeft :size="18" /></el-button>
           <el-button text @click="thisWeek">本周</el-button>
@@ -538,5 +633,113 @@ function isToday(d: Date): boolean {
   font-size: 13px;
   color: var(--color-muted, #888);
   margin: 0 0 16px;
+}
+
+.recommend-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.recommend-hint {
+  font-size: 13px;
+  color: var(--color-muted, #888);
+}
+
+.recommend-panel {
+  background: var(--el-fill-color-blank, #fff);
+  border: 1px solid var(--el-border-color-light, #e4e7ed);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.recommend-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-muted, #888);
+  font-size: 14px;
+  padding: 12px 0;
+}
+
+.recommend-empty {
+  color: var(--color-muted, #888);
+  font-size: 14px;
+  padding: 12px 0;
+  text-align: center;
+}
+
+.recommend-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.recommend-item {
+  padding: 12px;
+  border: 1px solid var(--el-border-color-lighter, #ebeef5);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.recommend-item:hover {
+  border-color: var(--el-color-primary, #409eff);
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.1);
+}
+
+.recommend-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.recommend-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--color-text, #333);
+}
+
+.recommend-score {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.recommend-bar-visual {
+  height: 4px;
+  background: var(--el-fill-color-light, #f5f7fa);
+  border-radius: 2px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+.recommend-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+
+.recommend-detail {
+  font-size: 12px;
+  line-height: 1.6;
+  margin-bottom: 4px;
+}
+
+.recommend-matched {
+  color: var(--el-color-success, #67c23a);
+  display: block;
+}
+
+.recommend-missing {
+  color: var(--el-color-danger, #f56c6c);
+  display: block;
+}
+
+.recommend-reason {
+  font-size: 12px;
+  color: var(--color-muted, #888);
 }
 </style>

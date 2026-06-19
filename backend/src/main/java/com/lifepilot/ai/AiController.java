@@ -13,6 +13,7 @@ import com.lifepilot.ai.dto.MonthlyReportResponse;
 import com.lifepilot.ai.dto.ParseShoppingRequest;
 import com.lifepilot.ai.dto.ParseTodoRequest;
 import com.lifepilot.ai.dto.ParseTransactionRequest;
+import com.lifepilot.ai.dto.RecipeRecommendationResponse;
 import com.lifepilot.ai.dto.ShoppingDraftResponse;
 import com.lifepilot.ai.dto.TodoDraftResponse;
 import com.lifepilot.ai.dto.TransactionDraftResponse;
@@ -75,5 +76,15 @@ public class AiController {
             throw new BusinessException("UNAUTHORIZED", "Authentication required");
         }
         return ApiResponse.ok(aiService.generateMonthlyReport(principal.id(), spaceId, year, month));
+    }
+
+    @GetMapping("/spaces/{spaceId}/recommend-recipes")
+    public ApiResponse<RecipeRecommendationResponse> recommendRecipes(
+            @AuthenticationPrincipal CurrentUserPrincipal principal,
+            @PathVariable Long spaceId) {
+        if (principal == null) {
+            throw new BusinessException("UNAUTHORIZED", "Authentication required");
+        }
+        return ApiResponse.ok(aiService.recommendRecipes(principal.id(), spaceId));
     }
 }

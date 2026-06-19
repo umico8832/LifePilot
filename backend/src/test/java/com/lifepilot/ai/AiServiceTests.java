@@ -19,10 +19,14 @@ import com.lifepilot.ai.dto.ParseTransactionRequest;
 import com.lifepilot.ai.dto.ShoppingDraftResponse;
 import com.lifepilot.ai.dto.TodoDraftResponse;
 import com.lifepilot.ai.dto.TransactionDraftResponse;
+import com.lifepilot.ai.dto.RecipeRecommendationResponse;
 import com.lifepilot.common.BusinessException;
 import com.lifepilot.finance.TransactionCategoryMapper;
 import com.lifepilot.finance.TransactionRecordMapper;
+import com.lifepilot.inventory.InventoryItem;
 import com.lifepilot.inventory.InventoryItemMapper;
+import com.lifepilot.recipe.Recipe;
+import com.lifepilot.recipe.RecipeMapper;
 import com.lifepilot.shopping.ShoppingListMapper;
 import com.lifepilot.space.HouseholdService;
 import com.lifepilot.todo.TodoTaskMapper;
@@ -44,6 +48,8 @@ class AiServiceTests {
     private ShoppingListMapper shoppingListMapper;
     @Mock
     private TodoTaskMapper todoTaskMapper;
+    @Mock
+    private RecipeMapper recipeMapper;
 
     @InjectMocks
     private AiService aiService;
@@ -161,5 +167,69 @@ class AiServiceTests {
 
         assertThrows(BusinessException.class, () ->
                 aiService.parseTodo(USER_ID, SPACE_ID, new ParseTodoRequest("test")));
+    }
+
+    // --- recommendRecipes ---
+
+    @Test
+    void recommendRecipes_returnsProviderRecommendation() {
+        RecipeRecommendationResponse expected = new RecipeRecommendationResponse(
+                java.util.List.of());
+        when(aiProvider.recommendRecipes(anyList(), anyList())).thenReturn(expected);
+
+        RecipeRecommendationResponse result = aiService.recommendRecipes(USER_ID, SPACE_ID);
+
+        assertNotNull(result);
+        assertTrue(result.recipes().isEmpty());
+        verify(householdService).requireSpaceMembership(USER_ID, SPACE_ID);
+        verify(inventoryItemMapper).selectList(any());
+        verify(recipeMapper).selectList(any());
+    }
+
+    @Test
+    void recommendRecipes_throwsWhenNotMember() {
+        doThrow(new BusinessException("FORBIDDEN", "not a member"))
+                .when(householdService).requireSpaceMembership(USER_ID, SPACE_ID);
+
+        assertThrows(BusinessException.class, () ->
+                aiService.recommendRecipes(USER_ID, SPACE_ID));
+    }
+
+    @Test
+    void recommendRecipes_passesInventoryAndRecipesToProvider() {
+        InventoryItem item = new InventoryItem();
+        item.setName("鸡蛋");
+        Recipe recipe = new Recipe();
+        recipe.setName("番茄炒蛋");
+        recipe.setIngredientsJson("[{\"name\":\"鸡蛋\",\"quantity\":\"2个\"},{\"name\":\"番茄\",\"quantity\":\"1个\"}]");
+
+        when(inventoryItemMapper.selectList(any())).thenReturn(java.util.List.of(item));
+        when(recipeMapper.selectList(any())).thenReturn(java.util.List.of(recipe));
+
+        RecipeRecommendationResponse response = new RecipeRecommendationResponse(
+                java.util.List.of(new RecipeRecommendationResponse.RecommendedRecipe(
+                        1L, "番茄炒蛋",
+                        java.util.List.of("鸡蛋"), java.util.List.of("番茄"),
+                        0.5, "部分食材可从库存中获取")));
+        when(aiProvider.recommendRecipes(anyList(), anyList())).thenReturn(response);
+
+        RecipeRecommendationResponse result = aiService.recommendRecipes(USER_ID, SPACE_ID);
+
+        assertEquals(1, result.recipes().size());
+        assertEquals("番茄炒蛋", result.recipes().get(0).recipeName());
+        verify(aiProvider).recommendRecipes(anyList(), anyList());
+    }
+
+    @Test
+    void recommendRecipes_emptyRecipesWhenNoData() {
+        when(inventoryItemMapper.selectList(any())).thenReturn(java.util.List.of());
+        when(recipeMapper.selectList(any())).thenReturn(java.util.List.of());
+
+        RecipeRecommendationResponse expected = new RecipeRecommendationResponse(java.util.List.of());
+        when(aiProvider.recommendRecipes(anyList(), anyList())).thenReturn(expected);
+
+        RecipeRecommendationResponse result = aiService.recommendRecipes(USER_ID, SPACE_ID);
+
+        assertTrue(result.recipes().isEmpty());
     }
 }
