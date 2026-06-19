@@ -2,9 +2,12 @@
 
 ## 后端单元测试策略
 
-- Service 层测试业务规则。
+- Service 层测试业务规则（Mockito 单元测试，mock Mapper 和 HouseholdService）。
+- 已覆盖 Service：AiService、StatisticService、TransactionService、ShoppingService、InventoryService、TodoService、RecipeService、DocumentService。
+- 测试用例覆盖正常路径和异常路径：NOT_FOUND、wrongSpace、invalidType、invalidPriority、nonMember。
 - Utility 和 mapper helper 测试边界输入。
 - Security 相关测试 token、权限和异常路径。
+- 注：MyBatis-Plus BaseMapper 方法存在重载歧义，Mockito 测试需使用 `(EntityType) any()` 显式类型转换。
 
 ## 后端集成测试策略
 

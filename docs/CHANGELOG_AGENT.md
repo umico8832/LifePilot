@@ -12,6 +12,24 @@ python3 scripts/agent_changelog_archive.py --keep 10
 
 脚本默认保留最近 10 条完整记录，并刷新 `docs/RECENT_HISTORY.md`。
 
+## 2026-06-19 12:34 Asia/Shanghai P3-004 后端 Service 层补充测试
+
+**任务**：P3-004 后端 Service 层补充测试
+
+**改动**：
+- 新增 `TransactionServiceTests`（12 用例）：覆盖 create 默认值、create 显式类型货币、非成员拒绝、list 正常和空、get 存在/不存在/错误空间、update 正常/不存在、delete 正常/不存在。
+- 新增 `ShoppingServiceTests`（13 用例）：覆盖 createList、listLists、getList 存在/不存在/错误空间/含子项、updateList、deleteList 正常/不存在、addItem、updateItem 不存在/错误清单、deleteItem 正常/不存在。
+- 新增 `InventoryServiceTests`（12 用例）：覆盖 createItem 正常/默认数量/非成员、listItems 正常/空、getItem 存在/不存在/错误空间、updateItem 正常/不存在、deleteItem 正常/不存在。
+- 新增 `TodoServiceTests`（15 用例）：覆盖 createTask 默认优先级/显式优先级/无效优先级/非成员、listTasks 无筛选/有筛选、getTask 存在/不存在/错误空间、updateTask 正常/无效状态/无效优先级/不存在、deleteTask 正常/不存在。
+- 新增 `RecipeServiceTests`（11 用例）：覆盖 createRecipe 正常/非成员、listRecipes 正常/空、getRecipe 存在/不存在/错误空间、updateRecipe 正常/不存在、deleteRecipe 正常/不存在。
+- 新增 `DocumentServiceTests`（14 用例）：覆盖 createDocument 正常/无效类型/非成员、listDocuments 正常/类型筛选/空、getDocument 存在/不存在/错误空间、updateDocument 正常/无效类型/不存在、deleteDocument 正常/不存在。
+- 使用 `(EntityType) any()` 显式类型转换解决 MyBatis-Plus BaseMapper 方法重载歧义。
+
+**验证**：
+- `cd backend && ./mvnw test -B`：通过，198 tests passed（原 121 + 新增 77）。
+- `python3 scripts/agent_changelog_archive.py`：通过。
+- `python3 scripts/agent_doc_check.py`：通过。
+
 ## 2026-06-19 12:18 Asia/Shanghai 修复 Agent 文档漂移检查和历史摘要生成
 
 **任务**：修复 Agent 文档漂移检查和历史摘要生成
@@ -161,13 +179,3 @@ feat(ai): 实现 OpenAI provider 代码骨架和条件注入
 - 遗留问题：P2-003（后端 Service 层单元测试）和 P2-004（OpenAI provider 代码骨架）尚未实现。
 - 下一步任务：P2-003 增加后端 Service 层单元测试。
 - 建议 commit message：`ci(frontend): CI 前端 job 增加 npm test 步骤`
-
-## 2026-06-18 22:27 Asia/Shanghai
-
-- Agent 任务名称：P2-001 规划真实 AI provider 配置骨架。
-- 修改文件：`docs/ARCHITECTURE.md`、`docs/API_DESIGN.md`、`docs/DECISION_LOG.md`、`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/CHANGELOG_AGENT.md`。
-- 实现内容：ARCHITECTURE.md AI Provider 设计章节大幅扩展——新增 Provider 接口与当前实现（3 个解析方法 + 月报聚合）、Provider 切换策略表（mock/openai）和 Spring 条件注入说明、OpenAI-compatible Provider YAML 配置模板（api-key/base-url/model/temperature/max-tokens/timeout-seconds/retry-max-attempts）、6 条安全边界（API Key 不入代码、Mock 回退、请求超时和重试、输出结构化、日志脱敏、费用控制）、4 项扩展点；API_DESIGN.md 新增 AI Provider 配置环境变量表（8 个变量含默认值和说明）+ Mock 回退机制说明 + 安全规则；DECISION_LOG.md 新增 provider 配置骨架决策条目。
-- 测试结果：纯文档任务，跳过后端测试和前端构建验证；`python3 scripts/agent_changelog_archive.py` 通过；`python3 scripts/agent_doc_check.py` 通过；`git diff --check` 通过。
-- 遗留问题：P2 backlog 已清空，无更多 todo 任务。
-- 下一步任务：待定（可新增 P2 任务继续开发）。
-- 建议 commit message：`docs(ai): 规划 OpenAI-compatible provider 配置骨架和安全边界`

@@ -5,11 +5,11 @@
 
 ## 最近完成
 
+- 2026-06-19 12:34 Asia/Shanghai P3-004 后端 Service 层补充测试：P3-004 后端 Service 层补充测试；验证：`cd backend && ./mvnw test -B`：通过，198 tests passed（原 121 + 新增 77）。；`python3 scripts/agent_changelog_archive.py`：通过。；`python3 scripts/agent_doc_check.py`：通过
 - 2026-06-19 12:18 Asia/Shanghai 修复 Agent 文档漂移检查和历史摘要生成：修复 Agent 文档漂移检查和历史摘要生成；验证：`python3 -m py_compile scripts/agent_changelog_archive.py scripts/agent_doc_check.py`：通过。；`python3 scripts/agent_changelog_archive.py`：通过，RECENT_HISTORY 已重新生成且无占位符。；`python3 scripts/agent_doc_check.py`：通过。；`git diff --check`：通过
 - 2026-06-19 11:46 Asia/Shanghai P3-003 实现购物统计接口：P3-003 实现购物统计接口；验证：后端 `./mvnw test`：121 tests passed，无回归。；前端 `npm run build` + `npm test`：24 tests passed，无回归
 - 2026-06-18 23:48 Asia/Shanghai P3-002 实现分类财务统计接口：P3-002 实现分类财务统计接口；验证：后端 `./mvnw test`：118 tests passed，无回归。；前端 `npm run build` + `npm test`：24 tests passed，无回归
 - 2026-06-18 23:44 Asia/Shanghai P3-001 前端首页统计图表可视化：P3-001 前端首页统计图表可视化；验证：后端 `./mvnw test`：118 tests passed，无回归。；前端 `npm test`：24 tests passed，无回归。；前端 `npm run build`：通过，ECharts chunk 超 500kB 警告为已知（ECharts 库本身体积）
-- 2026-06-18 23:28 Asia/Shanghai P2-004 实现 OpenAI provider 代码骨架：P2-004 实现 OpenAI provider 代码骨架；验证：后端 `./mvnw test`：118 tests passed；前端 `npm run build`：通过（vue-tsc + vite build）
 
 ## 维护规则
 
