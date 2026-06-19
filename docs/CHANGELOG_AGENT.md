@@ -12,6 +12,35 @@ python3 scripts/agent_changelog_archive.py --keep 10
 
 脚本默认保留最近 10 条完整记录，并刷新 `docs/RECENT_HISTORY.md`。
 
+## 2026-06-19 15:30 Asia/Shanghai P4-002 库存临期和缺货提醒逻辑
+
+- 任务：P4-002 库存临期和缺货提醒逻辑
+- 改动：
+  - 后端：新增 `InventoryAlertsResponse` DTO（含 `AlertItem` 内嵌 record）；`StatisticService.getInventoryAlerts` 方法查询 7 天内临期物品和低库存物品（quantity ≤ threshold）；`StatisticController` 新增 `GET /api/spaces/{spaceId}/statistics/inventory/alerts` 端点；`StatisticServiceTests` 新增 5 个测试用例覆盖空数据、临期物品、低库存物品、混合提醒和已过期物品排除
+  - 前端：`statistics.ts` 新增 `InventoryAlertsResponse`/`InventoryAlertItem` 类型和 `getInventoryAlerts` API 方法，修复 `CategoryCount` 类型缺失和 `ApiResponse` 导入问题；`HomeView` 集成库存提醒卡片列表（expiring/low_stock 双类型，含 badge、详情、响应式布局）
+
+**验证**：
+- `cd backend && ./mvnw test -B`：215 tests passed（原 210 新增 5）
+- `cd frontend && npm test`：66 tests passed
+- `cd frontend && npm run build`：通过
+
+**状态**：done
+
+## 2026-06-19 15:10 Asia/Shanghai P4-001 实现用户个人资料编辑
+
+- 任务：P4-001 实现用户个人资料编辑
+- 改动：
+  - 后端：新增 `ProfileUpdateRequest` DTO（含 Jakarta Validation）；`UserService.updateProfile` 方法支持 displayName 和 avatarUrl 更新、trim 和置空处理；`UserController` 新增 `PUT /api/users/me` 端点
+  - 前端：`auth.ts` 新增 `updateProfile` API 函数；`auth` store 新增 `updateProfile` action；新建 `ProfileView.vue` 个人设置页面（头像预览、表单编辑、成功/错误提示）；路由和导航栏注册"设置"入口（Settings 图标）
+  - 测试：新增 `UserServiceTests`（12 用例）覆盖 updateProfile 正常路径、异常路径、trim/置空逻辑、requireById 和 findByEmail
+
+**验证**：
+- `cd backend && ./mvnw test -B`：210 tests passed（原 198 新增 12）
+- `cd frontend && npm test`：66 tests passed
+- `cd frontend && npm run build`：通过
+
+**状态**：done
+
 ## 2026-06-19 14:50 Asia/Shanghai P3-005 前端 API 层测试补充
 
 - 任务：P3-005 前端 API 层测试补充
@@ -19,8 +48,11 @@ python3 scripts/agent_changelog_archive.py --keep 10
   - 新增 6 个 API 测试文件：`statistics.test.ts`（7 tests）、`shopping.test.ts`（9 tests）、`inventory.test.ts`（7 tests）、`todo.test.ts`（7 tests）、`document.test.ts`（7 tests）、`ai.test.ts`（5 tests）
   - 覆盖所有 API 模块的请求路径、参数传递、响应处理和错误传播
   - 使用 vitest 的 `vi.mock` mock `http` 模块，避免真实网络请求
-- 验证：`cd frontend && npm test`：9 文件 66 tests passed（原 24 新增 42）；`cd frontend && npm run build`：通过
-- 状态：done
+**验证**：
+- `cd frontend && npm test`：9 文件 66 tests passed（原 24 新增 42）
+- `cd frontend && npm run build`：通过
+
+**状态**：done
 
 ## 2026-06-19 12:34 Asia/Shanghai P3-004 后端 Service 层补充测试
 
@@ -159,23 +191,3 @@ feat(ai): 实现 OpenAI provider 代码骨架和条件注入
 - 遗留问题：P2-004（OpenAI provider 代码骨架）尚未实现。
 - 下一步任务：P2-004 实现 OpenAI provider 代码骨架。
 - 建议 commit message：`test(backend): 增加 AiService 和 StatisticService 单元测试`
-
-## 2026-06-18 22:53 Asia/Shanghai
-
-- Agent 任务名称：修复 changelog 归档排序并明确决策日志职责。
-- 修改文件：`scripts/agent_changelog_archive.py`、`docs/DECISION_LOG.md`、`docs/CHANGELOG_AGENT.md`、`docs/RECENT_HISTORY.md`、`docs/changelog/2026-06.md`。
-- 实现内容：归档脚本新增条目时间解析和倒序排序；每次运行都会规范化已有 `docs/changelog/*.md` 归档文件；`docs/changelog/2026-06.md` 重新生成为按时间倒序；Decision Log 顶部补充职责边界，明确只记录长期决策和原因，不记录普通开发流水。
-- 测试结果：`python3 scripts/agent_changelog_archive.py` 通过；`python3 -m py_compile scripts/agent_changelog_archive.py scripts/agent_doc_check.py` 通过；`python3 scripts/agent_doc_check.py` 通过；`git diff --check` 通过；后端 `mvn test` 通过，88 tests passed；前端 `npm run build` 通过。
-- 遗留问题：无。
-- 下一步任务：P2-003 增加后端 Service 层单元测试。
-- 建议 commit message：`docs(agent): 完善提交说明和历史归档规则`
-
-## 2026-06-18 22:37 Asia/Shanghai
-
-- Agent 任务名称：完善 Commit Message 详细度规则。
-- 修改文件：`docs/AGENT_GIT_RULES.md`、`docs/AGENT_REVIEW_CHECKLIST.md`、`docs/DECISION_LOG.md`、`docs/CHANGELOG_AGENT.md`。
-- 实现内容：Git 规则新增按提交复杂度决定 message body 的规范；小提交允许一行，中型提交建议使用 3-5 条中文 bullet，大型提交必须写中文 bullet body；新增中大型提交示例；自审清单增加 commit body 检查项；决策日志记录该规则的原因。
-- 测试结果：`python3 scripts/agent_changelog_archive.py` 通过；`python3 scripts/agent_doc_check.py` 通过；`git diff --check` 通过。
-- 遗留问题：未自动 amend 既有提交，避免改写最新历史。
-- 下一步任务：P2-003 增加后端 Service 层单元测试。
-- 建议 commit message：`docs(git): 完善提交信息详细度规则`

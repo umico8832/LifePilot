@@ -5,11 +5,11 @@
 
 ## 最近完成
 
-- 2026-06-19 14:50 Asia/Shanghai P3-005 前端 API 层测试补充：P3-005 前端 API 层测试补充；验证：未记录验证
+- 2026-06-19 15:30 Asia/Shanghai P4-002 库存临期和缺货提醒逻辑：P4-002 库存临期和缺货提醒逻辑；验证：`cd backend && ./mvnw test -B`：215 tests passed（原 210 新增 5）；`cd frontend && npm test`：66 tests passed；`cd frontend && npm run build`：通过
+- 2026-06-19 15:10 Asia/Shanghai P4-001 实现用户个人资料编辑：P4-001 实现用户个人资料编辑；验证：`cd backend && ./mvnw test -B`：210 tests passed（原 198 新增 12）；`cd frontend && npm test`：66 tests passed；`cd frontend && npm run build`：通过
+- 2026-06-19 14:50 Asia/Shanghai P3-005 前端 API 层测试补充：P3-005 前端 API 层测试补充；验证：`cd frontend && npm test`：9 文件 66 tests passed（原 24 新增 42）；`cd frontend && npm run build`：通过
 - 2026-06-19 12:34 Asia/Shanghai P3-004 后端 Service 层补充测试：P3-004 后端 Service 层补充测试；验证：`cd backend && ./mvnw test -B`：通过，198 tests passed（原 121 + 新增 77）。；`python3 scripts/agent_changelog_archive.py`：通过。；`python3 scripts/agent_doc_check.py`：通过
 - 2026-06-19 12:18 Asia/Shanghai 修复 Agent 文档漂移检查和历史摘要生成：修复 Agent 文档漂移检查和历史摘要生成；验证：`python3 -m py_compile scripts/agent_changelog_archive.py scripts/agent_doc_check.py`：通过。；`python3 scripts/agent_changelog_archive.py`：通过，RECENT_HISTORY 已重新生成且无占位符。；`python3 scripts/agent_doc_check.py`：通过。；`git diff --check`：通过
-- 2026-06-19 11:46 Asia/Shanghai P3-003 实现购物统计接口：P3-003 实现购物统计接口；验证：后端 `./mvnw test`：121 tests passed，无回归。；前端 `npm run build` + `npm test`：24 tests passed，无回归
-- 2026-06-18 23:48 Asia/Shanghai P3-002 实现分类财务统计接口：P3-002 实现分类财务统计接口；验证：后端 `./mvnw test`：118 tests passed，无回归。；前端 `npm run build` + `npm test`：24 tests passed，无回归
 
 ## 维护规则
 
