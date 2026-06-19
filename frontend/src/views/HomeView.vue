@@ -184,6 +184,33 @@ const todoChartOption = computed(() => {
   }
 })
 
+const todoTrendOption = computed(() => {
+  if (!todoStats.value || !todoStats.value.recent30Days || todoStats.value.recent30Days.length === 0) return null
+  const trend = todoStats.value.recent30Days
+  return {
+    tooltip: { trigger: 'axis' as const },
+    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+    xAxis: {
+      type: 'category' as const,
+      data: trend.map((d) => d.date.slice(5)), // MM-DD
+      axisLabel: { rotate: 45, fontSize: 10 },
+    },
+    yAxis: { type: 'value' as const, minInterval: 1 },
+    series: [
+      {
+        type: 'bar' as const,
+        data: trend.map((d) => d.count),
+        itemStyle: { color: '#16a34a', borderRadius: [4, 4, 0, 0] },
+      },
+    ],
+  }
+})
+
+const todoCompletionPercent = computed(() => {
+  if (!todoStats.value) return 0
+  return Math.round(todoStats.value.completionRate * 100)
+})
+
 async function handleGenerateReport() {
   if (!spaceStore.currentSpace) return
   const now = new Date()
@@ -334,6 +361,34 @@ onMounted(async () => {
         <div v-if="todoChartOption" class="chart-card">
           <h3 class="chart-title">✅ 待办状态分布</h3>
           <EChart :option="todoChartOption" height="260px" />
+        </div>
+        <div v-if="todoStats && todoStats.totalCount > 0" class="chart-card">
+          <h3 class="chart-title">📈 待办完成率</h3>
+          <div class="completion-rate-display">
+            <div class="completion-ring">
+              <svg viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="52" fill="none" stroke="#e5e7eb" stroke-width="10" />
+                <circle
+                  cx="60" cy="60" r="52" fill="none"
+                  stroke="#16a34a" stroke-width="10"
+                  stroke-linecap="round"
+                  :stroke-dasharray="`${todoCompletionPercent * 3.267} 326.7`"
+                  transform="rotate(-90 60 60)"
+                />
+              </svg>
+              <span class="completion-percent">{{ todoCompletionPercent }}%</span>
+            </div>
+            <div class="completion-details">
+              <p class="completion-detail-item"><span class="dot completed"></span> 已完成 {{ todoStats.completedCount }}</p>
+              <p class="completion-detail-item"><span class="dot pending"></span> 待处理 {{ todoStats.pendingCount }}</p>
+              <p class="completion-detail-item"><span class="dot in-progress"></span> 进行中 {{ todoStats.inProgressCount }}</p>
+              <p v-if="todoStats.overdueCount > 0" class="completion-detail-item"><span class="dot overdue"></span> 逾期 {{ todoStats.overdueCount }}</p>
+            </div>
+          </div>
+        </div>
+        <div v-if="todoTrendOption" class="chart-card">
+          <h3 class="chart-title">📅 近 30 天待办完成趋势</h3>
+          <EChart :option="todoTrendOption" height="260px" />
         </div>
       </div>
     </section>
@@ -589,6 +644,75 @@ onMounted(async () => {
   .chart-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* ---- Completion rate display ---- */
+
+.completion-rate-display {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 8px 0;
+}
+
+.completion-ring {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  flex-shrink: 0;
+}
+
+.completion-ring svg {
+  width: 100%;
+  height: 100%;
+}
+
+.completion-percent {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 24px;
+  font-weight: 700;
+  color: #16a34a;
+}
+
+.completion-details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.completion-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--color-text, #333);
+  margin: 0;
+}
+
+.dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.dot.completed {
+  background: #16a34a;
+}
+
+.dot.pending {
+  background: #f59e0b;
+}
+
+.dot.in-progress {
+  background: #3b82f6;
+}
+
+.dot.overdue {
+  background: #ef4444;
 }
 
 /* ---- Report section ---- */

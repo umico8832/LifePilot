@@ -176,6 +176,9 @@ class StatisticServiceTests {
         assertEquals(0L, result.completedCount());
         assertEquals(0L, result.cancelledCount());
         assertEquals(0L, result.overdueCount());
+        assertEquals(0.0, result.completionRate(), 0.001);
+        assertEquals(30, result.recent30Days().size());
+        assertTrue(result.recent30Days().stream().allMatch(d -> d.count() == 0L));
     }
 
     @Test
@@ -190,6 +193,7 @@ class StatisticServiceTests {
 
         TodoTask completed = new TodoTask();
         completed.setStatus("completed");
+        completed.setUpdatedAt(LocalDateTime.now().toLocalDate().atStartOfDay());
         completed.setDueAt(null);
 
         TodoTask cancelled = new TodoTask();
@@ -207,6 +211,9 @@ class StatisticServiceTests {
         assertEquals(1L, result.completedCount());
         assertEquals(1L, result.cancelledCount());
         assertEquals(1L, result.overdueCount()); // pending with past due date
+        // completionRate = 1 completed / (4 total - 1 cancelled) = 1/3
+        assertEquals(1.0 / 3.0, result.completionRate(), 0.001);
+        assertEquals(30, result.recent30Days().size());
     }
 
     // --- getShoppingStats ---
@@ -304,6 +311,7 @@ class StatisticServiceTests {
     void getTodoStats_nonPendingNotOverdue() {
         TodoTask completedWithPastDue = new TodoTask();
         completedWithPastDue.setStatus("completed");
+        completedWithPastDue.setUpdatedAt(LocalDateTime.now().minusDays(1));
         completedWithPastDue.setDueAt(LocalDateTime.now().minusDays(1));
 
         when(todoTaskMapper.selectList(any(LambdaQueryWrapper.class)))
@@ -312,6 +320,49 @@ class StatisticServiceTests {
         TodoStatsResponse result = statisticService.getTodoStats(USER_ID, SPACE_ID);
 
         assertEquals(0L, result.overdueCount()); // completed tasks are not overdue
+        assertEquals(1.0, result.completionRate(), 0.001); // 1/1 actionable
+    }
+
+    @Test
+    void getTodoStats_completionRateWithOnlyCancelledTasks() {
+        TodoTask cancelled = new TodoTask();
+        cancelled.setStatus("cancelled");
+
+        when(todoTaskMapper.selectList(any(LambdaQueryWrapper.class)))
+                .thenReturn(List.of(cancelled));
+
+        TodoStatsResponse result = statisticService.getTodoStats(USER_ID, SPACE_ID);
+
+        assertEquals(0.0, result.completionRate(), 0.001); // no actionable tasks
+    }
+
+    @Test
+    void getTodoStats_30DayTrend() {
+        TodoTask completedToday = new TodoTask();
+        completedToday.setStatus("completed");
+        completedToday.setUpdatedAt(LocalDateTime.now().toLocalDate().atStartOfDay());
+
+        TodoTask completedToday2 = new TodoTask();
+        completedToday2.setStatus("completed");
+        completedToday2.setUpdatedAt(LocalDateTime.now().toLocalDate().atStartOfDay().plusHours(2));
+
+        TodoTask completedOld = new TodoTask();
+        completedOld.setStatus("completed");
+        completedOld.setUpdatedAt(LocalDateTime.now().minusDays(60));
+
+        when(todoTaskMapper.selectList(any(LambdaQueryWrapper.class)))
+                .thenReturn(List.of(completedToday, completedToday2, completedOld));
+
+        TodoStatsResponse result = statisticService.getTodoStats(USER_ID, SPACE_ID);
+
+        assertEquals(30, result.recent30Days().size());
+        // Today should have 2 completed tasks
+        String today = LocalDateTime.now().toLocalDate().toString();
+        long todayCount = result.recent30Days().stream()
+                .filter(d -> d.date().equals(today))
+                .mapToLong(TodoStatsResponse.DailyTrend::count)
+                .sum();
+        assertEquals(2L, todayCount);
     }
 
     // --- getInventoryAlerts ---

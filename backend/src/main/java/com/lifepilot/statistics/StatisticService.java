@@ -363,7 +363,7 @@ public class StatisticService {
     }
 
     /**
-     * Todo task statistics: counts by status, overdue count.
+     * Todo task statistics: counts by status, overdue count, completion rate, 30-day completion trend.
      */
     public TodoStatsResponse getTodoStats(Long userId, Long spaceId) {
         householdService.requireSpaceMembership(userId, spaceId);
@@ -381,6 +381,31 @@ public class StatisticService {
             return t.getDueAt() != null && t.getDueAt().isBefore(LocalDateTime.now());
         }).count();
 
-        return new TodoStatsResponse(tasks.size(), pending, inProgress, completed, cancelled, overdue);
+        // Completion rate = completed / (total - cancelled) to exclude cancelled tasks
+        long actionable = tasks.size() - cancelled;
+        double completionRate = actionable > 0 ? (double) completed / actionable : 0.0;
+
+        // 30-day trend: count tasks completed per day (using updatedAt for completed tasks)
+        LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(29).toLocalDate().atStartOfDay();
+        List<TodoTask> recentCompleted = tasks.stream()
+                .filter(t -> "completed".equals(t.getStatus())
+                        && t.getUpdatedAt() != null
+                        && !t.getUpdatedAt().isBefore(thirtyDaysAgo))
+                .collect(Collectors.toList());
+
+        Map<String, Long> dailyCounts = recentCompleted.stream()
+                .collect(Collectors.groupingBy(
+                        t -> t.getUpdatedAt().toLocalDate().toString(),
+                        Collectors.counting()));
+
+        List<TodoStatsResponse.DailyTrend> recent30Days = new ArrayList<>();
+        for (int i = 0; i < 30; i++) {
+            String date = thirtyDaysAgo.plusDays(i).toLocalDate().toString();
+            long count = dailyCounts.getOrDefault(date, 0L);
+            recent30Days.add(new TodoStatsResponse.DailyTrend(date, count));
+        }
+
+        return new TodoStatsResponse(tasks.size(), pending, inProgress, completed, cancelled, overdue,
+                completionRate, recent30Days);
     }
 }

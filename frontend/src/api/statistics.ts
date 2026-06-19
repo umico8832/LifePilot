@@ -61,6 +61,11 @@ export interface InventoryAlertsResponse {
   totalAlerts: number
 }
 
+export interface TodoDailyTrend {
+  date: string
+  count: number
+}
+
 export interface TodoStatsResponse {
   totalCount: number
   pendingCount: number
@@ -68,6 +73,8 @@ export interface TodoStatsResponse {
   completedCount: number
   cancelledCount: number
   overdueCount: number
+  completionRate: number
+  recent30Days: TodoDailyTrend[]
 }
 
 export async function getFinanceMonthly(
