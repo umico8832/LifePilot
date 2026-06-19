@@ -2,11 +2,11 @@
 
 ## 当前阶段
 
-P3-004 完成。当前处于 P3 质量补强阶段；最近完成 Phase 12 后端 Service 层补充测试，下一项自动任务见下文，属于 Phase 13 前端 API 层测试补充。
+P3-005 完成。当前处于 P3 质量补强阶段；最近完成 Phase 13 前端 API 层测试补充，当前所有 P0/P1/P2/P3 任务均已完成。
 
 ## 当前最高优先级任务
 
-P3-005 前端 API 层测试补充。
+所有当前阶段任务已完成。等待用户决定下一步方向。
 
 ## 最近完成任务
 
@@ -14,9 +14,10 @@ P3-005 前端 API 层测试补充。
 - P1-001～P1-017：全部完成。
 - P2-001～P2-004：全部完成。
 - P3-001 前端首页统计图表可视化：新建 EChart.vue 通用组件，HomeView 集成 3 个 ECharts 图表。
-- P3-002 实现分类财务统计接口：新增 `FinanceCategoriesResponse` DTO（含 expenseCategories 和 incomeCategories 分组），`StatisticService.getFinanceCategories` 按月按类型分组统计分类汇总并按金额降序排列，`StatisticController` 新增 `GET /finance/categories?year=&month=` 端点，前端 `statistics.ts` 新增 `FinanceCategoriesResponse` 类型和 `getFinanceCategories` 函数。
-- P3-003 实现购物统计接口：新增 `ShoppingStatsResponse` DTO（含 totalLists、activeLists、completedLists、totalItems、purchasedItems、recent30Days 趋势），`StatisticService.getShoppingStats` 统计购物清单状态、物品采购比和近 30 天创建趋势，`StatisticController` 新增 `GET /shopping` 端点，前端 `statistics.ts` 新增 `ShoppingStatsResponse` 类型和 `getShoppingStats` 函数，新增 3 个单元测试。
-- P3-004 后端 Service 层补充测试：为 TransactionService、ShoppingService、InventoryService、TodoService、RecipeService、DocumentService 新增独立 Mockito 单元测试，共 6 个测试文件 75 个测试用例，覆盖正常路径和异常路径（NOT_FOUND、wrongSpace、invalidType、invalidPriority、nonMember）。后端总测试从 121 增长到 198。
+- P3-002 实现分类财务统计接口：新增 `FinanceCategoriesResponse` DTO，`StatisticService.getFinanceCategories` 按月按类型分组统计，`StatisticController` 新增端点。
+- P3-003 实现购物统计接口：新增 `ShoppingStatsResponse` DTO 和 `/shopping` 端点。
+- P3-004 后端 Service 层补充测试：为 6 个 Service 新增 75 个 Mockito 单元测试，后端总测试从 121 增长到 198。
+- P3-005 前端 API 层测试补充：为 statistics、shopping、inventory、todo、document、ai 6 个 API 模块新增 42 个测试用例，前端总测试从 24 增长到 66。
 
 ## 当前阻塞项
 
@@ -24,12 +25,12 @@ P3-005 前端 API 层测试补充。
 
 ## 下一项自动任务
 
-P3-005 前端 API 层测试补充。
+所有当前 P0-P3 任务已完成。触发停止条件：所有当前阶段任务已清空。
 
 ## 最近验证结果
 
 - 后端 `./mvnw test`：通过，198 tests passed。
-- 前端 `npm test`：通过，3 个测试文件共 24 项测试全部通过。
+- 前端 `npm test`：通过，9 个测试文件共 66 项测试全部通过。
 - 前端 `npm run build`：通过。
 - Flyway 迁移 V1-V8 在 H2 测试数据库上通过。
 - 文档归档脚本 `python3 scripts/agent_changelog_archive.py`：通过。

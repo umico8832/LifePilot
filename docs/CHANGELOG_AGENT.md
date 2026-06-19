@@ -12,6 +12,16 @@ python3 scripts/agent_changelog_archive.py --keep 10
 
 脚本默认保留最近 10 条完整记录，并刷新 `docs/RECENT_HISTORY.md`。
 
+## 2026-06-19 14:50 Asia/Shanghai P3-005 前端 API 层测试补充
+
+- 任务：P3-005 前端 API 层测试补充
+- 改动：
+  - 新增 6 个 API 测试文件：`statistics.test.ts`（7 tests）、`shopping.test.ts`（9 tests）、`inventory.test.ts`（7 tests）、`todo.test.ts`（7 tests）、`document.test.ts`（7 tests）、`ai.test.ts`（5 tests）
+  - 覆盖所有 API 模块的请求路径、参数传递、响应处理和错误传播
+  - 使用 vitest 的 `vi.mock` mock `http` 模块，避免真实网络请求
+- 验证：`cd frontend && npm test`：9 文件 66 tests passed（原 24 新增 42）；`cd frontend && npm run build`：通过
+- 状态：done
+
 ## 2026-06-19 12:34 Asia/Shanghai P3-004 后端 Service 层补充测试
 
 **任务**：P3-004 后端 Service 层补充测试
@@ -169,13 +179,3 @@ feat(ai): 实现 OpenAI provider 代码骨架和条件注入
 - 遗留问题：未自动 amend 既有提交，避免改写最新历史。
 - 下一步任务：P2-003 增加后端 Service 层单元测试。
 - 建议 commit message：`docs(git): 完善提交信息详细度规则`
-
-## 2026-06-18 22:32 Asia/Shanghai
-
-- Agent 任务名称：新增 P2 任务并执行 P2-002 CI 增加前端测试步骤。
-- 修改文件：`.github/workflows/ci.yml`、`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/CHANGELOG_AGENT.md`。
-- 实现内容：BACKLOG 新增 P2-002（CI 前端测试）、P2-003（后端 Service 层单元测试）、P2-004（OpenAI provider 代码骨架）；ci.yml 前端 job 在 `npm run build` 步骤前新增 `npm test` 步骤，确保前端 Vitest 测试在每次 CI 提交时自动运行。
-- 测试结果：前端 `npm test` 通过（24 项）；后端 `./mvnw test` 通过（88 项）。
-- 遗留问题：P2-003（后端 Service 层单元测试）和 P2-004（OpenAI provider 代码骨架）尚未实现。
-- 下一步任务：P2-003 增加后端 Service 层单元测试。
-- 建议 commit message：`ci(frontend): CI 前端 job 增加 npm test 步骤`
