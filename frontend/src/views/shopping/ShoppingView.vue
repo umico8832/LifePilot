@@ -301,6 +301,19 @@ async function handleDeleteItem(item: ShoppingItemResponse) {
 function getStatusLabel(status: string) {
   return status === 'completed' ? '已完成' : '进行中'
 }
+
+function getTotalEstimatedCost(): number {
+  if (!activeList.value) return 0
+  return activeList.value.items.reduce((sum, item) => {
+    const price = item.estimatedPrice || 0
+    return sum + price * item.quantity
+  }, 0)
+}
+
+function getBudgetPercent(): number {
+  if (!activeList.value?.estimatedBudget || activeList.value.estimatedBudget <= 0) return 0
+  return Math.min(100, Math.round((getTotalEstimatedCost() / activeList.value.estimatedBudget) * 100))
+}
 </script>
 
 <template>
@@ -418,11 +431,30 @@ function getStatusLabel(status: string) {
           <el-tag :type="activeList.status === 'completed' ? 'success' : 'info'" size="small">
             {{ getStatusLabel(activeList.status) }}
           </el-tag>
-          <span v-if="activeList.estimatedBudget" class="budget-label">
-            预算：¥{{ activeList.estimatedBudget.toFixed(2) }}
-          </span>
           <div style="flex: 1" />
           <el-button size="small" type="primary" @click="openCreateItemDialog">添加物品</el-button>
+        </div>
+
+        <!-- Budget comparison card -->
+        <div v-if="activeList.estimatedBudget" class="budget-card">
+          <div class="budget-card-header">
+            <span class="budget-title">💰 预算对比</span>
+            <span class="budget-amount">预算 ¥{{ activeList.estimatedBudget.toFixed(2) }}</span>
+          </div>
+          <div class="budget-bar-wrapper">
+            <div
+              class="budget-bar"
+              :class="{ 'over-budget': getBudgetPercent() > 100 }"
+              :style="{ width: Math.min(getBudgetPercent(), 100) + '%' }"
+            />
+          </div>
+          <div class="budget-card-footer">
+            <span>预估花费 ¥{{ getTotalEstimatedCost().toFixed(2) }}</span>
+            <span :class="getBudgetPercent() > 100 ? 'over-budget-text' : 'under-budget-text'">
+              {{ getBudgetPercent() > 100 ? '超出预算 ' + (getBudgetPercent() - 100) + '%' : '已用 ' + getBudgetPercent() + '%' }}
+            </span>
+            <span>剩余 ¥{{ Math.max(0, activeList.estimatedBudget - getTotalEstimatedCost()).toFixed(2) }}</span>
+          </div>
         </div>
 
         <div v-if="activeList.items.length > 0" class="table-scroll">
@@ -604,6 +636,72 @@ function getStatusLabel(status: string) {
 .budget-label {
   color: var(--color-muted, #888);
   font-size: 14px;
+}
+
+/* ---- Budget comparison card ---- */
+
+.budget-card {
+  background: var(--color-surface, #fff);
+  border-radius: 12px;
+  border: 1px solid var(--color-border, #e4e7ed);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.budget-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.budget-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text, #333);
+}
+
+.budget-amount {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text, #333);
+}
+
+.budget-bar-wrapper {
+  height: 10px;
+  background: #e5e7eb;
+  border-radius: 5px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.budget-bar {
+  height: 100%;
+  background: #16a34a;
+  border-radius: 5px;
+  transition: width 0.3s ease;
+}
+
+.budget-bar.over-budget {
+  background: #ef4444;
+}
+
+.budget-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--color-muted, #666);
+}
+
+.over-budget-text {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.under-budget-text {
+  color: #16a34a;
+  font-weight: 600;
 }
 
 .item-purchased {
