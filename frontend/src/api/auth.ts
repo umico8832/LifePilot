@@ -27,3 +27,13 @@ export async function fetchCurrentUser() {
   return response.data.data
 }
 
+export interface ProfileUpdatePayload {
+  displayName?: string
+  avatarUrl?: string
+}
+
+export async function updateProfile(payload: ProfileUpdatePayload) {
+  const response = await http.put<ApiResponse<UserProfile>>('/api/users/me', payload)
+  return response.data.data
+}
+

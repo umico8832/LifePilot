@@ -57,6 +57,21 @@ public class UserService {
         return passwordEncoder.matches(rawPassword, user.getPasswordHash());
     }
 
+    public UserAccount updateProfile(Long userId, String displayName, String avatarUrl) {
+        UserAccount user = requireById(userId);
+        LocalDateTime now = LocalDateTime.now();
+
+        if (displayName != null && !displayName.isBlank()) {
+            user.setDisplayName(displayName.trim());
+        }
+        if (avatarUrl != null) {
+            user.setAvatarUrl(avatarUrl.isBlank() ? null : avatarUrl.trim());
+        }
+        user.setUpdatedAt(now);
+        userMapper.updateById(user);
+        return user;
+    }
+
     private String normalizeEmail(String email) {
         return email.trim().toLowerCase(Locale.ROOT);
     }

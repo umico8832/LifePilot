@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 
-import { fetchCurrentUser, login, register } from '@/api/auth'
-import type { LoginPayload, RegisterPayload } from '@/api/auth'
+import { fetchCurrentUser, login, register, updateProfile } from '@/api/auth'
+import type { LoginPayload, ProfileUpdatePayload, RegisterPayload } from '@/api/auth'
 import type { UserProfile } from '@/types/auth'
 
 const tokenStorageKey = 'lifepilot.accessToken'
@@ -49,6 +49,14 @@ export const useAuthStore = defineStore('auth', {
       this.token = token
       this.user = user
       localStorage.setItem(tokenStorageKey, token)
+    },
+    async updateProfile(payload: ProfileUpdatePayload) {
+      this.loading = true
+      try {
+        this.user = await updateProfile(payload)
+      } finally {
+        this.loading = false
+      }
     },
     logout() {
       this.token = null
