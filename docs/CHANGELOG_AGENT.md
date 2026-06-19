@@ -12,6 +12,36 @@ python3 scripts/agent_changelog_archive.py --keep 10
 
 脚本默认保留最近 10 条完整记录，并刷新 `docs/RECENT_HISTORY.md`。
 
+## 2026-06-19 15:53 Asia/Shanghai P4-004 购物预算估算功能
+
+- 任务：P4-004 购物预算估算功能
+- 改动：
+  - 后端：`estimatedBudget` 字段已在 V4 迁移（`estimated_budget DECIMAL(12,2) NULL`）、`ShoppingList` 实体、`CreateShoppingListRequest`（`@Positive BigDecimal`）、`UpdateShoppingListRequest`、`ShoppingListResponse`（含 `from()` 方法）和 `ShoppingService`（create/update 逻辑）中完整实现，无需新增 V9 迁移
+  - 前端：`ShoppingView.vue` 新增 `getTotalEstimatedCost()`（累加 items 的 estimatedPrice × quantity）和 `getBudgetPercent()` 计算函数；模板新增预算对比卡片（进度条 + 预算/花费/剩余/百分比，超预算时进度条变红）；列表页已有预算列展示
+- 文档：`docs/BACKLOG.md` P4-004 状态更新为 done；`docs/CURRENT_STATE.md` 更新当前状态
+
+**验证**：
+- `cd backend && ./mvnw test -B`：217 tests passed
+- `cd frontend && npm test`：66 tests passed
+- `cd frontend && npm run build`：通过
+
+---
+
+## 2026-06-19 15:48 Asia/Shanghai P4-003 待办完成率统计接口
+
+- 任务：P4-003 待办完成率统计接口
+- 改动：
+  - 后端：`TodoStatsResponse` 新增 `completionRate`（double，完成率 = completed / (total - cancelled)）和 `recent30Days`（`List<DailyTrend>`，近 30 天每天完成任务数）；内部新增 `DailyTrend` record；`StatisticService.getTodoStats` 增加完成率计算和按 `updatedAt` 统计每日完成数的逻辑；`StatisticServiceTests` 更新 2 个现有测试并新增 3 个测试（完成率含取消任务、仅取消任务时完成率为 0、30 天趋势验证），后端总测试从 215 增长到 217
+  - 前端：`statistics.ts` 新增 `TodoDailyTrend` 接口，`TodoStatsResponse` 新增 `completionRate` 和 `recent30Days` 字段；`HomeView` 新增 `todoTrendOption`（近 30 天完成趋势柱状图）、`todoCompletionPercent` 计算属性，模板新增完成率环形图（SVG `stroke-dasharray` 实现）和趋势图表卡片，新增 `.completion-rate-display` / `.completion-ring` / `.dot.*` 样式
+- 文档：`docs/API_DESIGN.md` 更新 todos 统计接口描述；`docs/BACKLOG.md` P4-003 状态更新为 done；`docs/CURRENT_STATE.md` 更新当前状态
+
+**验证**：
+- `cd backend && ./mvnw test -B`：217 tests passed（原 215 新增 2，含更新）
+- `cd frontend && npm test`：66 tests passed
+- `cd frontend && npm run build`：通过
+
+---
+
 ## 2026-06-19 15:30 Asia/Shanghai P4-002 库存临期和缺货提醒逻辑
 
 - 任务：P4-002 库存临期和缺货提醒逻辑
@@ -152,42 +182,3 @@ python3 scripts/agent_changelog_archive.py --keep 10
 - `docs/BACKLOG.md`：P3-001 标记 done，新增 P3-002～P3-005 任务。
 - `docs/CURRENT_STATE.md`：更新当前阶段和下一项任务。
 - `docs/CHANGELOG_AGENT.md`：本条。
-
-## 2026-06-18 23:28 Asia/Shanghai P2-004 实现 OpenAI provider 代码骨架
-
-**任务**：P2-004 实现 OpenAI provider 代码骨架
-
-**改动**：
-- 新增 `AiProviderProperties`：`@ConfigurationProperties` 绑定 `lifepilot.ai.provider` 和 `lifepilot.ai.openai.*`
-- 新增 `AiProviderConfig`：基于 provider 值条件注入 MockAiProvider 或 OpenAiProvider；openai+空 key 自动回退并 WARN 日志
-- 新增 `OpenAiProvider`：通过 RestClient 调用 Chat Completions API，含 JSON 反序列化、code fence 清理、可配置重试和超时
-- 修改 `MockAiProvider`：移除 `@Component`，改由 AiProviderConfig 手动创建 Bean
-- 更新 `application.yml`：补充完整 openai 子配置（api-key、base-url、model、temperature、max-tokens、timeout-seconds、retry-max-attempts）
-- 更新测试 `application.yml`：显式设置 `provider: mock`
-- 新增 `OpenAiProviderTest`（8 项）：Transaction/Shopping/Todo 成功路径、code fence 清理、500 错误返回 null、畸形 JSON 返回 null、空 choices 返回 null、null 输入仍调用 API
-- 新增 `AiProviderConfigTest`（5 项）：Spring 默认注入 MockAiProvider、openai+空 key 回退 Mock、未知 provider 抛异常、openai+有效 key 创建 OpenAiProvider、mock 创建 MockAiProvider
-
-**验证**：
-- 后端 `./mvnw test`：118 tests passed
-- 前端 `npm run build`：通过（vue-tsc + vite build）
-
-**建议提交信息**：
-```
-feat(ai): 实现 OpenAI provider 代码骨架和条件注入
-
-- 新增 AiProviderProperties 绑定 lifepilot.ai.openai.* 配置
-- 新增 AiProviderConfig 条件注入：mock/openai 两种 provider
-- 新增 OpenAiProvider：RestClient + Chat Completions + JSON 反序列化 + 超时重试
-- provider=openai 且 API Key 为空时自动回退 MockAiProvider 并打印警告
-- 新增 OpenAiProviderTest（8 项）+ AiProviderConfigTest（5 项），118 tests passed
-```
-
-## 2026-06-18 23:02 Asia/Shanghai
-
-- Agent 任务名称：P2-003 增加后端 Service 层单元测试。
-- 修改文件：`backend/src/test/java/com/lifepilot/ai/AiServiceTests.java`、`backend/src/test/java/com/lifepilot/statistics/StatisticServiceTests.java`、`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/CHANGELOG_AGENT.md`。
-- 实现内容：AiServiceTests（Mockito 单元测试，mock AiProvider + HouseholdService + 各 Mapper）覆盖 parseTransaction/parseShoppingList/parseTodo 各三种路径（正常返回、null 返回 needsReview、非成员抛 BusinessException），共 9 项；StatisticServiceTests 覆盖 getOverview 空数据零值/收支计算/低库存检测、getInventoryStats 空数据/分类分组+低库存、getTodoStats 空数据/四种状态计数+逾期判定/已完成不计逾期，共 8 项。
-- 测试结果：后端 `./mvnw test` 通过，105 tests passed（原有 88 + 新增 9 AiServiceTests + 8 StatisticServiceTests）；前端 `npm test` 通过（24 项）。
-- 遗留问题：P2-004（OpenAI provider 代码骨架）尚未实现。
-- 下一步任务：P2-004 实现 OpenAI provider 代码骨架。
-- 建议 commit message：`test(backend): 增加 AiService 和 StatisticService 单元测试`

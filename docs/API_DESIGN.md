@@ -153,4 +153,4 @@ AI 接口返回草稿，用户确认后再调用业务写入接口。
 - `GET /api/spaces/{spaceId}/statistics/shopping` ✅（返回购物清单统计：总数、进行中/已完成、物品采购比、30 天趋势）
 - `GET /api/spaces/{spaceId}/statistics/inventory` ✅（返回库存总数、低库存数量和分类分布）
 - `GET /api/spaces/{spaceId}/statistics/inventory/alerts` ✅（返回临期物品列表和低库存物品列表）
-- `GET /api/spaces/{spaceId}/statistics/todos` ✅（返回待办状态计数和逾期数量）
+- `GET /api/spaces/{spaceId}/statistics/todos` ✅（返回待办状态计数、逾期数量、完成率和近 30 天完成趋势）
