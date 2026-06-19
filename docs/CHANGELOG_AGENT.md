@@ -12,6 +12,25 @@ python3 scripts/agent_changelog_archive.py --keep 10
 
 脚本默认保留最近 10 条完整记录，并刷新 `docs/RECENT_HISTORY.md`。
 
+## 2026-06-19 12:18 Asia/Shanghai 修复 Agent 文档漂移检查和历史摘要生成
+
+**任务**：修复 Agent 文档漂移检查和历史摘要生成
+
+**改动**：
+- `docs/API_DESIGN.md` 标记 `/statistics/inventory` 和 `/statistics/todos` 为已完成，并补充返回内容说明，避免与 P1-015 done 状态冲突。
+- `docs/CURRENT_STATE.md` 将当前阶段改为 P3 质量补强阶段描述，避免 Phase 10 完成与下一任务 Phase 12 并存时产生误解。
+- `docs/ROADMAP.md` 补齐 Phase 13、Phase 14、Phase 15，覆盖 BACKLOG 已引用的前端测试体系、真实 AI Provider 准备、可视化体验增强。
+- `scripts/agent_changelog_archive.py` 兼容旧格式 `- Agent 任务名称：` 和新格式 `**任务**：` / `**验证**：`，并清理误混入条目的重复维护块。
+- `scripts/agent_doc_check.py` 新增三类防漂移检查：RECENT_HISTORY 占位符、BACKLOG Phase 是否都在 ROADMAP 定义、P1-015 完成后 API 统计接口是否标 ✅。
+
+**验证**：
+- `python3 -m py_compile scripts/agent_changelog_archive.py scripts/agent_doc_check.py`：通过。
+- `python3 scripts/agent_changelog_archive.py`：通过，RECENT_HISTORY 已重新生成且无占位符。
+- `python3 scripts/agent_doc_check.py`：通过。
+- `git diff --check`：通过。
+
+**文档更新**：`docs/API_DESIGN.md`、`docs/CURRENT_STATE.md`、`docs/ROADMAP.md`、`docs/RECENT_HISTORY.md`、`docs/CHANGELOG_AGENT.md`。
+
 ## 2026-06-19 11:46 Asia/Shanghai P3-003 实现购物统计接口
 
 **任务**：P3-003 实现购物统计接口
@@ -103,14 +122,6 @@ feat(ai): 实现 OpenAI provider 代码骨架和条件注入
 - 新增 OpenAiProviderTest（8 项）+ AiProviderConfigTest（5 项），118 tests passed
 ```
 
-## 维护方式
-
-```bash
-python3 scripts/agent_changelog_archive.py --keep 10
-```
-
-脚本默认保留最近 10 条完整记录，并刷新 `docs/RECENT_HISTORY.md`。
-
 ## 2026-06-18 23:02 Asia/Shanghai
 
 - Agent 任务名称：P2-003 增加后端 Service 层单元测试。
@@ -160,13 +171,3 @@ python3 scripts/agent_changelog_archive.py --keep 10
 - 遗留问题：P2 backlog 已清空，无更多 todo 任务。
 - 下一步任务：待定（可新增 P2 任务继续开发）。
 - 建议 commit message：`docs(ai): 规划 OpenAI-compatible provider 配置骨架和安全边界`
-
-## 2026-06-18 22:23 Asia/Shanghai
-
-- Agent 任务名称：P1-017 增加前端关键测试。
-- 修改文件：`frontend/package.json`、`frontend/vite.config.ts`、`frontend/src/stores/__tests__/auth.test.ts`、`frontend/src/stores/__tests__/space.test.ts`、`frontend/src/api/__tests__/http.test.ts`、`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/CHANGELOG_AGENT.md`、`docs/TESTING.md`。
-- 实现内容：接入 Vitest 4 + jsdom + @vue/test-utils 作为前端测试框架；`vite.config.ts` 增加 `test` 配置（environment: jsdom, globals: true）；`package.json` 增加 `test` 和 `test:watch` 脚本；auth store 测试覆盖：初始状态（无 token/无 user）、从 localStorage 恢复 token、login 设置 token 和 user、register 设置 token 和 user、logout 清空状态、loadCurrentUser 正常加载、loadCurrentUser 无 token 跳过、loadCurrentUser 失败自动 logout、loading 标志管理（共 9 项）；space store 测试覆盖：空状态、fetchSpaces 加载并设第一个为 current、fetchSpaces 不覆盖已有 current、fetchSpace 设置 current、createNewSpace 添加并设 current、renameSpace 更新列表和 current、fetchMembers 加载成员、inviteMember 添加成员、clear 重置、setCurrentSpace 设置（共 10 项）；http interceptor 测试覆盖：请求拦截器有 token 添加 Authorization、无 token 不添加、响应拦截器正常通过、响应拦截器错误拒绝、基础配置验证（共 5 项）。
-- 测试结果：前端 `npm test` 通过，3 个测试文件共 24 项测试全部通过；前端 `npm run build` 通过（vue-tsc + vite build）。
-- 遗留问题：无。
-- 下一步任务：P2-001 规划真实 AI provider 配置骨架。
-- 建议 commit message：`test(frontend): 接入 Vitest 并为 auth store、space store 和 http interceptor 增加测试`

@@ -16,6 +16,11 @@ RECENT_HISTORY = ROOT / "docs" / "RECENT_HISTORY.md"
 ARCHIVE_DIR = ROOT / "docs" / "changelog"
 
 ENTRY_RE = re.compile(r"^## (\d{4})-(\d{2})-\d{2}[^\n]*$", re.M)
+MAINTENANCE_RE = re.compile(
+    r"\n## 维护方式\n\n```bash\npython3 scripts/agent_changelog_archive\.py --keep \d+\n```\n\n"
+    r"脚本默认保留最近 \d+ 条完整记录，并刷新 `docs/RECENT_HISTORY\.md`。\n",
+    re.M,
+)
 
 
 def split_entries(text: str) -> tuple[str, list[str]]:
@@ -41,6 +46,10 @@ def entry_month(entry: str) -> str:
 
 def entry_key(entry: str) -> str:
     return entry.splitlines()[0].strip()
+
+
+def clean_entry(entry: str) -> str:
+    return MAINTENANCE_RE.sub("\n", entry).strip() + "\n"
 
 
 def entry_datetime(entry: str) -> datetime:
@@ -78,7 +87,25 @@ def refresh_changelog(header: str, kept_entries: list[str], keep: int) -> str:
 
 def extract_bullet(entry: str, label: str) -> str:
     match = re.search(rf"^- {re.escape(label)}：(.+)$", entry, re.M)
-    return match.group(1).strip() if match else ""
+    if match:
+        return match.group(1).strip()
+
+    bold_match = re.search(rf"^\*\*{re.escape(label)}\*\*：(.+)$", entry, re.M)
+    return bold_match.group(1).strip() if bold_match else ""
+
+
+def extract_bold_section(entry: str, label: str) -> str:
+    pattern = rf"^\*\*{re.escape(label)}\*\*：\n(?P<body>.*?)(?=\n\*\*[^*\n]+?\*\*：|\n## |\Z)"
+    match = re.search(pattern, entry, re.M | re.S)
+    if not match:
+        return ""
+
+    lines = []
+    for line in match.group("body").strip().splitlines():
+        clean_line = line.strip()
+        if clean_line.startswith("- "):
+            lines.append(clean_line[2:])
+    return "；".join(lines)
 
 
 def clean_summary(value: str) -> str:
@@ -99,9 +126,14 @@ def refresh_recent_history(entries: list[str], recent_keep: int) -> str:
     for entry in entries[:recent_keep]:
         heading = entry.splitlines()[0].replace("## ", "", 1)
         task = clean_summary(extract_bullet(entry, "Agent 任务名称")) or "未标注任务"
-        verification = clean_summary(extract_bullet(entry, "测试结果")) or "未记录验证"
+        if task == "未标注任务":
+            task = clean_summary(extract_bullet(entry, "任务")) or "未标注任务"
+        verification = clean_summary(extract_bullet(entry, "测试结果")) or clean_summary(extract_bold_section(entry, "验证")) or "未记录验证"
         next_task = clean_summary(extract_bullet(entry, "下一步任务")) or "未记录下一步"
-        lines.append(f"- {heading}：{task}；验证：{verification}；下一步：{next_task}")
+        summary = f"- {heading}：{task}；验证：{verification}"
+        if next_task != "未记录下一步":
+            summary += f"；下一步：{next_task}"
+        lines.append(summary)
 
     lines.extend(
         [
@@ -135,7 +167,7 @@ def archive_entries(entries: list[str]) -> None:
         combined: dict[str, str] = {entry_key(entry): entry for entry in existing_entries}
         for entry in month_entries:
             combined.setdefault(entry_key(entry), entry)
-        sorted_entries = sort_entries_newest_first(list(combined.values()))
+        sorted_entries = sort_entries_newest_first([clean_entry(entry) for entry in combined.values()])
 
         archive_text = (
             f"# Agent Changelog Archive: {month}\n\n"
@@ -157,7 +189,7 @@ def normalize_archives() -> None:
         _, existing_entries = read_archive_entries(archive_path)
         if not existing_entries:
             continue
-        sorted_entries = sort_entries_newest_first(existing_entries)
+        sorted_entries = sort_entries_newest_first([clean_entry(entry) for entry in existing_entries])
         archive_text = (
             f"# Agent Changelog Archive: {month}\n\n"
             "本文件由 `scripts/agent_changelog_archive.py` 自动维护。"
@@ -181,7 +213,7 @@ def main() -> int:
         raise SystemExit("--recent-keep must be positive")
 
     header, entries = split_entries(CHANGELOG.read_text(encoding="utf-8"))
-    sorted_entries = sort_entries_newest_first(entries)
+    sorted_entries = sort_entries_newest_first([clean_entry(entry) for entry in entries])
     kept_entries = sorted_entries[: args.keep]
     archived_entries = sorted_entries[args.keep :]
 

@@ -151,5 +151,5 @@ AI 接口返回草稿，用户确认后再调用业务写入接口。
 - `GET /api/spaces/{spaceId}/statistics/finance/monthly` ✅
 - `GET /api/spaces/{spaceId}/statistics/finance/categories` ✅（支持 `?year=&month=` 参数，返回支出/收入分类汇总）
 - `GET /api/spaces/{spaceId}/statistics/shopping` ✅（返回购物清单统计：总数、进行中/已完成、物品采购比、30 天趋势）
-- `GET /api/spaces/{spaceId}/statistics/inventory`
-- `GET /api/spaces/{spaceId}/statistics/todos`
+- `GET /api/spaces/{spaceId}/statistics/inventory` ✅（返回库存总数、低库存数量和分类分布）
+- `GET /api/spaces/{spaceId}/statistics/todos` ✅（返回待办状态计数和逾期数量）

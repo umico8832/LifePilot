@@ -51,11 +51,21 @@ def parse_backlog_tasks(backlog: str) -> dict[str, dict[str, str]]:
     return tasks
 
 
+def parse_backlog_phases(backlog: str) -> set[int]:
+    return {int(match.group(1)) for match in re.finditer(r"所属阶段：Phase (\d+)", backlog)}
+
+
+def parse_roadmap_phases(roadmap: str) -> set[int]:
+    return {int(match.group(1)) for match in re.finditer(r"^## Phase (\d+)", roadmap, re.M)}
+
+
 def main() -> int:
     current = read("docs/CURRENT_STATE.md")
     backlog = read("docs/BACKLOG.md")
     changelog = read("docs/CHANGELOG_AGENT.md")
     recent_history = read("docs/RECENT_HISTORY.md")
+    roadmap = read("docs/ROADMAP.md")
+    api_design = read("docs/API_DESIGN.md")
     handoff = read("docs/HANDOFF.md")
     next_prompt = read("docs/NEXT_CHAT_PROMPT.md")
 
@@ -121,6 +131,30 @@ def main() -> int:
     if "docs/changelog/" not in changelog:
         fail("CHANGELOG_AGENT does not explain archived history in docs/changelog/.")
     ok("CHANGELOG_AGENT references archive directory.")
+
+    broken_recent_markers = ["未标注任务", "未记录验证", "未记录下一步"]
+    for marker in broken_recent_markers:
+        if marker in recent_history:
+            fail(f"RECENT_HISTORY contains generated placeholder `{marker}`.")
+    ok("RECENT_HISTORY has no generated placeholder summaries.")
+
+    backlog_phases = parse_backlog_phases(backlog)
+    roadmap_phases = parse_roadmap_phases(roadmap)
+    missing_phases = sorted(backlog_phases - roadmap_phases)
+    if missing_phases:
+        fail(f"ROADMAP is missing phases referenced by BACKLOG: {missing_phases}.")
+    ok("ROADMAP defines every phase referenced by BACKLOG.")
+
+    if tasks.get("P1-015", {}).get("status") == "done":
+        required_done_endpoints = [
+            "/statistics/finance/categories",
+            "/statistics/inventory",
+            "/statistics/todos",
+        ]
+        for endpoint in required_done_endpoints:
+            if not re.search(rf"`GET [^`]*{re.escape(endpoint)}` ✅", api_design):
+                fail(f"API_DESIGN does not mark completed statistics endpoint {endpoint} as done.")
+        ok("API_DESIGN marks P1-015 statistics endpoints as done.")
 
     print("[OK] Agent documentation consistency check passed.")
     return 0
