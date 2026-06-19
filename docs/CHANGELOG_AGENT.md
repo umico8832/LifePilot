@@ -12,6 +12,20 @@ python3 scripts/agent_changelog_archive.py --keep 10
 
 脚本默认保留最近 10 条完整记录，并刷新 `docs/RECENT_HISTORY.md`。
 
+## 2026-06-19 17:26 Asia/Shanghai P5-001 实现一周饮食计划 CRUD
+
+- **任务**：P5-001 实现一周饮食计划 CRUD
+- **改动**：
+  - 后端：新建 `V9__create_meal_plan.sql` 迁移（meal_plan 表含 household_id、recipe_id、planned_date、meal_type、note 等字段）；recipe 模块新增 MealPlan 实体、MealPlanMapper、MealPlanService、MealPlanController 和 3 个 DTO
+  - 前端：新建 `mealplan.ts` API 模块、`MealPlanView.vue` 周历视图页面（7 天 × 4 餐次网格、周导航、今日高亮、菜谱选择弹窗）；路由新增 `/mealplan`；AppShell 导航栏新增"饮食计划"入口
+  - 测试：新增 13 个 MealPlanService 单元测试
+- **验证**：
+  - `cd backend && ./mvnw test -Dtest="MealPlanServiceTests"`：13 tests passed
+  - `cd frontend && npm test`：11 文件 91 tests passed
+  - `cd frontend && npm run build`：通过
+
+---
+
 ## 2026-06-19 16:50 Asia/Shanghai P4-005 前端视图层组件测试
 
 - **任务**：P4-005 前端视图层组件测试
@@ -155,21 +169,3 @@ python3 scripts/agent_changelog_archive.py --keep 10
 **文档更新**：`BACKLOG.md`、`CURRENT_STATE.md`、`CHANGELOG_AGENT.md`、`API_DESIGN.md`。
 
 ---
-
-## 2026-06-18 23:48 Asia/Shanghai P3-002 实现分类财务统计接口
-
-**任务**：P3-002 实现分类财务统计接口
-
-**改动**：
-- 新增 `FinanceCategoriesResponse` DTO：返回 `year`、`month`、`totalIncome`、`totalExpense`、`expenseCategories`、`incomeCategories`，分类列表按金额降序。
-- `StatisticService` 新增 `getFinanceCategories` 方法：查询当月 `TransactionRecord`，按收入/支出分别汇总分类，使用 `buildCategoryDetails` 统一组装排序结果。
-- `StatisticController` 新增 `GET /api/spaces/{spaceId}/statistics/finance/categories?year=&month=`。
-- 前端 `statistics.ts` 新增 `CategoryDetail`、`FinanceCategoriesResponse` 类型以及 `getFinanceCategories` API 方法。
-- `docs/API_DESIGN.md` 为 `/statistics/finance/categories` 标记 ✅。
-
-**验证**：
-- 后端 `./mvnw test`：118 tests passed，无回归。
-- 前端 `npm run build` + `npm test`：24 tests passed，无回归。
-
-**文档更新**：
-- `docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/API_DESIGN.md`、`docs/CHANGELOG_AGENT.md`：本条。

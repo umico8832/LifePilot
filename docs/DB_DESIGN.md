@@ -19,6 +19,8 @@
 - `household` 1:N `inventory_item`
 - `household` 1:N `todo_task`
 - `household` 1:N `document_record`
+- `household` 1:N `meal_plan`
+- `recipe` 1:N `meal_plan`
 - `user` 1:N `ai_call_log`
 
 ## 核心表规划
@@ -168,6 +170,18 @@
 - `expire_at`
 - `storage_location`
 - `metadata_json`
+- `created_at`
+- `updated_at`
+
+### meal_plan
+
+- `id`
+- `household_id`
+- `recipe_id`
+- `planned_date`
+- `meal_type`：breakfast、lunch、dinner、snack
+- `note`
+- `created_by`
 - `created_at`
 - `updated_at`
 
