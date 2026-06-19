@@ -1,4 +1,5 @@
 import { http } from './http'
+import type { ApiResponse } from '@/types/auth'
 
 export interface OverviewResponse {
   totalIncome: number
@@ -31,10 +32,33 @@ export async function getOverview(spaceId: number): Promise<OverviewResponse> {
   return res.data.data
 }
 
+export interface CategoryCount {
+  category: string
+  count: number
+}
+
 export interface InventoryStatsResponse {
   totalItems: number
   lowStockCount: number
-  byCategory: Array<{ category: string; count: number }>
+  byCategory: CategoryCount[]
+}
+
+export interface InventoryAlertItem {
+  id: number
+  name: string
+  category: string | null
+  quantity: number
+  unit: string | null
+  location: string | null
+  expireAt: string | null
+  lowStockThreshold: number | null
+  alertType: 'expiring' | 'low_stock'
+}
+
+export interface InventoryAlertsResponse {
+  expiringItems: InventoryAlertItem[]
+  lowStockItems: InventoryAlertItem[]
+  totalAlerts: number
 }
 
 export interface TodoStatsResponse {
@@ -104,6 +128,11 @@ export async function getShoppingStats(spaceId: number): Promise<ShoppingStatsRe
 }
 
 export async function getTodoStats(spaceId: number): Promise<TodoStatsResponse> {
-  const res = await http.get(`/api/spaces/${spaceId}/statistics/todos`)
+  const res = await http.get<ApiResponse<TodoStatsResponse>>(`/api/spaces/${spaceId}/statistics/todos`)
+  return res.data.data
+}
+
+export async function getInventoryAlerts(spaceId: number): Promise<InventoryAlertsResponse> {
+  const res = await http.get<ApiResponse<InventoryAlertsResponse>>(`/api/spaces/${spaceId}/statistics/inventory/alerts`)
   return res.data.data
 }

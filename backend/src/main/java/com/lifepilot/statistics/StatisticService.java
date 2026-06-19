@@ -26,6 +26,7 @@ import com.lifepilot.todo.TodoTask;
 import com.lifepilot.todo.TodoTaskMapper;
 import com.lifepilot.statistics.dto.FinanceCategoriesResponse;
 import com.lifepilot.statistics.dto.FinanceMonthlyResponse;
+import com.lifepilot.statistics.dto.InventoryAlertsResponse;
 import com.lifepilot.statistics.dto.InventoryStatsResponse;
 import com.lifepilot.statistics.dto.OverviewResponse;
 import com.lifepilot.statistics.dto.ShoppingStatsResponse;
@@ -283,6 +284,51 @@ public class StatisticService {
                 allItems.size(),
                 purchasedItems,
                 recent30Days
+        );
+    }
+
+    /**
+     * Inventory alerts: items expiring within 7 days and low stock items.
+     */
+    public InventoryAlertsResponse getInventoryAlerts(Long userId, Long spaceId) {
+        householdService.requireSpaceMembership(userId, spaceId);
+
+        List<InventoryItem> items = inventoryItemMapper.selectList(
+                new LambdaQueryWrapper<InventoryItem>()
+                        .eq(InventoryItem::getHouseholdId, spaceId));
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime sevenDaysLater = now.plusDays(7);
+
+        List<InventoryAlertsResponse.AlertItem> expiringItems = items.stream()
+                .filter(item -> item.getExpireAt() != null
+                        && item.getExpireAt().isAfter(now)
+                        && item.getExpireAt().isBefore(sevenDaysLater))
+                .map(item -> toAlertItem(item, "expiring"))
+                .collect(Collectors.toList());
+
+        List<InventoryAlertsResponse.AlertItem> lowStockItems = items.stream()
+                .filter(item -> item.getLowStockThreshold() != null
+                        && item.getQuantity() != null
+                        && item.getQuantity().compareTo(item.getLowStockThreshold()) <= 0)
+                .map(item -> toAlertItem(item, "low_stock"))
+                .collect(Collectors.toList());
+
+        int totalAlerts = expiringItems.size() + lowStockItems.size();
+        return new InventoryAlertsResponse(expiringItems, lowStockItems, totalAlerts);
+    }
+
+    private InventoryAlertsResponse.AlertItem toAlertItem(InventoryItem item, String alertType) {
+        return new InventoryAlertsResponse.AlertItem(
+                item.getId(),
+                item.getName(),
+                item.getCategory(),
+                item.getQuantity(),
+                item.getUnit(),
+                item.getLocation(),
+                item.getExpireAt(),
+                item.getLowStockThreshold(),
+                alertType
         );
     }
 

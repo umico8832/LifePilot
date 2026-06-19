@@ -19,9 +19,11 @@ import {
   getOverview,
   getFinanceMonthly,
   getTodoStats,
+  getInventoryAlerts,
   type OverviewResponse,
   type FinanceMonthlyResponse,
   type TodoStatsResponse,
+  type InventoryAlertsResponse,
 } from '@/api/statistics'
 import { generateMonthlyReport, type MonthlyReport } from '@/api/ai'
 import AppShell from '@/layouts/AppShell.vue'
@@ -43,6 +45,10 @@ const overviewError = ref('')
 const financeMonthly = ref<FinanceMonthlyResponse | null>(null)
 const todoStats = ref<TodoStatsResponse | null>(null)
 const chartsLoading = ref(false)
+
+// Inventory alerts
+const inventoryAlerts = ref<InventoryAlertsResponse | null>(null)
+const alertsLoading = ref(false)
 
 // Monthly report
 const reportLoading = ref(false)
@@ -83,12 +89,14 @@ async function loadCharts() {
     const now = new Date()
     const year = now.getFullYear()
     const month = now.getMonth() + 1
-    const [fm, ts] = await Promise.all([
+    const [fm, ts, ia] = await Promise.all([
       getFinanceMonthly(spaceStore.currentSpace.id, year, month),
       getTodoStats(spaceStore.currentSpace.id),
+      getInventoryAlerts(spaceStore.currentSpace.id),
     ])
     financeMonthly.value = fm
     todoStats.value = ts
+    inventoryAlerts.value = ia
   } catch {
     // chart data load failure is non-blocking
   } finally {
@@ -326,6 +334,35 @@ onMounted(async () => {
         <div v-if="todoChartOption" class="chart-card">
           <h3 class="chart-title">✅ 待办状态分布</h3>
           <EChart :option="todoChartOption" height="260px" />
+        </div>
+      </div>
+    </section>
+
+    <!-- Inventory alerts section -->
+    <section
+      v-if="authStore.isAuthenticated && spaceStore.currentSpace && inventoryAlerts && inventoryAlerts.totalAlerts > 0"
+      class="alerts-section"
+    >
+      <h3 class="alerts-title">⚠️ 库存提醒</h3>
+      <div class="alerts-grid">
+        <div v-for="item in inventoryAlerts.expiringItems" :key="'exp-' + item.id" class="alert-item expiring">
+          <div class="alert-item-header">
+            <span class="alert-badge expiring">即将过期</span>
+            <span class="alert-item-name">{{ item.name }}</span>
+          </div>
+          <p class="alert-item-detail">
+            {{ item.category || '未分类' }} · {{ item.quantity }} {{ item.unit || '' }}
+            <span v-if="item.expireAt"> · 过期时间 {{ item.expireAt.slice(0, 10) }}</span>
+          </p>
+        </div>
+        <div v-for="item in inventoryAlerts.lowStockItems" :key="'low-' + item.id" class="alert-item low-stock">
+          <div class="alert-item-header">
+            <span class="alert-badge low-stock">库存不足</span>
+            <span class="alert-item-name">{{ item.name }}</span>
+          </div>
+          <p class="alert-item-detail">
+            {{ item.category || '未分类' }} · 剩余 {{ item.quantity }} {{ item.unit || '' }} / 阈值 {{ item.lowStockThreshold }}
+          </p>
         </div>
       </div>
     </section>
@@ -683,10 +720,89 @@ onMounted(async () => {
   font-family: inherit;
 }
 
+/* ---- Alerts section ---- */
+
+.alerts-section {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #fffbeb;
+  border-radius: 12px;
+  border: 1px solid #fde68a;
+}
+
+.alerts-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 12px;
+  color: #92400e;
+}
+
+.alerts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+.alert-item {
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid #fde68a;
+}
+
+.alert-item.expiring {
+  border-left: 3px solid #f59e0b;
+}
+
+.alert-item.low-stock {
+  border-left: 3px solid #ef4444;
+}
+
+.alert-item-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.alert-badge {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.alert-badge.expiring {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.alert-badge.low-stock {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.alert-item-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.alert-item-detail {
+  font-size: 12px;
+  color: #666;
+  margin: 0;
+}
+
 @media (max-width: 600px) {
   .report-section {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .alerts-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

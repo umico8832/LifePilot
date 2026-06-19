@@ -12,6 +12,7 @@ import com.lifepilot.common.BusinessException;
 import com.lifepilot.security.CurrentUserPrincipal;
 import com.lifepilot.statistics.dto.FinanceCategoriesResponse;
 import com.lifepilot.statistics.dto.FinanceMonthlyResponse;
+import com.lifepilot.statistics.dto.InventoryAlertsResponse;
 import com.lifepilot.statistics.dto.InventoryStatsResponse;
 import com.lifepilot.statistics.dto.OverviewResponse;
 import com.lifepilot.statistics.dto.ShoppingStatsResponse;
@@ -61,6 +62,14 @@ public class StatisticController {
             @PathVariable Long spaceId) {
         requireAuth(principal);
         return ApiResponse.ok(statisticService.getShoppingStats(principal.id(), spaceId));
+    }
+
+    @GetMapping("/inventory/alerts")
+    public ApiResponse<InventoryAlertsResponse> inventoryAlerts(
+            @AuthenticationPrincipal CurrentUserPrincipal principal,
+            @PathVariable Long spaceId) {
+        requireAuth(principal);
+        return ApiResponse.ok(statisticService.getInventoryAlerts(principal.id(), spaceId));
     }
 
     @GetMapping("/inventory")

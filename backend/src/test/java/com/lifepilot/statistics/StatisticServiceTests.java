@@ -25,6 +25,7 @@ import com.lifepilot.shopping.ShoppingItemMapper;
 import com.lifepilot.shopping.ShoppingList;
 import com.lifepilot.shopping.ShoppingListMapper;
 import com.lifepilot.space.HouseholdService;
+import com.lifepilot.statistics.dto.InventoryAlertsResponse;
 import com.lifepilot.statistics.dto.InventoryStatsResponse;
 import com.lifepilot.statistics.dto.OverviewResponse;
 import com.lifepilot.statistics.dto.ShoppingStatsResponse;
@@ -311,5 +312,115 @@ class StatisticServiceTests {
         TodoStatsResponse result = statisticService.getTodoStats(USER_ID, SPACE_ID);
 
         assertEquals(0L, result.overdueCount()); // completed tasks are not overdue
+    }
+
+    // --- getInventoryAlerts ---
+
+    @Test
+    void getInventoryAlerts_emptyReturnsNoAlerts() {
+        when(inventoryItemMapper.selectList(any(LambdaQueryWrapper.class)))
+                .thenReturn(List.of());
+
+        InventoryAlertsResponse result = statisticService.getInventoryAlerts(USER_ID, SPACE_ID);
+
+        assertTrue(result.expiringItems().isEmpty());
+        assertTrue(result.lowStockItems().isEmpty());
+        assertEquals(0, result.totalAlerts());
+    }
+
+    @Test
+    void getInventoryAlerts_expiringItems() {
+        InventoryItem expiringSoon = new InventoryItem();
+        expiringSoon.setId(1L);
+        expiringSoon.setName("Milk");
+        expiringSoon.setCategory("Food");
+        expiringSoon.setQuantity(new BigDecimal("2"));
+        expiringSoon.setUnit("L");
+        expiringSoon.setExpireAt(LocalDateTime.now().plusDays(3));
+
+        InventoryItem notExpiring = new InventoryItem();
+        notExpiring.setId(2L);
+        notExpiring.setName("Rice");
+        notExpiring.setExpireAt(LocalDateTime.now().plusDays(30));
+
+        InventoryItem noExpireDate = new InventoryItem();
+        noExpireDate.setId(3L);
+        noExpireDate.setName("Salt");
+
+        when(inventoryItemMapper.selectList(any(LambdaQueryWrapper.class)))
+                .thenReturn(List.of(expiringSoon, notExpiring, noExpireDate));
+
+        InventoryAlertsResponse result = statisticService.getInventoryAlerts(USER_ID, SPACE_ID);
+
+        assertEquals(1, result.expiringItems().size());
+        assertEquals("Milk", result.expiringItems().get(0).name());
+        assertEquals("expiring", result.expiringItems().get(0).alertType());
+        assertTrue(result.lowStockItems().isEmpty());
+    }
+
+    @Test
+    void getInventoryAlerts_lowStockItems() {
+        InventoryItem lowStock = new InventoryItem();
+        lowStock.setId(1L);
+        lowStock.setName("Toothpaste");
+        lowStock.setCategory("Daily");
+        lowStock.setQuantity(new BigDecimal("1"));
+        lowStock.setUnit("tube");
+        lowStock.setLowStockThreshold(new BigDecimal("2"));
+
+        InventoryItem okStock = new InventoryItem();
+        okStock.setId(2L);
+        okStock.setName("Shampoo");
+        okStock.setQuantity(new BigDecimal("5"));
+        okStock.setLowStockThreshold(new BigDecimal("2"));
+
+        InventoryItem noThreshold = new InventoryItem();
+        noThreshold.setId(3L);
+        noThreshold.setName("Towel");
+        noThreshold.setQuantity(new BigDecimal("0"));
+
+        when(inventoryItemMapper.selectList(any(LambdaQueryWrapper.class)))
+                .thenReturn(List.of(lowStock, okStock, noThreshold));
+
+        InventoryAlertsResponse result = statisticService.getInventoryAlerts(USER_ID, SPACE_ID);
+
+        assertTrue(result.expiringItems().isEmpty());
+        assertEquals(1, result.lowStockItems().size());
+        assertEquals("Toothpaste", result.lowStockItems().get(0).name());
+        assertEquals("low_stock", result.lowStockItems().get(0).alertType());
+    }
+
+    @Test
+    void getInventoryAlerts_mixedAlerts() {
+        InventoryItem both = new InventoryItem();
+        both.setId(1L);
+        both.setName("Yogurt");
+        both.setQuantity(new BigDecimal("1"));
+        both.setLowStockThreshold(new BigDecimal("3"));
+        both.setExpireAt(LocalDateTime.now().plusDays(2));
+
+        when(inventoryItemMapper.selectList(any(LambdaQueryWrapper.class)))
+                .thenReturn(List.of(both));
+
+        InventoryAlertsResponse result = statisticService.getInventoryAlerts(USER_ID, SPACE_ID);
+
+        assertEquals(1, result.expiringItems().size());
+        assertEquals(1, result.lowStockItems().size());
+        assertEquals(2, result.totalAlerts());
+    }
+
+    @Test
+    void getInventoryAlerts_alreadyExpiredNotIncluded() {
+        InventoryItem expired = new InventoryItem();
+        expired.setId(1L);
+        expired.setName("Old Milk");
+        expired.setExpireAt(LocalDateTime.now().minusDays(1)); // already expired
+
+        when(inventoryItemMapper.selectList(any(LambdaQueryWrapper.class)))
+                .thenReturn(List.of(expired));
+
+        InventoryAlertsResponse result = statisticService.getInventoryAlerts(USER_ID, SPACE_ID);
+
+        assertTrue(result.expiringItems().isEmpty()); // only expiring within 7 days, not already expired
     }
 }
