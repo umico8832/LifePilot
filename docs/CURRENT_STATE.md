@@ -39,9 +39,10 @@ P6-001 完成。当前处于 P6 智能饮食阶段（Phase 18）；最近完成 
 - 后端 `./mvnw test -B -Dtest="AiServiceTests"`：通过，13 tests passed（含 P6-001 新增 4 个）。
 - 前端 `npm test`：通过，11 个测试文件共 91 项测试全部通过。
 - 前端 `npm run build`：通过。
-- 注：集成测试（`@SpringBootTest` 类）因 P5-001 遗留的 H2 Flyway `meal_plan` 表映射问题持续失败（`Cannot resolve reference to bean 'sqlSessionTemplate'`），为 P5-001 已知遗留问题，非 P6-001 引入。
-- 文档归档脚本 `python3 scripts/agent_changelog_archive.py`：待运行。
-- 文档一致性检查 `python3 scripts/agent_doc_check.py`：待运行。
+- 后端 `./mvnw test -B`：通过，234 tests passed（修复 `MealPlanMapper` 缺少 `@Mapper` 导致的 Spring 上下文和真实服务启动失败）。
+- 实机联调：MySQL（3307）下后端服务成功启动（18081），健康检查返回 `UP`；浏览器完成注册、自动登录和创建家庭空间，未发现 console error。
+- 文档归档脚本 `python3 scripts/agent_changelog_archive.py`：通过。
+- 文档一致性检查 `python3 scripts/agent_doc_check.py`：任务池无 `todo`，按自主开发协议返回当前阶段完成的停止条件。
 
 ## 注意事项
 
@@ -58,4 +59,4 @@ P6-001 完成。当前处于 P6 智能饮食阶段（Phase 18）；最近完成 
 - 饮食计划 `meal_plan` 表由 V9 迁移创建，包含外键约束关联 `household`、`recipe` 和 `users` 表。
 - `AiProvider` 接口新增 `recommendRecipes` 方法；`RecipeRecommendationResponse` DTO 新增于 `ai/dto/`。
 - `AiService` 构造函数新增 `RecipeMapper` 依赖。
-- 集成测试（`@SpringBootTest`）因 P5-001 遗留的 H2/Flyway 兼容问题仍失败，单元测试全部通过。
+- `MealPlanMapper` 已显式标注 `@Mapper`，完整测试与真实 MySQL 服务启动均已恢复。

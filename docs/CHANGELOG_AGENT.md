@@ -12,6 +12,19 @@ python3 scripts/agent_changelog_archive.py --keep 10
 
 脚本默认保留最近 10 条完整记录，并刷新 `docs/RECENT_HISTORY.md`。
 
+## 2026-06-20 22:26 Asia/Shanghai 修复饮食计划 Mapper 注册导致的服务启动失败
+
+- 任务：修复实际体验验证发现的后端启动阻断问题。
+- 改动：为 `backend/src/main/java/com/lifepilot/recipe/MealPlanMapper.java` 补充 MyBatis `@Mapper` 注解，使其与其余 Mapper 的注册方式一致。
+- 影响：修复 `MealPlanService` 无法注入 `MealPlanMapper` 的问题；恢复所有 `@SpringBootTest` 控制器测试和真实 MySQL 环境中的后端服务启动。
+
+**验证**：
+- `cd backend && ./mvnw test -B`：234 tests passed。
+- MySQL（3307）联调下，后端（18081）启动成功，`GET /api/health` 返回 `UP`。
+- 浏览器：完成注册、自动登录、创建家庭空间；未发现 console error。
+
+---
+
 ## 2026-06-19 20:25 Asia/Shanghai P6-001 AI 根据库存推荐菜谱
 
 - **任务**：P6-001 AI 根据库存推荐菜谱
@@ -140,22 +153,3 @@ python3 scripts/agent_changelog_archive.py --keep 10
 - `cd backend && ./mvnw test -B`：通过，198 tests passed（原 121 + 新增 77）。
 - `python3 scripts/agent_changelog_archive.py`：通过。
 - `python3 scripts/agent_doc_check.py`：通过。
-
-## 2026-06-19 12:18 Asia/Shanghai 修复 Agent 文档漂移检查和历史摘要生成
-
-**任务**：修复 Agent 文档漂移检查和历史摘要生成
-
-**改动**：
-- `docs/API_DESIGN.md` 标记 `/statistics/inventory` 和 `/statistics/todos` 为已完成，并补充返回内容说明，避免与 P1-015 done 状态冲突。
-- `docs/CURRENT_STATE.md` 将当前阶段改为 P3 质量补强阶段描述，避免 Phase 10 完成与下一任务 Phase 12 并存时产生误解。
-- `docs/ROADMAP.md` 补齐 Phase 13、Phase 14、Phase 15，覆盖 BACKLOG 已引用的前端测试体系、真实 AI Provider 准备、可视化体验增强。
-- `scripts/agent_changelog_archive.py` 兼容旧格式 `- Agent 任务名称：` 和新格式 `**任务**：` / `**验证**：`，并清理误混入条目的重复维护块。
-- `scripts/agent_doc_check.py` 新增三类防漂移检查：RECENT_HISTORY 占位符、BACKLOG Phase 是否都在 ROADMAP 定义、P1-015 完成后 API 统计接口是否标 ✅。
-
-**验证**：
-- `python3 -m py_compile scripts/agent_changelog_archive.py scripts/agent_doc_check.py`：通过。
-- `python3 scripts/agent_changelog_archive.py`：通过，RECENT_HISTORY 已重新生成且无占位符。
-- `python3 scripts/agent_doc_check.py`：通过。
-- `git diff --check`：通过。
-
-**文档更新**：`docs/API_DESIGN.md`、`docs/CURRENT_STATE.md`、`docs/ROADMAP.md`、`docs/RECENT_HISTORY.md`、`docs/CHANGELOG_AGENT.md`。
