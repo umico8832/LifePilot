@@ -18,6 +18,7 @@ import com.lifepilot.ai.dto.ShoppingDraftResponse;
 import com.lifepilot.ai.dto.TodoDraftResponse;
 import com.lifepilot.ai.dto.TransactionDraftResponse;
 import com.lifepilot.inventory.InventoryItem;
+import com.lifepilot.recipe.MealPlan;
 import com.lifepilot.recipe.Recipe;
 
 /**
@@ -472,6 +473,78 @@ public class MockAiProvider implements AiProvider {
         return new RecipeRecommendationResponse(results);
     }
 
+    @Override
+    public ShoppingDraftResponse draftShoppingListFromMealPlan(
+            List<MealPlan> mealPlans,
+            List<Recipe> recipes,
+            List<InventoryItem> inventory) {
+        if (mealPlans == null || mealPlans.isEmpty()) {
+            return new ShoppingDraftResponse(
+                    "饮食计划采购清单", null, List.of(), true, null,
+                    "当前日期范围内没有饮食计划，请先安排菜谱。"
+            );
+        }
+        if (recipes == null || recipes.isEmpty()) {
+            return new ShoppingDraftResponse(
+                    "饮食计划采购清单", null, List.of(), true, null,
+                    "饮食计划中的菜谱信息不完整，请检查后再生成采购清单。"
+            );
+        }
+
+        Map<Long, Recipe> recipeById = recipes.stream()
+                .filter(recipe -> recipe.getId() != null)
+                .collect(Collectors.toMap(Recipe::getId, recipe -> recipe, (a, b) -> a));
+
+        Map<String, ShoppingDraftResponse.ShoppingDraftItem> neededByKey = new java.util.LinkedHashMap<>();
+        for (MealPlan mealPlan : mealPlans) {
+            Recipe recipe = recipeById.get(mealPlan.getRecipeId());
+            if (recipe == null) {
+                continue;
+            }
+            for (ShoppingDraftResponse.ShoppingDraftItem item : extractIngredientItems(recipe.getIngredientsJson())) {
+                String key = item.name().toLowerCase().trim() + "|" + normalizeUnit(item.unit());
+                ShoppingDraftResponse.ShoppingDraftItem existing = neededByKey.get(key);
+                if (existing == null) {
+                    neededByKey.put(key, item);
+                } else {
+                    neededByKey.put(key, new ShoppingDraftResponse.ShoppingDraftItem(
+                            existing.name(),
+                            existing.quantity().add(item.quantity()),
+                            existing.unit(),
+                            null
+                    ));
+                }
+            }
+        }
+
+        if (neededByKey.isEmpty()) {
+            return new ShoppingDraftResponse(
+                    "饮食计划采购清单", null, List.of(), true,
+                    buildMealPlanRawInput(mealPlans, recipeById),
+                    "饮食计划中的菜谱缺少食材信息，请补充后再生成采购清单。"
+            );
+        }
+
+        List<ShoppingDraftResponse.ShoppingDraftItem> missingItems = neededByKey.values().stream()
+                .map(item -> subtractInventory(item, inventory != null ? inventory : List.of()))
+                .filter(item -> item != null && item.quantity().compareTo(BigDecimal.ZERO) > 0)
+                .collect(Collectors.toList());
+
+        if (missingItems.isEmpty()) {
+            return new ShoppingDraftResponse(
+                    "饮食计划采购清单", null, List.of(), false,
+                    buildMealPlanRawInput(mealPlans, recipeById),
+                    "当前库存已覆盖所选饮食计划的主要食材。"
+            );
+        }
+
+        return new ShoppingDraftResponse(
+                "饮食计划采购清单", null, missingItems, true,
+                buildMealPlanRawInput(mealPlans, recipeById),
+                "已根据饮食计划和当前库存生成缺口清单，请确认数量和单位后创建。"
+        );
+    }
+
     /**
      * Parse ingredientsJson to extract ingredient names.
      * Expected format: JSON array of objects with "name" field, e.g.
@@ -504,6 +577,122 @@ public class MockAiProvider implements AiProvider {
                 return List.of();
             }
         }
+    }
+
+    List<ShoppingDraftResponse.ShoppingDraftItem> extractIngredientItems(String ingredientsJson) {
+        if (ingredientsJson == null || ingredientsJson.isBlank()) {
+            return List.of();
+        }
+        try {
+            List<Map<String, Object>> list = JSON_MAPPER.readValue(ingredientsJson, INGREDIENTS_TYPE);
+            return list.stream()
+                    .map(this::toIngredientItem)
+                    .filter(item -> item != null && item.name() != null && !item.name().isBlank())
+                    .collect(Collectors.toList());
+        } catch (JsonProcessingException e) {
+            try {
+                List<String> names = JSON_MAPPER.readValue(ingredientsJson,
+                        new TypeReference<List<String>>() {});
+                return names.stream()
+                        .filter(n -> n != null && !n.isBlank())
+                        .map(name -> new ShoppingDraftResponse.ShoppingDraftItem(name.trim(), BigDecimal.ONE, null, null))
+                        .collect(Collectors.toList());
+            } catch (JsonProcessingException e2) {
+                return List.of();
+            }
+        }
+    }
+
+    private ShoppingDraftResponse.ShoppingDraftItem toIngredientItem(Map<String, Object> map) {
+        Object rawName = map.get("name");
+        if (rawName == null || rawName.toString().isBlank()) {
+            return null;
+        }
+        String name = rawName.toString().trim();
+        String unit = valueAsString(map.get("unit"));
+        BigDecimal quantity = null;
+        Object rawQuantity = map.get("quantity");
+        if (rawQuantity instanceof Number number) {
+            quantity = new BigDecimal(number.toString());
+        } else {
+            QuantityParts parts = parseQuantityParts(valueAsString(rawQuantity));
+            quantity = parts.quantity();
+            if (unit == null) {
+                unit = parts.unit();
+            }
+        }
+        if (quantity == null) {
+            quantity = BigDecimal.ONE;
+        }
+
+        return new ShoppingDraftResponse.ShoppingDraftItem(name, quantity, unit, null);
+    }
+
+    private ShoppingDraftResponse.ShoppingDraftItem subtractInventory(
+            ShoppingDraftResponse.ShoppingDraftItem needed,
+            List<InventoryItem> inventory) {
+        for (InventoryItem item : inventory) {
+            if (item.getName() == null || item.getName().isBlank()) {
+                continue;
+            }
+            String inventoryName = item.getName().toLowerCase().trim();
+            String neededName = needed.name().toLowerCase().trim();
+            if (!inventoryName.contains(neededName) && !neededName.contains(inventoryName)) {
+                continue;
+            }
+
+            BigDecimal inventoryQty = item.getQuantity();
+            if (inventoryQty == null || inventoryQty.compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
+            }
+
+            String inventoryUnit = normalizeUnit(item.getUnit());
+            String neededUnit = normalizeUnit(needed.unit());
+            if (inventoryUnit.equals(neededUnit) && !neededUnit.isBlank()) {
+                BigDecimal shortage = needed.quantity().subtract(inventoryQty);
+                if (shortage.compareTo(BigDecimal.ZERO) > 0) {
+                    return new ShoppingDraftResponse.ShoppingDraftItem(needed.name(), shortage, needed.unit(), null);
+                }
+            }
+            return null;
+        }
+        return needed;
+    }
+
+    private String buildMealPlanRawInput(List<MealPlan> mealPlans, Map<Long, Recipe> recipeById) {
+        return mealPlans.stream()
+                .map(plan -> {
+                    Recipe recipe = recipeById.get(plan.getRecipeId());
+                    String recipeName = recipe != null ? recipe.getName() : "未知菜谱";
+                    return plan.getPlannedDate() + " " + plan.getMealType() + " " + recipeName;
+                })
+                .collect(Collectors.joining("；"));
+    }
+
+    private QuantityParts parseQuantityParts(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return new QuantityParts(null, null);
+        }
+        Matcher matcher = Pattern.compile("^(\\d+(?:\\.\\d+)?)\\s*([^\\d\\s]+)?$").matcher(raw.trim());
+        if (!matcher.matches()) {
+            return new QuantityParts(null, null);
+        }
+        return new QuantityParts(new BigDecimal(matcher.group(1)), matcher.group(2));
+    }
+
+    private String valueAsString(Object value) {
+        if (value == null) {
+            return null;
+        }
+        String text = value.toString().trim();
+        return text.isEmpty() ? null : text;
+    }
+
+    private String normalizeUnit(String unit) {
+        return unit == null ? "" : unit.trim().toLowerCase();
+    }
+
+    private record QuantityParts(BigDecimal quantity, String unit) {
     }
 
     /**

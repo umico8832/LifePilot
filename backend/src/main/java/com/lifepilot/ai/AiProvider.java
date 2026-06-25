@@ -7,6 +7,7 @@ import com.lifepilot.ai.dto.ShoppingDraftResponse;
 import com.lifepilot.ai.dto.TodoDraftResponse;
 import com.lifepilot.ai.dto.TransactionDraftResponse;
 import com.lifepilot.inventory.InventoryItem;
+import com.lifepilot.recipe.MealPlan;
 import com.lifepilot.recipe.Recipe;
 
 /**
@@ -43,4 +44,10 @@ public interface AiProvider {
      * Returns an empty list if no recipes can be recommended.
      */
     RecipeRecommendationResponse recommendRecipes(List<InventoryItem> inventory, List<Recipe> recipes);
+
+    /**
+     * Generate a shopping list draft from planned meals and current inventory.
+     * Returns a reviewable draft; callers must not write business records without user confirmation.
+     */
+    ShoppingDraftResponse draftShoppingListFromMealPlan(List<MealPlan> mealPlans, List<Recipe> recipes, List<InventoryItem> inventory);
 }

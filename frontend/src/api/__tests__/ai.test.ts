@@ -13,6 +13,7 @@ import {
   parseShoppingList,
   parseTodo,
   generateMonthlyReport,
+  draftShoppingListFromMealPlan,
 } from '../ai'
 
 const mockedGet = vi.mocked(http.get)
@@ -107,6 +108,27 @@ describe('ai API', () => {
       params: { year: 2026, month: 6 },
     })
     expect(result).toEqual(mockReport)
+  })
+
+  it('draftShoppingListFromMealPlan calls GET with date range params', async () => {
+    const mockDraft = {
+      listName: '饮食计划采购清单',
+      estimatedBudget: null,
+      items: [
+        { name: '番茄', quantity: 2, unit: '个', estimatedPrice: null },
+      ],
+      needsReview: true,
+      rawInput: '2026-06-22 lunch 番茄炒蛋',
+      validationMessage: '请确认数量和单位后创建。',
+    }
+    mockedGet.mockResolvedValue({ data: { data: mockDraft } })
+
+    const result = await draftShoppingListFromMealPlan(1, '2026-06-22', '2026-06-28')
+
+    expect(mockedGet).toHaveBeenCalledWith('/api/ai/spaces/1/meal-plan-shopping-draft', {
+      params: { startDate: '2026-06-22', endDate: '2026-06-28' },
+    })
+    expect(result).toEqual(mockDraft)
   })
 
   it('propagates errors from http calls', async () => {

@@ -1,11 +1,13 @@
 package com.lifepilot.ai;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -18,6 +20,7 @@ import com.lifepilot.ai.dto.ParseTransactionRequest;
 import com.lifepilot.ai.dto.ShoppingDraftResponse;
 import com.lifepilot.ai.dto.TodoDraftResponse;
 import com.lifepilot.ai.dto.TransactionDraftResponse;
+import com.lifepilot.common.BusinessException;
 import com.lifepilot.finance.TransactionCategory;
 import com.lifepilot.finance.TransactionCategoryMapper;
 import com.lifepilot.finance.TransactionRecord;
@@ -25,6 +28,8 @@ import com.lifepilot.finance.TransactionRecordMapper;
 import com.lifepilot.ai.dto.RecipeRecommendationResponse;
 import com.lifepilot.inventory.InventoryItem;
 import com.lifepilot.inventory.InventoryItemMapper;
+import com.lifepilot.recipe.MealPlan;
+import com.lifepilot.recipe.MealPlanMapper;
 import com.lifepilot.recipe.Recipe;
 import com.lifepilot.recipe.RecipeMapper;
 import com.lifepilot.shopping.ShoppingList;
@@ -44,6 +49,7 @@ public class AiService {
     private final ShoppingListMapper shoppingListMapper;
     private final TodoTaskMapper todoTaskMapper;
     private final RecipeMapper recipeMapper;
+    private final MealPlanMapper mealPlanMapper;
 
     public AiService(AiProvider aiProvider, HouseholdService householdService,
                      TransactionRecordMapper transactionRecordMapper,
@@ -51,7 +57,8 @@ public class AiService {
                      InventoryItemMapper inventoryItemMapper,
                      ShoppingListMapper shoppingListMapper,
                      TodoTaskMapper todoTaskMapper,
-                     RecipeMapper recipeMapper) {
+                     RecipeMapper recipeMapper,
+                     MealPlanMapper mealPlanMapper) {
         this.aiProvider = aiProvider;
         this.householdService = householdService;
         this.transactionRecordMapper = transactionRecordMapper;
@@ -60,6 +67,7 @@ public class AiService {
         this.shoppingListMapper = shoppingListMapper;
         this.todoTaskMapper = todoTaskMapper;
         this.recipeMapper = recipeMapper;
+        this.mealPlanMapper = mealPlanMapper;
     }
 
     public TransactionDraftResponse parseTransaction(Long userId, Long spaceId, ParseTransactionRequest request) {
@@ -253,5 +261,42 @@ public class AiService {
                         .eq(Recipe::getHouseholdId, spaceId));
 
         return aiProvider.recommendRecipes(inventoryItems, recipes);
+    }
+
+    public ShoppingDraftResponse draftShoppingListFromMealPlan(
+            Long userId, Long spaceId, LocalDate startDate, LocalDate endDate) {
+        householdService.requireSpaceMembership(userId, spaceId);
+
+        if (startDate != null && endDate != null && endDate.isBefore(startDate)) {
+            throw new BusinessException("VALIDATION_ERROR", "endDate must not be before startDate");
+        }
+
+        LambdaQueryWrapper<MealPlan> mealPlanWrapper = new LambdaQueryWrapper<MealPlan>()
+                .eq(MealPlan::getHouseholdId, spaceId);
+        if (startDate != null) {
+            mealPlanWrapper.ge(MealPlan::getPlannedDate, startDate);
+        }
+        if (endDate != null) {
+            mealPlanWrapper.le(MealPlan::getPlannedDate, endDate);
+        }
+        mealPlanWrapper.orderByAsc(MealPlan::getPlannedDate).orderByAsc(MealPlan::getMealType);
+        List<MealPlan> mealPlans = mealPlanMapper.selectList(mealPlanWrapper);
+
+        Set<Long> recipeIds = mealPlans.stream()
+                .map(MealPlan::getRecipeId)
+                .filter(id -> id != null)
+                .collect(Collectors.toSet());
+
+        List<Recipe> recipes = recipeIds.isEmpty()
+                ? List.of()
+                : recipeMapper.selectList(new LambdaQueryWrapper<Recipe>()
+                        .eq(Recipe::getHouseholdId, spaceId)
+                        .in(Recipe::getId, recipeIds));
+
+        List<InventoryItem> inventoryItems = inventoryItemMapper.selectList(
+                new LambdaQueryWrapper<InventoryItem>()
+                        .eq(InventoryItem::getHouseholdId, spaceId));
+
+        return aiProvider.draftShoppingListFromMealPlan(mealPlans, recipes, inventoryItems);
     }
 }

@@ -44,11 +44,13 @@ LifePilot 使用前后端分离架构：
 
 ### Provider 接口与当前实现
 
-`AiProvider` 接口位于 `backend/ai/AiProvider.java`，当前定义三个解析方法：
+`AiProvider` 接口位于 `backend/ai/AiProvider.java`，当前定义自然语言解析和生活建议草稿方法：
 
 - `parseTransaction(String text)`：自然语言 → 记账草稿
 - `parseShoppingList(String text)`：自然语言 → 购物清单草稿
 - `parseTodo(String text)`：自然语言 → 待办草稿
+- `recommendRecipes(List<InventoryItem>, List<Recipe>)`：库存 + 菜谱 → 菜谱推荐
+- `draftShoppingListFromMealPlan(List<MealPlan>, List<Recipe>, List<InventoryItem>)`：饮食计划 + 菜谱 + 库存 → 购物清单草稿
 
 月度报告由 `AiService.generateMonthlyReport` 直接聚合业务数据生成，不经过 `AiProvider` 接口，未来可将文本润色和建议生成委托给真实 provider。
 
@@ -92,6 +94,7 @@ lifepilot:
 
 - 未来可增加更多 provider 实现（如 Azure OpenAI、Anthropic、Ollama 本地模型）。
 - `parseTransaction` / `parseShoppingList` / `parseTodo` 可统一改为异步流式返回（当前设计为同步）。
+- 菜谱推荐和饮食计划采购草稿当前由本地确定性算法计算；真实 provider 启用时仍委托 mock 算法，避免引入不可控建议和外部成本。
 - 月度报告的文本润色和建议生成可委托给真实 provider，当前由 `AiService` 硬编码模板。
 - 后续可增加 `AiCallLog` 记录每次外部调用的 token 用量、耗时和结果摘要。
 
@@ -119,4 +122,3 @@ lifepilot:
 - OCR provider。
 - GitHub Actions CI。
 - 移动端或 PWA。
-

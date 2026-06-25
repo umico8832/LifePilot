@@ -1,6 +1,9 @@
 package com.lifepilot.ai;
 
+import java.time.LocalDate;
+
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -86,5 +89,17 @@ public class AiController {
             throw new BusinessException("UNAUTHORIZED", "Authentication required");
         }
         return ApiResponse.ok(aiService.recommendRecipes(principal.id(), spaceId));
+    }
+
+    @GetMapping("/spaces/{spaceId}/meal-plan-shopping-draft")
+    public ApiResponse<ShoppingDraftResponse> draftShoppingListFromMealPlan(
+            @AuthenticationPrincipal CurrentUserPrincipal principal,
+            @PathVariable Long spaceId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        if (principal == null) {
+            throw new BusinessException("UNAUTHORIZED", "Authentication required");
+        }
+        return ApiResponse.ok(aiService.draftShoppingListFromMealPlan(principal.id(), spaceId, startDate, endDate));
     }
 }

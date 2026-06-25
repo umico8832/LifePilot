@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { CalendarDays, AlertCircle, RefreshCw, ChevronLeft, ChevronRight, Sparkles } from '@lucide/vue'
+import { CalendarDays, AlertCircle, RefreshCw, ChevronLeft, ChevronRight, Sparkles, ShoppingCart } from '@lucide/vue'
 
 import AppShell from '@/layouts/AppShell.vue'
 import { useSpaceStore } from '@/stores/space'
@@ -13,7 +13,8 @@ import {
   deleteMealPlan,
   type MealPlanResponse,
 } from '@/api/mealplan'
-import { recommendRecipes, type RecommendedRecipe } from '@/api/ai'
+import { draftShoppingListFromMealPlan, recommendRecipes, type RecommendedRecipe, type ShoppingDraft } from '@/api/ai'
+import { addShoppingItem, createShoppingList } from '@/api/shopping'
 
 const spaceStore = useSpaceStore()
 const mealPlans = ref<MealPlanResponse[]>([])
@@ -35,6 +36,10 @@ const mealTypeOrder = ['breakfast', 'lunch', 'dinner', 'snack']
 const recommendations = ref<RecommendedRecipe[]>([])
 const recommendLoading = ref(false)
 const showRecommendPanel = ref(false)
+const shoppingDraft = ref<ShoppingDraft | null>(null)
+const shoppingDraftLoading = ref(false)
+const shoppingDraftCreating = ref(false)
+const showShoppingDraftPanel = ref(false)
 
 const form = ref({
   recipeId: null as number | null,
@@ -228,6 +233,57 @@ async function loadRecommendations() {
   }
 }
 
+async function loadShoppingDraft() {
+  if (!spaceStore.currentSpace) return
+  shoppingDraftLoading.value = true
+  showShoppingDraftPanel.value = true
+  try {
+    const start = formatDateStr(weekStart.value)
+    const endDate = new Date(weekStart.value)
+    endDate.setDate(endDate.getDate() + 6)
+    shoppingDraft.value = await draftShoppingListFromMealPlan(
+      spaceStore.currentSpace.id,
+      start,
+      formatDateStr(endDate),
+    )
+  } catch {
+    shoppingDraft.value = null
+    ElMessage.error('生成采购清单失败')
+  } finally {
+    shoppingDraftLoading.value = false
+  }
+}
+
+async function createShoppingListFromDraft() {
+  if (!spaceStore.currentSpace || !shoppingDraft.value) return
+  if (shoppingDraft.value.items.length === 0) {
+    ElMessage.warning('当前没有可创建的采购项')
+    return
+  }
+  shoppingDraftCreating.value = true
+  try {
+    const list = await createShoppingList(spaceStore.currentSpace.id, {
+      name: shoppingDraft.value.listName || '饮食计划采购清单',
+      estimatedBudget: shoppingDraft.value.estimatedBudget ?? undefined,
+    })
+    for (const item of shoppingDraft.value.items) {
+      await addShoppingItem(spaceStore.currentSpace.id, list.id, {
+        name: item.name,
+        quantity: item.quantity,
+        unit: item.unit ?? undefined,
+        estimatedPrice: item.estimatedPrice ?? undefined,
+      })
+    }
+    ElMessage.success('采购清单已创建')
+    shoppingDraft.value = null
+    showShoppingDraftPanel.value = false
+  } catch {
+    ElMessage.error('创建采购清单失败')
+  } finally {
+    shoppingDraftCreating.value = false
+  }
+}
+
 function useRecommendation(recipe: RecommendedRecipe) {
   // Pre-fill the create dialog with the recommended recipe
   const recipeObj = recipes.value.find(r => r.id === recipe.recipeId)
@@ -304,7 +360,51 @@ function getScoreColor(score: number): string {
             <Sparkles :size="14" style="margin-right: 4px" />
             AI 菜谱推荐
           </el-button>
+          <el-button :loading="shoppingDraftLoading" @click="loadShoppingDraft">
+            <ShoppingCart :size="14" style="margin-right: 4px" />
+            生成采购清单
+          </el-button>
           <span class="recommend-hint">根据库存推荐可制作的菜谱</span>
+        </div>
+
+        <!-- Meal-plan shopping draft panel -->
+        <div v-if="showShoppingDraftPanel" class="shopping-draft-panel">
+          <div v-if="shoppingDraftLoading" class="recommend-loading">
+            <el-icon class="is-loading"><RefreshCw :size="16" /></el-icon>
+            正在分析本周饮食计划和库存…
+          </div>
+          <template v-else-if="shoppingDraft">
+            <div class="shopping-draft-header">
+              <div>
+                <div class="shopping-draft-title">{{ shoppingDraft.listName }}</div>
+                <div v-if="shoppingDraft.validationMessage" class="shopping-draft-message">
+                  {{ shoppingDraft.validationMessage }}
+                </div>
+              </div>
+              <el-button
+                type="primary"
+                :disabled="shoppingDraft.items.length === 0"
+                :loading="shoppingDraftCreating"
+                @click="createShoppingListFromDraft"
+              >
+                创建清单
+              </el-button>
+            </div>
+            <div v-if="shoppingDraft.items.length === 0" class="recommend-empty">
+              暂无需要采购的食材。
+            </div>
+            <div v-else class="shopping-draft-items">
+              <div v-for="item in shoppingDraft.items" :key="`${item.name}-${item.unit || ''}`" class="shopping-draft-item">
+                <span class="shopping-draft-name">{{ item.name }}</span>
+                <span class="shopping-draft-quantity">
+                  {{ item.quantity }}{{ item.unit || '' }}
+                </span>
+              </div>
+            </div>
+          </template>
+          <div v-else class="recommend-empty">
+            暂未生成采购草稿。
+          </div>
         </div>
 
         <!-- Recommendation panel -->
@@ -653,6 +753,64 @@ function getScoreColor(score: number): string {
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 16px;
+}
+
+.shopping-draft-panel {
+  background: var(--el-fill-color-blank, #fff);
+  border: 1px solid var(--el-border-color-light, #e4e7ed);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.shopping-draft-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.shopping-draft-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text, #333);
+}
+
+.shopping-draft-message {
+  margin-top: 4px;
+  color: var(--color-muted, #888);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.shopping-draft-items {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+}
+
+.shopping-draft-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--el-border-color-lighter, #ebeef5);
+  border-radius: 6px;
+  background: var(--el-fill-color-light, #f5f7fa);
+  font-size: 13px;
+}
+
+.shopping-draft-name {
+  color: var(--color-text, #333);
+  overflow-wrap: anywhere;
+}
+
+.shopping-draft-quantity {
+  color: var(--el-color-primary, #409eff);
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .recommend-loading {

@@ -172,3 +172,12 @@
 - 数据库任务：无（使用已有 recipe 和 inventory 表）。
 - AI 任务：mock provider 使用确定性匹配算法，不接真实 AI；后续可替换为真实 LLM 推荐。
 - 验收标准：`GET /api/ai/spaces/{spaceId}/recommend-recipes` 返回推荐列表；前端推荐面板可展示和交互；后端单元测试通过。
+
+## Phase 19：饮食采购闭环
+
+- 目标：根据一周饮食计划和当前库存生成购物清单草稿，打通“库存 → 菜谱 → 饮食计划 → 采购清单”的生活数据闭环。
+- 后端任务：AiProvider 接口新增 `draftShoppingListFromMealPlan`；MockAiProvider 解析菜谱食材并计算库存缺口；AiService 按日期范围查询 meal_plan、recipe、inventory；AiController 新增草稿端点。
+- 前端任务：MealPlanView 新增"生成采购清单"按钮、草稿面板和确认创建购物清单流程，复用现有 shopping API 写入清单和清单项。
+- 数据库任务：无（复用 meal_plan、recipe、inventory_item、shopping_list、shopping_item）。
+- AI 任务：mock provider 使用确定性缺口计算；真实 provider 当前仍委托本地算法，不自动下单，不绕过用户确认。
+- 验收标准：`GET /api/ai/spaces/{spaceId}/meal-plan-shopping-draft?startDate=&endDate=` 返回购物清单草稿；前端可展示草稿并在用户确认后创建购物清单；后端和前端测试通过。

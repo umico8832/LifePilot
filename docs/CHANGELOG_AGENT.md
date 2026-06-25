@@ -12,6 +12,26 @@ python3 scripts/agent_changelog_archive.py --keep 10
 
 脚本默认保留最近 10 条完整记录，并刷新 `docs/RECENT_HISTORY.md`。
 
+## 2026-06-25 14:00 Asia/Shanghai P6-002 根据饮食计划和库存生成购物清单草稿
+
+- 任务：P6-002 根据饮食计划和库存生成购物清单草稿
+- 改动：
+  - 后端：`AiProvider` 新增 `draftShoppingListFromMealPlan(List<MealPlan>, List<Recipe>, List<InventoryItem>)` 方法；`MockAiProvider` 新增菜谱食材解析与库存缺口计算，支持从 `ingredientsJson` 中读取食材名称、数量和单位，并在同单位库存不足时只生成差额采购项；`OpenAiProvider` 继续委托本地 mock 算法，不新增真实 AI 调用；`AiService` 新增按日期范围查询饮食计划、对应菜谱和库存的草稿方法；`AiController` 新增 `GET /api/ai/spaces/{spaceId}/meal-plan-shopping-draft?startDate=&endDate=` 端点。
+  - 前端：`ai.ts` 新增 `draftShoppingListFromMealPlan()` API 方法；`MealPlanView.vue` 新增“生成采购清单”按钮、采购草稿面板和确认创建流程，用户确认后复用现有 `createShoppingList` / `addShoppingItem` API 写入业务数据。
+  - 测试：新增 `MockAiProviderTest` 覆盖库存缺口计算和无计划提示；`AiServiceTests` 新增饮食计划购物草稿查询、空计划和日期校验测试；`ai.test.ts` 新增前端 API 路径与参数测试。
+**验证**：
+  - `cd backend && ./mvnw test -B -Dtest="AiServiceTests,MockAiProviderTest,OpenAiProviderTest"`：26 tests passed。
+  - `cd frontend && npm test -- ai.test.ts`：1 个测试文件 6 tests passed。
+  - `cd backend && ./mvnw test -B`：240 tests passed。
+  - `cd frontend && npm test`：11 个测试文件 92 tests passed。
+  - `cd frontend && npm run build`：通过；仍有既有 Rolldown pure annotation 和大 chunk 警告。
+  - `python3 scripts/agent_changelog_archive.py`：通过。
+  - `python3 scripts/agent_doc_check.py`：按预期返回“BACKLOG has no todo tasks”，触发当前阶段完成的停止条件。
+  - `git diff --check`：通过。
+- **文档更新**：`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/API_DESIGN.md`、`docs/ARCHITECTURE.md`、`docs/ROADMAP.md`、`docs/CHANGELOG_AGENT.md`。
+
+---
+
 ## 2026-06-20 22:26 Asia/Shanghai 修复饮食计划 Mapper 注册导致的服务启动失败
 
 - 任务：修复实际体验验证发现的后端启动阻断问题。
@@ -135,21 +155,3 @@ python3 scripts/agent_changelog_archive.py --keep 10
 - `cd frontend && npm run build`：通过
 
 **状态**：done
-
-## 2026-06-19 12:34 Asia/Shanghai P3-004 后端 Service 层补充测试
-
-**任务**：P3-004 后端 Service 层补充测试
-
-**改动**：
-- 新增 `TransactionServiceTests`（12 用例）：覆盖 create 默认值、create 显式类型货币、非成员拒绝、list 正常和空、get 存在/不存在/错误空间、update 正常/不存在、delete 正常/不存在。
-- 新增 `ShoppingServiceTests`（13 用例）：覆盖 createList、listLists、getList 存在/不存在/错误空间/含子项、updateList、deleteList 正常/不存在、addItem、updateItem 不存在/错误清单、deleteItem 正常/不存在。
-- 新增 `InventoryServiceTests`（12 用例）：覆盖 createItem 正常/默认数量/非成员、listItems 正常/空、getItem 存在/不存在/错误空间、updateItem 正常/不存在、deleteItem 正常/不存在。
-- 新增 `TodoServiceTests`（15 用例）：覆盖 createTask 默认优先级/显式优先级/无效优先级/非成员、listTasks 无筛选/有筛选、getTask 存在/不存在/错误空间、updateTask 正常/无效状态/无效优先级/不存在、deleteTask 正常/不存在。
-- 新增 `RecipeServiceTests`（11 用例）：覆盖 createRecipe 正常/非成员、listRecipes 正常/空、getRecipe 存在/不存在/错误空间、updateRecipe 正常/不存在、deleteRecipe 正常/不存在。
-- 新增 `DocumentServiceTests`（14 用例）：覆盖 createDocument 正常/无效类型/非成员、listDocuments 正常/类型筛选/空、getDocument 存在/不存在/错误空间、updateDocument 正常/无效类型/不存在、deleteDocument 正常/不存在。
-- 使用 `(EntityType) any()` 显式类型转换解决 MyBatis-Plus BaseMapper 方法重载歧义。
-
-**验证**：
-- `cd backend && ./mvnw test -B`：通过，198 tests passed（原 121 + 新增 77）。
-- `python3 scripts/agent_changelog_archive.py`：通过。
-- `python3 scripts/agent_doc_check.py`：通过。

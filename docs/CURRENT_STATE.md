@@ -2,11 +2,11 @@
 
 ## 当前阶段
 
-P6-001 完成。当前处于 P6 智能饮食阶段（Phase 18）；最近完成 AI 根据库存推荐菜谱功能。
+P6-002 完成。当前处于 P6 智能饮食阶段（Phase 19）；最近完成根据饮食计划和库存生成购物清单草稿功能。
 
 ## 当前最高优先级任务
 
-无待定任务（P6-001 已完成，待规划下一阶段）。
+无待定任务（P6-002 已完成，待规划下一阶段）。
 
 ## 最近完成任务
 
@@ -25,6 +25,7 @@ P6-001 完成。当前处于 P6 智能饮食阶段（Phase 18）；最近完成 
 - P4-005 前端视图层组件测试：新建 `frontend/src/views/__tests__/` 目录，为 AuthView 新增 13 个组件测试（表单提交、登录/注册模式切换、错误消息显示、重定向逻辑），为 FinanceView 新增 12 个组件测试（无空间状态、数据加载、错误态、空态、汇总计算、工具栏按钮）。前端总测试从 66 增长到 91。
 - P5-001 实现一周饮食计划 CRUD：新建 `V9__create_meal_plan.sql` 迁移（meal_plan 表含 household_id、recipe_id、planned_date、meal_type、note 等字段）；后端 `recipe` 模块新增 `MealPlan` 实体、`MealPlanMapper`、`MealPlanService`、`MealPlanController` 和 3 个 DTO（`CreateMealPlanRequest`、`UpdateMealPlanRequest`、`MealPlanResponse`）；前端新建 `mealplan.ts` API 模块、`MealPlanView.vue` 周历视图页面（7 天 × 4 餐次网格、周导航、今日高亮、菜谱选择弹窗）；路由新增 `/mealplan`、AppShell 导航栏新增"饮食计划"入口；新增 13 个 MealPlanService 单元测试。后端总测试从 217 增长到 230。
 - P6-001 AI 根据库存推荐菜谱：后端 `AiProvider` 接口新增 `recommendRecipes(List<InventoryItem>, List<Recipe>)` 方法；新增 `RecipeRecommendationResponse` DTO（含 `RecommendedRecipe` 子记录：recipeId、recipeName、matchedIngredients、missingIngredients、matchScore、reason）；`MockAiProvider` 实现确定性关键词匹配评分逻辑（解析 `ingredientsJson` 中食材名称，与库存物品名称双向包含匹配，按匹配度排序）；`OpenAiProvider` 委托 Mock 实现；`AiService.recommendRecipes()` 查询空间库存和菜谱后委托 provider 计算；`AiController` 新增 `GET /api/ai/spaces/{spaceId}/recommend-recipes` 端点；前端 `ai.ts` 新增 `RecommendedRecipe`、`RecipeRecommendation` 类型和 `recommendRecipes()` 方法；前端 `MealPlanView.vue` 新增"AI 菜谱推荐"按钮和推荐面板（匹配百分比进度条、已匹配/缺失食材列表、推荐理由，点击可快速填入饮食计划）；新增 4 个 AiService 单元测试。后端单元测试 13 通过，前端构建和测试通过。
+- P6-002 根据饮食计划和库存生成购物清单草稿：后端 `AiProvider` 新增 `draftShoppingListFromMealPlan` 方法；`MockAiProvider` 解析菜谱食材数量/单位并结合库存生成缺口购物草稿；`OpenAiProvider` 委托本地 mock 算法；`AiService` 按日期范围查询饮食计划、对应菜谱和库存；`AiController` 新增 `GET /api/ai/spaces/{spaceId}/meal-plan-shopping-draft` 端点；前端 `ai.ts` 新增 API 方法，`MealPlanView.vue` 新增“生成采购清单”按钮、草稿面板和确认创建购物清单流程；新增 `MockAiProviderTest` 和 AiService/API 测试覆盖。
 
 ## 当前阻塞项
 
@@ -32,17 +33,17 @@ P6-001 完成。当前处于 P6 智能饮食阶段（Phase 18）；最近完成 
 
 ## 下一项自动任务
 
-待定（P6-001 已完成）。
+待定（P6-002 已完成）。
 
 ## 最近验证结果
 
-- 后端 `./mvnw test -B -Dtest="AiServiceTests"`：通过，13 tests passed（含 P6-001 新增 4 个）。
-- 前端 `npm test`：通过，11 个测试文件共 91 项测试全部通过。
-- 前端 `npm run build`：通过。
-- 后端 `./mvnw test -B`：通过，234 tests passed（修复 `MealPlanMapper` 缺少 `@Mapper` 导致的 Spring 上下文和真实服务启动失败）。
+- 后端 `./mvnw test -B`：通过，240 tests passed（P6-002 后新增 6 项测试）。
+- 前端 `npm test`：通过，11 个测试文件共 92 项测试全部通过。
+- 前端 `npm run build`：通过；仍有既有 Rolldown pure annotation 和大 chunk 警告。
 - 实机联调：MySQL（3307）下后端服务成功启动（18081），健康检查返回 `UP`；浏览器完成注册、自动登录和创建家庭空间，未发现 console error。
 - 文档归档脚本 `python3 scripts/agent_changelog_archive.py`：通过。
 - 文档一致性检查 `python3 scripts/agent_doc_check.py`：任务池无 `todo`，按自主开发协议返回当前阶段完成的停止条件。
+- `git diff --check`：通过。
 
 ## 注意事项
 
@@ -59,4 +60,6 @@ P6-001 完成。当前处于 P6 智能饮食阶段（Phase 18）；最近完成 
 - 饮食计划 `meal_plan` 表由 V9 迁移创建，包含外键约束关联 `household`、`recipe` 和 `users` 表。
 - `AiProvider` 接口新增 `recommendRecipes` 方法；`RecipeRecommendationResponse` DTO 新增于 `ai/dto/`。
 - `AiService` 构造函数新增 `RecipeMapper` 依赖。
+- `AiService` 构造函数新增 `MealPlanMapper` 依赖。
+- `AiProvider` 接口新增 `draftShoppingListFromMealPlan` 方法；真实 OpenAI provider 当前仍委托本地 mock 算法，不新增外部 AI 调用。
 - `MealPlanMapper` 已显式标注 `@Mapper`，完整测试与真实 MySQL 服务启动均已恢复。

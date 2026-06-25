@@ -14,6 +14,7 @@ import com.lifepilot.ai.dto.ShoppingDraftResponse;
 import com.lifepilot.ai.dto.TodoDraftResponse;
 import com.lifepilot.ai.dto.TransactionDraftResponse;
 import com.lifepilot.inventory.InventoryItem;
+import com.lifepilot.recipe.MealPlan;
 import com.lifepilot.recipe.Recipe;
 
 /**
@@ -129,6 +130,15 @@ public class OpenAiProvider implements AiProvider {
         // For OpenAI provider, we delegate to a new MockAiProvider instance.
         log.info("OpenAI provider: delegating recipe recommendation to local matching algorithm");
         return new MockAiProvider().recommendRecipes(inventory, recipes);
+    }
+
+    @Override
+    public ShoppingDraftResponse draftShoppingListFromMealPlan(
+            List<MealPlan> mealPlans,
+            List<Recipe> recipes,
+            List<InventoryItem> inventory) {
+        log.info("OpenAI provider: delegating meal-plan shopping draft to local matching algorithm");
+        return new MockAiProvider().draftShoppingListFromMealPlan(mealPlans, recipes, inventory);
     }
 
     // ---- Internal helpers ----

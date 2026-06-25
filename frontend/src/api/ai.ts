@@ -122,3 +122,14 @@ export async function recommendRecipes(spaceId: number): Promise<RecipeRecommend
   const res = await http.get(`/api/ai/spaces/${spaceId}/recommend-recipes`)
   return res.data.data
 }
+
+export async function draftShoppingListFromMealPlan(
+  spaceId: number,
+  startDate?: string,
+  endDate?: string,
+): Promise<ShoppingDraft> {
+  const res = await http.get(`/api/ai/spaces/${spaceId}/meal-plan-shopping-draft`, {
+    params: { startDate, endDate },
+  })
+  return res.data.data
+}

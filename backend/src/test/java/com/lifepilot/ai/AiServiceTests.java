@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,6 +26,8 @@ import com.lifepilot.finance.TransactionCategoryMapper;
 import com.lifepilot.finance.TransactionRecordMapper;
 import com.lifepilot.inventory.InventoryItem;
 import com.lifepilot.inventory.InventoryItemMapper;
+import com.lifepilot.recipe.MealPlan;
+import com.lifepilot.recipe.MealPlanMapper;
 import com.lifepilot.recipe.Recipe;
 import com.lifepilot.recipe.RecipeMapper;
 import com.lifepilot.shopping.ShoppingListMapper;
@@ -50,6 +53,8 @@ class AiServiceTests {
     private TodoTaskMapper todoTaskMapper;
     @Mock
     private RecipeMapper recipeMapper;
+    @Mock
+    private MealPlanMapper mealPlanMapper;
 
     @InjectMocks
     private AiService aiService;
@@ -231,5 +236,71 @@ class AiServiceTests {
         RecipeRecommendationResponse result = aiService.recommendRecipes(USER_ID, SPACE_ID);
 
         assertTrue(result.recipes().isEmpty());
+    }
+
+    // --- draftShoppingListFromMealPlan ---
+
+    @Test
+    void draftShoppingListFromMealPlan_returnsProviderDraft() {
+        MealPlan mealPlan = new MealPlan();
+        mealPlan.setRecipeId(20L);
+        mealPlan.setPlannedDate(LocalDate.of(2026, 6, 22));
+        Recipe recipe = new Recipe();
+        recipe.setId(20L);
+        recipe.setName("番茄炒蛋");
+        InventoryItem inventoryItem = new InventoryItem();
+        inventoryItem.setName("鸡蛋");
+
+        ShoppingDraftResponse expected = new ShoppingDraftResponse(
+                "饮食计划采购清单",
+                null,
+                java.util.List.of(new ShoppingDraftResponse.ShoppingDraftItem(
+                        "番茄", BigDecimal.ONE, "个", null)),
+                true,
+                "2026-06-22 lunch 番茄炒蛋",
+                "已根据饮食计划和当前库存生成缺口清单，请确认数量和单位后创建。"
+        );
+
+        when(mealPlanMapper.selectList(any())).thenReturn(java.util.List.of(mealPlan));
+        when(recipeMapper.selectList(any())).thenReturn(java.util.List.of(recipe));
+        when(inventoryItemMapper.selectList(any())).thenReturn(java.util.List.of(inventoryItem));
+        when(aiProvider.draftShoppingListFromMealPlan(anyList(), anyList(), anyList())).thenReturn(expected);
+
+        ShoppingDraftResponse result = aiService.draftShoppingListFromMealPlan(
+                USER_ID, SPACE_ID, LocalDate.of(2026, 6, 22), LocalDate.of(2026, 6, 28));
+
+        assertEquals("饮食计划采购清单", result.listName());
+        assertEquals(1, result.items().size());
+        assertEquals("番茄", result.items().get(0).name());
+        verify(householdService).requireSpaceMembership(USER_ID, SPACE_ID);
+        verify(mealPlanMapper).selectList(any());
+        verify(recipeMapper).selectList(any());
+        verify(inventoryItemMapper).selectList(any());
+        verify(aiProvider).draftShoppingListFromMealPlan(anyList(), anyList(), anyList());
+    }
+
+    @Test
+    void draftShoppingListFromMealPlan_skipsRecipeQueryWhenNoMealPlans() {
+        ShoppingDraftResponse expected = new ShoppingDraftResponse(
+                "饮食计划采购清单", null, java.util.List.of(), true, null,
+                "当前日期范围内没有饮食计划，请先安排菜谱。"
+        );
+
+        when(mealPlanMapper.selectList(any())).thenReturn(java.util.List.of());
+        when(inventoryItemMapper.selectList(any())).thenReturn(java.util.List.of());
+        when(aiProvider.draftShoppingListFromMealPlan(anyList(), anyList(), anyList())).thenReturn(expected);
+
+        ShoppingDraftResponse result = aiService.draftShoppingListFromMealPlan(
+                USER_ID, SPACE_ID, LocalDate.of(2026, 6, 22), LocalDate.of(2026, 6, 28));
+
+        assertTrue(result.needsReview());
+        assertTrue(result.items().isEmpty());
+        verify(recipeMapper, never()).selectList(any());
+    }
+
+    @Test
+    void draftShoppingListFromMealPlan_throwsWhenEndDateBeforeStartDate() {
+        assertThrows(BusinessException.class, () -> aiService.draftShoppingListFromMealPlan(
+                USER_ID, SPACE_ID, LocalDate.of(2026, 6, 28), LocalDate.of(2026, 6, 22)));
     }
 }

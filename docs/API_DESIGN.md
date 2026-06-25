@@ -120,8 +120,23 @@
 - `POST /api/ai/spaces/{spaceId}/parse-shopping` ✅
 - `POST /api/ai/spaces/{spaceId}/parse-todo` ✅
 - `GET /api/ai/spaces/{spaceId}/monthly-report?year=&month=` ✅
+- `GET /api/ai/spaces/{spaceId}/recommend-recipes` ✅
+- `GET /api/ai/spaces/{spaceId}/meal-plan-shopping-draft?startDate=&endDate=` ✅
 
 AI 接口返回草稿，用户确认后再调用业务写入接口。
+
+### 饮食计划生成采购草稿
+
+`GET /api/ai/spaces/{spaceId}/meal-plan-shopping-draft?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD`
+
+返回 `ShoppingDraftResponse`，字段与自然语言购物解析草稿一致：
+
+- `listName`：默认“饮食计划采购清单”。
+- `items`：根据饮食计划中的菜谱食材和当前库存缺口生成，包含 `name`、`quantity`、`unit`、`estimatedPrice`。
+- `needsReview`：固定要求用户确认，尤其是菜谱食材单位可能不标准。
+- `validationMessage`：说明无饮食计划、菜谱不完整、库存已覆盖或需确认后创建等状态。
+
+该接口只生成草稿，不直接写入 `shopping_list` 或 `shopping_item`；前端确认后调用购物清单业务接口创建。
 
 ### AI Provider 配置
 
