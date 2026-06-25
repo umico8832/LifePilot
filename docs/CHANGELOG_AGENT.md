@@ -12,6 +12,26 @@ python3 scripts/agent_changelog_archive.py --keep 10
 
 脚本默认保留最近 10 条完整记录，并刷新 `docs/RECENT_HISTORY.md`。
 
+## 2026-06-25 14:25 Asia/Shanghai 工程体检与构建稳定性修复
+
+- 任务：按用户要求对当前项目做完整工程体检，检查 CI、本地安装、测试、构建和文档运行方式。
+- 改动：
+  - 新增 `REPORT.md`，记录技术栈、CI 失败定位、本地验证结果、已修复问题、仍存在问题和运行/测试/构建方式。
+  - 前端 `vite.config.ts` 新增 `build.chunkSizeWarningLimit: 1000`，匹配当前 Element Plus + ECharts 应用体量，消除既有大 chunk 阈值噪音。
+  - 更新 `docs/CURRENT_STATE.md` 最近验证结果，补充本次工程体检结论。
+- CI 检查：
+  - GitHub Actions 最近远端 CI #12（`14ebfb1`）成功。
+  - 上一失败 CI #11（`ddf0408`）失败 job 为 Backend Tests，失败步骤为 Run tests；公共 API 无权限下载完整 job logs（403），后续提交 `14ebfb1` 已修复 `MealPlanMapper` 注册问题。
+**验证**：
+  - `cd backend && ./mvnw test -B`：240 tests passed。
+  - `cd frontend && npm ci`：通过。
+  - `cd frontend && npm test`：11 个测试文件 92 tests passed。
+  - `cd frontend && npm run build`：通过；大 chunk 警告已消除，仍有第三方 `@vueuse/core` Rolldown pure annotation 警告。
+  - `cd frontend && npm audit --audit-level=high`：0 vulnerabilities。
+  - `cd frontend && npm run lint`：失败，项目尚未定义 lint 脚本。
+
+---
+
 ## 2026-06-25 14:00 Asia/Shanghai P6-002 根据饮食计划和库存生成购物清单草稿
 
 - 任务：P6-002 根据饮食计划和库存生成购物清单草稿
@@ -139,19 +159,6 @@ python3 scripts/agent_changelog_archive.py --keep 10
 **验证**：
 - `cd backend && ./mvnw test -B`：210 tests passed（原 198 新增 12）
 - `cd frontend && npm test`：66 tests passed
-- `cd frontend && npm run build`：通过
-
-**状态**：done
-
-## 2026-06-19 14:50 Asia/Shanghai P3-005 前端 API 层测试补充
-
-- 任务：P3-005 前端 API 层测试补充
-- 改动：
-  - 新增 6 个 API 测试文件：`statistics.test.ts`（7 tests）、`shopping.test.ts`（9 tests）、`inventory.test.ts`（7 tests）、`todo.test.ts`（7 tests）、`document.test.ts`（7 tests）、`ai.test.ts`（5 tests）
-  - 覆盖所有 API 模块的请求路径、参数传递、响应处理和错误传播
-  - 使用 vitest 的 `vi.mock` mock `http` 模块，避免真实网络请求
-**验证**：
-- `cd frontend && npm test`：9 文件 66 tests passed（原 24 新增 42）
 - `cd frontend && npm run build`：通过
 
 **状态**：done
