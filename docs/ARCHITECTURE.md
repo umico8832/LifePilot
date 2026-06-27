@@ -26,6 +26,10 @@ LifePilot 使用前后端分离架构：
 - `ai`：AI provider、结构化解析、调用日志。
 - `statistics`：统计聚合和生活报告。
 
+### AI 调用日志
+
+`ai` 模块通过 `AiCallLogService` 为 AI 解析、月报、菜谱推荐和饮食计划采购草稿记录审计日志。日志保存 provider、scenario、空间、用户、prompt hash、脱敏请求/响应摘要、状态、耗时和错误摘要；自然语言输入不保存原文。日志查询仍通过空间成员权限校验，避免跨空间读取。
+
 ## 前端目录结构
 
 - `src/api`：Axios 实例和接口函数。
@@ -97,6 +101,7 @@ lifepilot:
 - 菜谱推荐和饮食计划采购草稿当前由本地确定性算法计算；真实 provider 启用时仍委托 mock 算法，避免引入不可控建议和外部成本。
 - 月度报告的文本润色和建议生成可委托给真实 provider，当前由 `AiService` 硬编码模板。
 - 后续可增加 `AiCallLog` 记录每次外部调用的 token 用量、耗时和结果摘要。
+- 当前已落地 `AiCallLog` 的基础审计表和查询接口，后续真实 provider 可在此基础上扩展 token、费用、模型名和外部请求 ID。
 
 ## 权限模型
 

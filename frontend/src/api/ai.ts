@@ -133,3 +133,29 @@ export async function draftShoppingListFromMealPlan(
   })
   return res.data.data
 }
+
+export interface AiCallLog {
+  id: number
+  userId: number
+  spaceId: number
+  provider: string
+  scenario: string
+  promptHash: string | null
+  requestJson: string | null
+  responseJson: string | null
+  status: string
+  durationMs: number | null
+  errorMessage: string | null
+  createdAt: string
+}
+
+export interface AiCallLogQuery {
+  scenario?: string
+  status?: string
+  limit?: number
+}
+
+export async function listAiCallLogs(spaceId: number, query: AiCallLogQuery = {}): Promise<AiCallLog[]> {
+  const res = await http.get(`/api/ai/spaces/${spaceId}/call-logs`, { params: query })
+  return res.data.data
+}

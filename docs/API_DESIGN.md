@@ -122,8 +122,25 @@
 - `GET /api/ai/spaces/{spaceId}/monthly-report?year=&month=` ✅
 - `GET /api/ai/spaces/{spaceId}/recommend-recipes` ✅
 - `GET /api/ai/spaces/{spaceId}/meal-plan-shopping-draft?startDate=&endDate=` ✅
+- `GET /api/ai/spaces/{spaceId}/call-logs?scenario=&status=&limit=` ✅
 
 AI 接口返回草稿，用户确认后再调用业务写入接口。
+
+### AI 调用日志
+
+`GET /api/ai/spaces/{spaceId}/call-logs?scenario=&status=&limit=`
+
+返回当前用户所属空间内的 AI 调用审计记录，默认按创建时间倒序返回最近 50 条，`limit` 上限为 100。可选 `scenario` 和 `status` 过滤。
+
+返回字段：
+
+- `id`、`userId`、`spaceId`
+- `provider`：`mock`、`openai` 或自定义 provider 类名。
+- `scenario`：如 `parse_transaction`、`parse_shopping`、`parse_todo`、`monthly_report`、`recommend_recipes`、`meal_plan_shopping_draft`。
+- `promptHash`：自然语言输入的 SHA-256 hash；非自然语言场景可为空。
+- `requestJson` / `responseJson`：脱敏后的摘要 JSON，不保存自然语言输入原文。
+- `status`：`success` 或 `failed`。
+- `durationMs`、`errorMessage`、`createdAt`。
 
 ### 饮食计划生成采购草稿
 

@@ -1,5 +1,6 @@
 package com.lifepilot.ai;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -414,6 +415,32 @@ class AiControllerTests {
                         .param("year", "2026")
                         .param("month", "6"))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void callLogsReturnsSanitizedAiAuditRecords() throws Exception {
+        String body = """
+                { "text": "明天买牛奶" }
+                """;
+
+        mockMvc.perform(post("/api/ai/spaces/" + spaceId + "/parse-todo")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/ai/spaces/" + spaceId + "/call-logs")
+                        .header("Authorization", "Bearer " + token)
+                        .param("scenario", "parse_todo")
+                        .param("status", "success")
+                        .param("limit", "5"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].scenario").value("parse_todo"))
+                .andExpect(jsonPath("$.data[0].status").value("success"))
+                .andExpect(jsonPath("$.data[0].promptHash").isNotEmpty())
+                .andExpect(jsonPath("$.data[0].requestJson").value(org.hamcrest.Matchers.containsString("inputLength")))
+                .andExpect(jsonPath("$.data[0].requestJson").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("买牛奶"))));
     }
 
     private static org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder get(String url) {

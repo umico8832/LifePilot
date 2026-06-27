@@ -12,6 +12,27 @@ python3 scripts/agent_changelog_archive.py --keep 10
 
 脚本默认保留最近 10 条完整记录，并刷新 `docs/RECENT_HISTORY.md`。
 
+## 2026-06-27 14:42 Asia/Shanghai P7-001 AI 调用日志持久化与查询
+
+- 任务：P7-001 AI 调用日志持久化与查询
+- 改动：
+  - 后端：新增 `V10__create_ai_call_log.sql`，创建 `ai_call_log` 表和按 user/household/scenario/status 的查询索引；新增 `AiCallLog`、`AiCallLogMapper`、`AiCallLogService` 和 `AiCallLogResponse`；`AiService` 为自然语言记账、购物草稿、待办草稿、月报、菜谱推荐和饮食计划采购草稿记录成功日志，并在 provider 异常时记录失败日志后继续抛出；`AiController` 新增 `GET /api/ai/spaces/{spaceId}/call-logs?scenario=&status=&limit=` 查询接口。
+  - 安全边界：自然语言输入不保存原文，只保存 SHA-256 `promptHash` 和输入长度等摘要；响应日志只保存类型、条目数、是否需要复核、是否有校验消息等摘要。
+  - 前端：`frontend/src/api/ai.ts` 新增 `AiCallLog`、`AiCallLogQuery` 类型和 `listAiCallLogs()` 方法；`ai.test.ts` 覆盖日志查询路径和参数。
+  - 测试：新增 `AiCallLogServiceTests`；扩展 `AiServiceTests` 和 `AiControllerTests` 覆盖成功日志、失败日志、日志查询和脱敏摘要。
+**验证**：
+  - `cd backend && ./mvnw test -B -Dtest="AiServiceTests,AiCallLogServiceTests,AiControllerTests"`：45 tests passed。
+  - `cd frontend && npm test -- ai.test.ts`：1 个测试文件 7 tests passed。
+  - `cd backend && ./mvnw test -B`：247 tests passed。
+  - `cd frontend && npm test`：11 个测试文件 93 tests passed。
+  - `cd frontend && npm run build`：通过；仍有既有第三方 `@vueuse/core` Rolldown pure annotation 警告。
+  - `python3 scripts/agent_changelog_archive.py`：通过。
+  - `python3 scripts/agent_doc_check.py`：按预期返回“BACKLOG has no todo tasks”，触发当前阶段完成的停止条件。
+  - `git diff --check`：通过。
+- **文档更新**：`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/API_DESIGN.md`、`docs/DB_DESIGN.md`、`docs/ARCHITECTURE.md`、`docs/ROADMAP.md`、`docs/CHANGELOG_AGENT.md`。
+
+---
+
 ## 2026-06-25 14:25 Asia/Shanghai 工程体检与构建稳定性修复
 
 - 任务：按用户要求对当前项目做完整工程体检，检查 CI、本地安装、测试、构建和文档运行方式。
@@ -143,21 +164,6 @@ python3 scripts/agent_changelog_archive.py --keep 10
 
 **验证**：
 - `cd backend && ./mvnw test -B`：215 tests passed（原 210 新增 5）
-- `cd frontend && npm test`：66 tests passed
-- `cd frontend && npm run build`：通过
-
-**状态**：done
-
-## 2026-06-19 15:10 Asia/Shanghai P4-001 实现用户个人资料编辑
-
-- 任务：P4-001 实现用户个人资料编辑
-- 改动：
-  - 后端：新增 `ProfileUpdateRequest` DTO（含 Jakarta Validation）；`UserService.updateProfile` 方法支持 displayName 和 avatarUrl 更新、trim 和置空处理；`UserController` 新增 `PUT /api/users/me` 端点
-  - 前端：`auth.ts` 新增 `updateProfile` API 函数；`auth` store 新增 `updateProfile` action；新建 `ProfileView.vue` 个人设置页面（头像预览、表单编辑、成功/错误提示）；路由和导航栏注册"设置"入口（Settings 图标）
-  - 测试：新增 `UserServiceTests`（12 用例）覆盖 updateProfile 正常路径、异常路径、trim/置空逻辑、requireById 和 findByEmail
-
-**验证**：
-- `cd backend && ./mvnw test -B`：210 tests passed（原 198 新增 12）
 - `cd frontend && npm test`：66 tests passed
 - `cd frontend && npm run build`：通过
 

@@ -1,6 +1,7 @@
 package com.lifepilot.ai;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.lifepilot.ai.dto.MonthlyReportResponse;
+import com.lifepilot.ai.dto.AiCallLogResponse;
 import com.lifepilot.ai.dto.ParseShoppingRequest;
 import com.lifepilot.ai.dto.ParseTodoRequest;
 import com.lifepilot.ai.dto.ParseTransactionRequest;
@@ -101,5 +103,18 @@ public class AiController {
             throw new BusinessException("UNAUTHORIZED", "Authentication required");
         }
         return ApiResponse.ok(aiService.draftShoppingListFromMealPlan(principal.id(), spaceId, startDate, endDate));
+    }
+
+    @GetMapping("/spaces/{spaceId}/call-logs")
+    public ApiResponse<List<AiCallLogResponse>> listCallLogs(
+            @AuthenticationPrincipal CurrentUserPrincipal principal,
+            @PathVariable Long spaceId,
+            @RequestParam(required = false) String scenario,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) Integer limit) {
+        if (principal == null) {
+            throw new BusinessException("UNAUTHORIZED", "Authentication required");
+        }
+        return ApiResponse.ok(aiService.listCallLogs(principal.id(), spaceId, scenario, status, limit));
     }
 }

@@ -196,4 +196,7 @@
 - `request_json`
 - `response_json`
 - `status`
+- `duration_ms`
+- `error_message`
 - `created_at`
+- `updated_at`

@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,6 +21,7 @@ import com.lifepilot.ai.dto.ParseTransactionRequest;
 import com.lifepilot.ai.dto.ShoppingDraftResponse;
 import com.lifepilot.ai.dto.TodoDraftResponse;
 import com.lifepilot.ai.dto.TransactionDraftResponse;
+import com.lifepilot.ai.dto.AiCallLogResponse;
 import com.lifepilot.ai.dto.RecipeRecommendationResponse;
 import com.lifepilot.common.BusinessException;
 import com.lifepilot.finance.TransactionCategoryMapper;
@@ -55,6 +57,8 @@ class AiServiceTests {
     private RecipeMapper recipeMapper;
     @Mock
     private MealPlanMapper mealPlanMapper;
+    @Mock
+    private AiCallLogService aiCallLogService;
 
     @InjectMocks
     private AiService aiService;
@@ -78,6 +82,8 @@ class AiServiceTests {
         assertEquals(new BigDecimal("15.50"), result.amount());
         assertFalse(result.needsReview());
         verify(householdService).requireSpaceMembership(USER_ID, SPACE_ID);
+        verify(aiCallLogService).recordSuccess(eq(USER_ID), eq(SPACE_ID), anyString(),
+                eq("parse_transaction"), any(), anyMap(), anyMap(), anyLong());
     }
 
     @Test
@@ -90,6 +96,8 @@ class AiServiceTests {
         assertTrue(result.needsReview());
         assertNotNull(result.validationMessage());
         verify(householdService).requireSpaceMembership(USER_ID, SPACE_ID);
+        verify(aiCallLogService).recordSuccess(eq(USER_ID), eq(SPACE_ID), anyString(),
+                eq("parse_transaction"), any(), anyMap(), anyMap(), anyLong());
     }
 
     @Test
@@ -99,6 +107,20 @@ class AiServiceTests {
 
         assertThrows(BusinessException.class, () ->
                 aiService.parseTransaction(USER_ID, SPACE_ID, new ParseTransactionRequest("test")));
+        verify(aiCallLogService, never()).recordSuccess(any(), any(), any(), any(), any(), anyMap(), anyMap(), anyLong());
+        verify(aiCallLogService, never()).recordFailure(any(), any(), any(), any(), any(), anyMap(), any(), anyLong());
+    }
+
+    @Test
+    void parseTransaction_recordsFailureWhenProviderThrows() {
+        RuntimeException error = new RuntimeException("provider unavailable");
+        when(aiProvider.parseTransaction("早餐15.5")).thenThrow(error);
+
+        assertThrows(RuntimeException.class, () -> aiService.parseTransaction(USER_ID, SPACE_ID,
+                new ParseTransactionRequest("早餐15.5")));
+
+        verify(aiCallLogService).recordFailure(eq(USER_ID), eq(SPACE_ID), anyString(),
+                eq("parse_transaction"), any(), anyMap(), eq(error), anyLong());
     }
 
     // --- parseShoppingList ---
@@ -116,6 +138,8 @@ class AiServiceTests {
         assertEquals("买菜", result.listName());
         assertFalse(result.needsReview());
         verify(householdService).requireSpaceMembership(USER_ID, SPACE_ID);
+        verify(aiCallLogService).recordSuccess(eq(USER_ID), eq(SPACE_ID), anyString(),
+                eq("parse_shopping"), any(), anyMap(), anyMap(), anyLong());
     }
 
     @Test
@@ -152,6 +176,8 @@ class AiServiceTests {
         assertFalse(result.needsReview());
         assertEquals("买牛奶", result.rawInput());
         verify(householdService).requireSpaceMembership(USER_ID, SPACE_ID);
+        verify(aiCallLogService).recordSuccess(eq(USER_ID), eq(SPACE_ID), anyString(),
+                eq("parse_todo"), any(), anyMap(), anyMap(), anyLong());
     }
 
     @Test
@@ -189,6 +215,8 @@ class AiServiceTests {
         verify(householdService).requireSpaceMembership(USER_ID, SPACE_ID);
         verify(inventoryItemMapper).selectList(any());
         verify(recipeMapper).selectList(any());
+        verify(aiCallLogService).recordSuccess(eq(USER_ID), eq(SPACE_ID), anyString(),
+                eq("recommend_recipes"), isNull(), anyMap(), anyMap(), anyLong());
     }
 
     @Test
@@ -277,6 +305,8 @@ class AiServiceTests {
         verify(recipeMapper).selectList(any());
         verify(inventoryItemMapper).selectList(any());
         verify(aiProvider).draftShoppingListFromMealPlan(anyList(), anyList(), anyList());
+        verify(aiCallLogService).recordSuccess(eq(USER_ID), eq(SPACE_ID), anyString(),
+                eq("meal_plan_shopping_draft"), isNull(), anyMap(), anyMap(), anyLong());
     }
 
     @Test
@@ -302,5 +332,23 @@ class AiServiceTests {
     void draftShoppingListFromMealPlan_throwsWhenEndDateBeforeStartDate() {
         assertThrows(BusinessException.class, () -> aiService.draftShoppingListFromMealPlan(
                 USER_ID, SPACE_ID, LocalDate.of(2026, 6, 28), LocalDate.of(2026, 6, 22)));
+    }
+
+    @Test
+    void listCallLogs_requiresMembershipAndDelegatesToLogService() {
+        AiCallLogResponse log = new AiCallLogResponse(
+                100L, USER_ID, SPACE_ID, "mock", "parse_todo", null,
+                "{\"inputLength\":3}", "{\"taskCount\":1}", "success",
+                6L, null, LocalDateTime.now());
+        when(aiCallLogService.listLogs(SPACE_ID, "parse_todo", "success", 20))
+                .thenReturn(java.util.List.of(log));
+
+        java.util.List<AiCallLogResponse> result = aiService.listCallLogs(
+                USER_ID, SPACE_ID, "parse_todo", "success", 20);
+
+        assertEquals(1, result.size());
+        assertEquals("parse_todo", result.get(0).scenario());
+        verify(householdService).requireSpaceMembership(USER_ID, SPACE_ID);
+        verify(aiCallLogService).listLogs(SPACE_ID, "parse_todo", "success", 20);
     }
 }

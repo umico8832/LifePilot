@@ -8,12 +8,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lifepilot.ai.dto.MonthlyReportResponse;
+import com.lifepilot.ai.dto.AiCallLogResponse;
 import com.lifepilot.ai.dto.ParseShoppingRequest;
 import com.lifepilot.ai.dto.ParseTodoRequest;
 import com.lifepilot.ai.dto.ParseTransactionRequest;
@@ -50,6 +52,7 @@ public class AiService {
     private final TodoTaskMapper todoTaskMapper;
     private final RecipeMapper recipeMapper;
     private final MealPlanMapper mealPlanMapper;
+    private final AiCallLogService aiCallLogService;
 
     public AiService(AiProvider aiProvider, HouseholdService householdService,
                      TransactionRecordMapper transactionRecordMapper,
@@ -58,7 +61,8 @@ public class AiService {
                      ShoppingListMapper shoppingListMapper,
                      TodoTaskMapper todoTaskMapper,
                      RecipeMapper recipeMapper,
-                     MealPlanMapper mealPlanMapper) {
+                     MealPlanMapper mealPlanMapper,
+                     AiCallLogService aiCallLogService) {
         this.aiProvider = aiProvider;
         this.householdService = householdService;
         this.transactionRecordMapper = transactionRecordMapper;
@@ -68,45 +72,72 @@ public class AiService {
         this.todoTaskMapper = todoTaskMapper;
         this.recipeMapper = recipeMapper;
         this.mealPlanMapper = mealPlanMapper;
+        this.aiCallLogService = aiCallLogService;
     }
 
     public TransactionDraftResponse parseTransaction(Long userId, Long spaceId, ParseTransactionRequest request) {
         householdService.requireSpaceMembership(userId, spaceId);
-        TransactionDraftResponse draft = aiProvider.parseTransaction(request.text());
-        if (draft == null) {
-            return new TransactionDraftResponse(
-                    null, null, "CNY", null, null, null,
-                    null, true, request.text(), "无法解析输入文本，请尝试重新描述。"
-            );
-        }
-        return draft;
+        return logAiCall(userId, spaceId, "parse_transaction",
+                aiCallLogService.hashPrompt(request.text()),
+                Map.of("inputLength", request.text().length()),
+                () -> {
+                    TransactionDraftResponse draft = aiProvider.parseTransaction(request.text());
+                    if (draft == null) {
+                        return new TransactionDraftResponse(
+                                null, null, "CNY", null, null, null,
+                                null, true, request.text(), "无法解析输入文本，请尝试重新描述。"
+                        );
+                    }
+                    return draft;
+                },
+                this::transactionSummary);
     }
 
     public ShoppingDraftResponse parseShoppingList(Long userId, Long spaceId, ParseShoppingRequest request) {
         householdService.requireSpaceMembership(userId, spaceId);
-        ShoppingDraftResponse draft = aiProvider.parseShoppingList(request.text());
-        if (draft == null) {
-            return new ShoppingDraftResponse(
-                    "购物清单", null, java.util.List.of(),
-                    true, request.text(), "无法解析输入文本，请尝试重新描述。"
-            );
-        }
-        return draft;
+        return logAiCall(userId, spaceId, "parse_shopping",
+                aiCallLogService.hashPrompt(request.text()),
+                Map.of("inputLength", request.text().length()),
+                () -> {
+                    ShoppingDraftResponse draft = aiProvider.parseShoppingList(request.text());
+                    if (draft == null) {
+                        return new ShoppingDraftResponse(
+                                "购物清单", null, java.util.List.of(),
+                                true, request.text(), "无法解析输入文本，请尝试重新描述。"
+                        );
+                    }
+                    return draft;
+                },
+                this::shoppingSummary);
     }
 
     public TodoDraftResponse parseTodo(Long userId, Long spaceId, ParseTodoRequest request) {
         householdService.requireSpaceMembership(userId, spaceId);
-        TodoDraftResponse draft = aiProvider.parseTodo(request.text());
-        if (draft == null) {
-            return new TodoDraftResponse(
-                    java.util.List.of(), true, request.text(), "无法解析输入文本，请尝试重新描述。"
-            );
-        }
-        return draft;
+        return logAiCall(userId, spaceId, "parse_todo",
+                aiCallLogService.hashPrompt(request.text()),
+                Map.of("inputLength", request.text().length()),
+                () -> {
+                    TodoDraftResponse draft = aiProvider.parseTodo(request.text());
+                    if (draft == null) {
+                        return new TodoDraftResponse(
+                                java.util.List.of(), true, request.text(), "无法解析输入文本，请尝试重新描述。"
+                        );
+                    }
+                    return draft;
+                },
+                this::todoSummary);
     }
 
     public MonthlyReportResponse generateMonthlyReport(Long userId, Long spaceId, int year, int month) {
         householdService.requireSpaceMembership(userId, spaceId);
+
+        return logAiCall(userId, spaceId, "monthly_report", null,
+                Map.of("year", year, "month", month),
+                () -> buildMonthlyReport(spaceId, year, month),
+                this::monthlyReportSummary);
+    }
+
+    private MonthlyReportResponse buildMonthlyReport(Long spaceId, int year, int month) {
 
         YearMonth ym = YearMonth.of(year, month);
         LocalDateTime start = ym.atDay(1).atStartOfDay();
@@ -260,7 +291,10 @@ public class AiService {
                 new LambdaQueryWrapper<Recipe>()
                         .eq(Recipe::getHouseholdId, spaceId));
 
-        return aiProvider.recommendRecipes(inventoryItems, recipes);
+        return logAiCall(userId, spaceId, "recommend_recipes", null,
+                Map.of("inventoryCount", inventoryItems.size(), "recipeCount", recipes.size()),
+                () -> aiProvider.recommendRecipes(inventoryItems, recipes),
+                response -> Map.of("recommendationCount", response.recipes().size()));
     }
 
     public ShoppingDraftResponse draftShoppingListFromMealPlan(
@@ -297,6 +331,90 @@ public class AiService {
                 new LambdaQueryWrapper<InventoryItem>()
                         .eq(InventoryItem::getHouseholdId, spaceId));
 
-        return aiProvider.draftShoppingListFromMealPlan(mealPlans, recipes, inventoryItems);
+        Map<String, Object> requestSummary = new java.util.LinkedHashMap<>();
+        requestSummary.put("startDate", startDate);
+        requestSummary.put("endDate", endDate);
+        requestSummary.put("mealPlanCount", mealPlans.size());
+        requestSummary.put("recipeCount", recipes.size());
+        requestSummary.put("inventoryCount", inventoryItems.size());
+
+        return logAiCall(userId, spaceId, "meal_plan_shopping_draft", null,
+                requestSummary,
+                () -> aiProvider.draftShoppingListFromMealPlan(mealPlans, recipes, inventoryItems),
+                this::shoppingSummary);
+    }
+
+    public List<AiCallLogResponse> listCallLogs(
+            Long userId, Long spaceId, String scenario, String status, Integer limit) {
+        householdService.requireSpaceMembership(userId, spaceId);
+        return aiCallLogService.listLogs(spaceId, scenario, status, limit == null ? 50 : limit);
+    }
+
+    private <T> T logAiCall(Long userId, Long spaceId, String scenario, String promptHash,
+                            Map<String, Object> requestSummary, Supplier<T> action,
+                            java.util.function.Function<T, Map<String, Object>> responseSummaryBuilder) {
+        long startNanos = System.nanoTime();
+        try {
+            T response = action.get();
+            long durationMs = elapsedMillis(startNanos);
+            aiCallLogService.recordSuccess(userId, spaceId, providerName(), scenario, promptHash,
+                    requestSummary, responseSummaryBuilder.apply(response), durationMs);
+            return response;
+        } catch (RuntimeException e) {
+            long durationMs = elapsedMillis(startNanos);
+            aiCallLogService.recordFailure(userId, spaceId, providerName(), scenario, promptHash,
+                    requestSummary, e, durationMs);
+            throw e;
+        }
+    }
+
+    private long elapsedMillis(long startNanos) {
+        return java.time.Duration.ofNanos(System.nanoTime() - startNanos).toMillis();
+    }
+
+    private String providerName() {
+        if (aiProvider instanceof MockAiProvider) {
+            return "mock";
+        }
+        if (aiProvider instanceof OpenAiProvider) {
+            return "openai";
+        }
+        return aiProvider.getClass().getSimpleName();
+    }
+
+    private Map<String, Object> transactionSummary(TransactionDraftResponse response) {
+        Map<String, Object> summary = new java.util.LinkedHashMap<>();
+        summary.put("type", response.type());
+        summary.put("hasAmount", response.amount() != null);
+        summary.put("needsReview", response.needsReview());
+        summary.put("hasValidationMessage", response.validationMessage() != null);
+        return summary;
+    }
+
+    private Map<String, Object> shoppingSummary(ShoppingDraftResponse response) {
+        Map<String, Object> summary = new java.util.LinkedHashMap<>();
+        summary.put("itemCount", response.items() == null ? 0 : response.items().size());
+        summary.put("hasEstimatedBudget", response.estimatedBudget() != null);
+        summary.put("needsReview", response.needsReview());
+        summary.put("hasValidationMessage", response.validationMessage() != null);
+        return summary;
+    }
+
+    private Map<String, Object> todoSummary(TodoDraftResponse response) {
+        Map<String, Object> summary = new java.util.LinkedHashMap<>();
+        summary.put("taskCount", response.items() == null ? 0 : response.items().size());
+        summary.put("needsReview", response.needsReview());
+        summary.put("hasValidationMessage", response.validationMessage() != null);
+        return summary;
+    }
+
+    private Map<String, Object> monthlyReportSummary(MonthlyReportResponse response) {
+        Map<String, Object> summary = new java.util.LinkedHashMap<>();
+        summary.put("year", response.year());
+        summary.put("month", response.month());
+        summary.put("highlightCount", response.highlights().size());
+        summary.put("suggestionCount", response.suggestions().size());
+        summary.put("transactionCount", response.finance().transactionCount());
+        return summary;
     }
 }

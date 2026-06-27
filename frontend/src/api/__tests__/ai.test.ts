@@ -14,6 +14,7 @@ import {
   parseTodo,
   generateMonthlyReport,
   draftShoppingListFromMealPlan,
+  listAiCallLogs,
 } from '../ai'
 
 const mockedGet = vi.mocked(http.get)
@@ -129,6 +130,33 @@ describe('ai API', () => {
       params: { startDate: '2026-06-22', endDate: '2026-06-28' },
     })
     expect(result).toEqual(mockDraft)
+  })
+
+  it('listAiCallLogs calls GET with filters', async () => {
+    const mockLogs = [
+      {
+        id: 1,
+        userId: 2,
+        spaceId: 3,
+        provider: 'mock',
+        scenario: 'parse_todo',
+        promptHash: null,
+        requestJson: '{"inputLength":3}',
+        responseJson: '{"taskCount":1}',
+        status: 'success',
+        durationMs: 8,
+        errorMessage: null,
+        createdAt: '2026-06-27T14:00:00',
+      },
+    ]
+    mockedGet.mockResolvedValue({ data: { data: mockLogs } })
+
+    const result = await listAiCallLogs(3, { scenario: 'parse_todo', status: 'success', limit: 20 })
+
+    expect(mockedGet).toHaveBeenCalledWith('/api/ai/spaces/3/call-logs', {
+      params: { scenario: 'parse_todo', status: 'success', limit: 20 },
+    })
+    expect(result).toEqual(mockLogs)
   })
 
   it('propagates errors from http calls', async () => {

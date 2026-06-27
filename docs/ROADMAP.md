@@ -181,3 +181,12 @@
 - 数据库任务：无（复用 meal_plan、recipe、inventory_item、shopping_list、shopping_item）。
 - AI 任务：mock provider 使用确定性缺口计算；真实 provider 当前仍委托本地算法，不自动下单，不绕过用户确认。
 - 验收标准：`GET /api/ai/spaces/{spaceId}/meal-plan-shopping-draft?startDate=&endDate=` 返回购物清单草稿；前端可展示草稿并在用户确认后创建购物清单；后端和前端测试通过。
+
+## Phase 20：AI 调用审计基础
+
+- 目标：为 AI 生活助手建立可追踪、可诊断、可扩展到真实 provider 的调用日志基础。
+- 后端任务：新增 `ai_call_log` 表、实体、Mapper 和日志服务；AI Service 在解析、月报、菜谱推荐和饮食计划采购草稿场景记录成功/失败日志；提供空间内日志查询接口。
+- 前端任务：前端 API 层提供 AI 调用日志类型和查询方法，后续可接入设置页或 AI 助手页。
+- 数据库任务：V10 创建 `ai_call_log` 表和 user/household/scenario/status 查询索引。
+- AI 任务：自然语言输入只保存 SHA-256 hash 和摘要信息，不保存原文；真实 provider 后续可扩展 token、费用和模型信息。
+- 验收标准：AI 调用日志可按空间、场景、状态查询；失败调用可记录错误摘要；日志不落库用户输入原文；后端和前端测试通过。
