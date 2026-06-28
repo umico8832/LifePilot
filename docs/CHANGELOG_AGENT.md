@@ -12,6 +12,24 @@ python3 scripts/agent_changelog_archive.py --keep 10
 
 脚本默认保留最近 10 条完整记录，并刷新 `docs/RECENT_HISTORY.md`。
 
+## 2026-06-28 21:10 Asia/Shanghai P8-003 演示数据与本地体验种子脚本
+
+- 任务：P8-003 演示数据与本地体验种子脚本
+- 改动：
+  - 脚本：新增 `scripts/demo_seed.sql`，在事务中重置并重建 `demo@lifepilot.local` 拥有的 demo 用户、家庭空间、成员关系、记账分类与流水、购物清单与预算、库存临期/低库存项、待办状态、菜谱、饮食计划、票据文档和 AI 调用日志。
+  - 命令：新增 `scripts/demo_seed.sh`，支持默认 `--dry-run`、显式 `--apply` 和 `--verify`；通过 `MYSQL_HOST`、`MYSQL_PORT`、`MYSQL_DATABASE`、`MYSQL_USER`、`MYSQL_PASSWORD` 指向本地开发库。
+  - 幂等性：重复 `--apply` 会先删除该 demo 用户拥有的空间和业务数据，再插入固定演示数据；不包含真实密钥、个人数据或外部服务调用。
+  - 文档：README 和 HANDOFF 记录默认演示账号、使用方式、端口变量、清理/重置注意事项和覆盖页面。
+**验证**：
+  - `bash -n scripts/demo_seed.sh`：通过。
+  - `scripts/demo_seed.sh --dry-run`：通过，确认默认目标和无副作用模式。
+  - `cd backend && ./mvnw test -B`：252 tests passed。
+  - `cd frontend && npm run build`：通过；仍有既有第三方 `@vueuse/core` Rolldown pure annotation 警告。
+  - `MYSQL_PORT=3307 docker compose up -d mysql`：未通过；Docker Desktop 处于手动暂停状态，无法拉起 MySQL。
+  - `MYSQL_PWD=lifepilot_dev_password mysql --host=127.0.0.1 --port=3306 --user=lifepilot --database=lifepilot --execute='SELECT 1 AS ok;'`：未通过，3306 未监听。
+  - `MYSQL_PWD=lifepilot_dev_password mysql --host=127.0.0.1 --port=3307 --user=lifepilot --database=lifepilot --execute='SELECT 1 AS ok;'`：无响应后中断；未对数据库写入。
+  - 待补跑：MySQL 可用后执行 `MYSQL_PORT=3307 scripts/demo_seed.sh --apply && MYSQL_PORT=3307 scripts/demo_seed.sh --verify`。
+
 ## 2026-06-28 20:03 Asia/Shanghai P8-002 AI 调用日志统计摘要接口
 
 - 任务：P8-002 AI 调用日志统计摘要接口
@@ -155,21 +173,6 @@ python3 scripts/agent_changelog_archive.py --keep 10
   - 测试：新增 13 个 MealPlanService 单元测试
 - **验证**：
   - `cd backend && ./mvnw test -Dtest="MealPlanServiceTests"`：13 tests passed
-  - `cd frontend && npm test`：11 文件 91 tests passed
-  - `cd frontend && npm run build`：通过
-
----
-
-## 2026-06-19 16:50 Asia/Shanghai P4-005 前端视图层组件测试
-
-- **任务**：P4-005 前端视图层组件测试
-- **改动**：
-  - 新建 `frontend/src/views/__tests__/` 目录
-  - 为 AuthView 新增 13 个组件测试：表单提交、登录/注册模式切换、错误消息显示、重定向逻辑、返回导航
-  - 为 FinanceView 新增 12 个组件测试：无空间状态、数据加载/失败/空态、汇总计算、工具栏按钮、空间选择器
-  - 前端总测试从 66 增长到 91（11 个测试文件）
-  - 更新 `docs/TESTING.md` 覆盖范围描述
-- **验证**：
   - `cd frontend && npm test`：11 文件 91 tests passed
   - `cd frontend && npm run build`：通过
 

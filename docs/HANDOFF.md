@@ -75,6 +75,23 @@ cd backend && mvn test
 - Swagger UI：`/swagger-ui.html`
 - OpenAPI JSON：`/v3/api-docs`
 
+## 本地演示数据
+
+项目提供 `scripts/demo_seed.sh` 和 `scripts/demo_seed.sql` 用于初始化可重复的本地演示数据。脚本默认 `--dry-run`，不会修改数据库；真实写入需显式使用 `--apply`。
+
+```bash
+scripts/demo_seed.sh --dry-run
+MYSQL_PORT=3307 scripts/demo_seed.sh --apply
+MYSQL_PORT=3307 scripts/demo_seed.sh --verify
+```
+
+默认演示账号：
+
+- Email：`demo@lifepilot.local`
+- Password：`demo-pass-123`
+
+脚本只清理并重建该 demo 账号拥有的 demo 空间和业务数据，覆盖记账、购物清单、库存提醒、待办、菜谱、饮食计划、票据文档和 AI 调用日志。若本地使用默认 `3306` 端口，可省略 `MYSQL_PORT=3307`；也可通过 `MYSQL_HOST`、`MYSQL_DATABASE`、`MYSQL_USER`、`MYSQL_PASSWORD` 指向其他本地开发库。
+
 ## 安全边界
 
 - 不提交真实 `.env`、真实密钥、数据库密码或外部服务凭据。
