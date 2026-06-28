@@ -22,6 +22,7 @@ import com.lifepilot.ai.dto.ShoppingDraftResponse;
 import com.lifepilot.ai.dto.TodoDraftResponse;
 import com.lifepilot.ai.dto.TransactionDraftResponse;
 import com.lifepilot.ai.dto.AiCallLogResponse;
+import com.lifepilot.ai.dto.AiCallLogSummaryResponse;
 import com.lifepilot.ai.dto.RecipeRecommendationResponse;
 import com.lifepilot.common.BusinessException;
 import com.lifepilot.finance.TransactionCategoryMapper;
@@ -350,5 +351,22 @@ class AiServiceTests {
         assertEquals("parse_todo", result.get(0).scenario());
         verify(householdService).requireSpaceMembership(USER_ID, SPACE_ID);
         verify(aiCallLogService).listLogs(SPACE_ID, "parse_todo", "success", 20);
+    }
+
+    @Test
+    void summarizeCallLogs_requiresMembershipAndDelegatesToLogService() {
+        AiCallLogSummaryResponse summary = new AiCallLogSummaryResponse(
+                3, 2, 1, 2.0 / 3.0, 18,
+                java.util.List.of(new AiCallLogSummaryResponse.ScenarioCount("parse_todo", 3)),
+                java.util.List.of(new AiCallLogSummaryResponse.StatusCount("success", 2))
+        );
+        when(aiCallLogService.summarizeLogs(SPACE_ID, 7)).thenReturn(summary);
+
+        AiCallLogSummaryResponse result = aiService.summarizeCallLogs(USER_ID, SPACE_ID, 7);
+
+        assertEquals(3, result.totalCount());
+        assertEquals(2, result.successCount());
+        verify(householdService).requireSpaceMembership(USER_ID, SPACE_ID);
+        verify(aiCallLogService).summarizeLogs(SPACE_ID, 7);
     }
 }

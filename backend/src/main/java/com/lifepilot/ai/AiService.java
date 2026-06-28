@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lifepilot.ai.dto.MonthlyReportResponse;
 import com.lifepilot.ai.dto.AiCallLogResponse;
+import com.lifepilot.ai.dto.AiCallLogSummaryResponse;
 import com.lifepilot.ai.dto.ParseShoppingRequest;
 import com.lifepilot.ai.dto.ParseTodoRequest;
 import com.lifepilot.ai.dto.ParseTransactionRequest;
@@ -348,6 +349,11 @@ public class AiService {
             Long userId, Long spaceId, String scenario, String status, Integer limit) {
         householdService.requireSpaceMembership(userId, spaceId);
         return aiCallLogService.listLogs(spaceId, scenario, status, limit == null ? 50 : limit);
+    }
+
+    public AiCallLogSummaryResponse summarizeCallLogs(Long userId, Long spaceId, Integer days) {
+        householdService.requireSpaceMembership(userId, spaceId);
+        return aiCallLogService.summarizeLogs(spaceId, days == null ? 30 : days);
     }
 
     private <T> T logAiCall(Long userId, Long spaceId, String scenario, String promptHash,

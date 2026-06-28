@@ -12,6 +12,56 @@ python3 scripts/agent_changelog_archive.py --keep 10
 
 脚本默认保留最近 10 条完整记录，并刷新 `docs/RECENT_HISTORY.md`。
 
+## 2026-06-28 20:03 Asia/Shanghai P8-002 AI 调用日志统计摘要接口
+
+- 任务：P8-002 AI 调用日志统计摘要接口
+- 改动：
+  - 后端：新增 `AiCallLogSummaryResponse` DTO；`AiCallLogService.summarizeLogs()` 按空间和最近天数统计总调用数、成功数、失败数、成功率、平均耗时、场景分布和状态分布；`AiService.summarizeCallLogs()` 复用空间成员权限校验；`AiController` 新增 `GET /api/ai/spaces/{spaceId}/call-logs/summary?days=`。
+  - 前端：`frontend/src/api/ai.ts` 新增 `AiCallLogSummary`、分组类型和 `getAiCallLogSummary()` 方法。
+  - 测试：扩展 `AiCallLogServiceTests`、`AiServiceTests`、`AiControllerTests` 和 `ai.test.ts` 覆盖统计计算、空数据、权限委托、控制器端点、认证要求和前端 API 参数。
+  - 文档：`docs/API_DESIGN.md` 记录日志摘要接口与响应字段；`docs/BACKLOG.md` 标记 P8-002 完成；`docs/CURRENT_STATE.md` 指向 P8-003。
+**验证**：
+  - `cd backend && ./mvnw test -B -Dtest="AiCallLogServiceTests,AiServiceTests,AiControllerTests"`：50 tests passed。
+  - `cd frontend && npm test -- ai.test.ts`：1 个测试文件 8 tests passed。
+  - `cd backend && ./mvnw test -B`：252 tests passed。
+  - `cd frontend && npm test`：12 个测试文件 98 tests passed。
+  - `cd frontend && npm run build`：通过；仍有既有第三方 `@vueuse/core` Rolldown pure annotation 警告。
+  - `python3 scripts/agent_changelog_archive.py`：通过。
+  - `python3 scripts/agent_doc_check.py`：通过。
+  - `git diff --check`：通过。
+
+---
+
+## 2026-06-28 19:58 Asia/Shanghai P8-001 前端 AI 调用日志审计页
+
+- 任务：P8-001 前端 AI 调用日志审计页
+- 改动：
+  - 前端：新增 `frontend/src/views/ai/AiLogView.vue`，通过 `listAiCallLogs()` 读取当前空间 AI 调用日志；支持空间切换、场景筛选、状态筛选和 limit 查询；展示调用场景、provider、状态、耗时、脱敏请求/响应摘要、prompt hash 和错误摘要；包含无空间、加载中、空数据和加载失败状态。
+  - 导航：`frontend/src/router/index.ts` 新增 `/ai-logs` 受保护路由；`AppShell.vue` 新增“AI 日志”导航入口。
+  - 测试：新增 `frontend/src/views/__tests__/AiLogView.test.ts`，覆盖选中空间加载日志、无空间不加载、空态和错误态。
+  - 文档：`docs/BACKLOG.md` 标记 P8-001 完成；`docs/CURRENT_STATE.md` 指向 P8-002；`docs/API_DESIGN.md` 记录前端 `/ai-logs` 已接入日志查询接口。
+**验证**：
+  - `cd frontend && npm test -- AiLogView.test.ts`：1 个测试文件 4 tests passed。
+  - `cd frontend && npm test`：12 个测试文件 97 tests passed。
+  - `cd frontend && npm run build`：通过；仍有既有第三方 `@vueuse/core` Rolldown pure annotation 警告。
+  - 浏览器自动化：尝试用 Playwright 检查 `/ai-logs`，但项目未安装 `playwright` 包且本轮未暴露 in-app browser 控制工具；未完成浏览器截图检查，主要 UI 状态已由组件测试覆盖。
+
+---
+
+## 2026-06-28 19:52 Asia/Shanghai 规划 P8 可观测性与演示体验任务池
+
+- 任务：补齐上一个阶段完成后的下一批可执行 backlog，恢复自主开发入口。
+- 改动：
+  - `docs/BACKLOG.md` 新增 P8-001～P8-004：前端 AI 调用日志审计页、AI 调用日志统计摘要接口、演示数据与本地体验种子脚本、家庭成员管理体验完善。
+  - `docs/CURRENT_STATE.md` 将当前阶段更新为 P8 可观测性与演示体验阶段，明确最高优先级任务和下一项自动任务为 P8-001。
+  - `docs/ROADMAP.md` 新增 Phase 21 可观测性与演示体验、Phase 22 家庭协作体验完善。
+**验证**：
+  - `python3 scripts/agent_changelog_archive.py`：通过，刷新 `docs/RECENT_HISTORY.md`。
+  - `python3 scripts/agent_doc_check.py`：通过，确认 BACKLOG 存在 P8-001～P8-004 todo，且 `CURRENT_STATE` 下一任务与 P8-001 一致。
+  - `git diff --check`：通过。
+
+---
+
 ## 2026-06-27 14:42 Asia/Shanghai P7-001 AI 调用日志持久化与查询
 
 - 任务：P7-001 AI 调用日志持久化与查询
@@ -124,47 +174,3 @@ python3 scripts/agent_changelog_archive.py --keep 10
   - `cd frontend && npm run build`：通过
 
 ---
-
-## 2026-06-19 15:53 Asia/Shanghai P4-004 购物预算估算功能
-
-- 任务：P4-004 购物预算估算功能
-- 改动：
-  - 后端：`estimatedBudget` 字段已在 V4 迁移（`estimated_budget DECIMAL(12,2) NULL`）、`ShoppingList` 实体、`CreateShoppingListRequest`（`@Positive BigDecimal`）、`UpdateShoppingListRequest`、`ShoppingListResponse`（含 `from()` 方法）和 `ShoppingService`（create/update 逻辑）中完整实现，无需新增 V9 迁移
-  - 前端：`ShoppingView.vue` 新增 `getTotalEstimatedCost()`（累加 items 的 estimatedPrice × quantity）和 `getBudgetPercent()` 计算函数；模板新增预算对比卡片（进度条 + 预算/花费/剩余/百分比，超预算时进度条变红）；列表页已有预算列展示
-- 文档：`docs/BACKLOG.md` P4-004 状态更新为 done；`docs/CURRENT_STATE.md` 更新当前状态
-
-**验证**：
-- `cd backend && ./mvnw test -B`：217 tests passed
-- `cd frontend && npm test`：66 tests passed
-- `cd frontend && npm run build`：通过
-
----
-
-## 2026-06-19 15:48 Asia/Shanghai P4-003 待办完成率统计接口
-
-- 任务：P4-003 待办完成率统计接口
-- 改动：
-  - 后端：`TodoStatsResponse` 新增 `completionRate`（double，完成率 = completed / (total - cancelled)）和 `recent30Days`（`List<DailyTrend>`，近 30 天每天完成任务数）；内部新增 `DailyTrend` record；`StatisticService.getTodoStats` 增加完成率计算和按 `updatedAt` 统计每日完成数的逻辑；`StatisticServiceTests` 更新 2 个现有测试并新增 3 个测试（完成率含取消任务、仅取消任务时完成率为 0、30 天趋势验证），后端总测试从 215 增长到 217
-  - 前端：`statistics.ts` 新增 `TodoDailyTrend` 接口，`TodoStatsResponse` 新增 `completionRate` 和 `recent30Days` 字段；`HomeView` 新增 `todoTrendOption`（近 30 天完成趋势柱状图）、`todoCompletionPercent` 计算属性，模板新增完成率环形图（SVG `stroke-dasharray` 实现）和趋势图表卡片，新增 `.completion-rate-display` / `.completion-ring` / `.dot.*` 样式
-- 文档：`docs/API_DESIGN.md` 更新 todos 统计接口描述；`docs/BACKLOG.md` P4-003 状态更新为 done；`docs/CURRENT_STATE.md` 更新当前状态
-
-**验证**：
-- `cd backend && ./mvnw test -B`：217 tests passed（原 215 新增 2，含更新）
-- `cd frontend && npm test`：66 tests passed
-- `cd frontend && npm run build`：通过
-
----
-
-## 2026-06-19 15:30 Asia/Shanghai P4-002 库存临期和缺货提醒逻辑
-
-- 任务：P4-002 库存临期和缺货提醒逻辑
-- 改动：
-  - 后端：新增 `InventoryAlertsResponse` DTO（含 `AlertItem` 内嵌 record）；`StatisticService.getInventoryAlerts` 方法查询 7 天内临期物品和低库存物品（quantity ≤ threshold）；`StatisticController` 新增 `GET /api/spaces/{spaceId}/statistics/inventory/alerts` 端点；`StatisticServiceTests` 新增 5 个测试用例覆盖空数据、临期物品、低库存物品、混合提醒和已过期物品排除
-  - 前端：`statistics.ts` 新增 `InventoryAlertsResponse`/`InventoryAlertItem` 类型和 `getInventoryAlerts` API 方法，修复 `CategoryCount` 类型缺失和 `ApiResponse` 导入问题；`HomeView` 集成库存提醒卡片列表（expiring/low_stock 双类型，含 badge、详情、响应式布局）
-
-**验证**：
-- `cd backend && ./mvnw test -B`：215 tests passed（原 210 新增 5）
-- `cd frontend && npm test`：66 tests passed
-- `cd frontend && npm run build`：通过
-
-**状态**：done

@@ -443,6 +443,35 @@ class AiControllerTests {
                 .andExpect(jsonPath("$.data[0].requestJson").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("买牛奶"))));
     }
 
+    @Test
+    void callLogSummaryReturnsCountsForCurrentSpace() throws Exception {
+        mockMvc.perform(post("/api/ai/spaces/" + spaceId + "/parse-todo")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "text": "明天交电费" }
+                                """))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/ai/spaces/" + spaceId + "/call-logs/summary")
+                        .header("Authorization", "Bearer " + token)
+                        .param("days", "7"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.totalCount").value(org.hamcrest.Matchers.greaterThanOrEqualTo(1)))
+                .andExpect(jsonPath("$.data.successCount").value(org.hamcrest.Matchers.greaterThanOrEqualTo(1)))
+                .andExpect(jsonPath("$.data.failedCount").value(0))
+                .andExpect(jsonPath("$.data.successRate").value(1.0))
+                .andExpect(jsonPath("$.data.scenarioCounts[0].scenario").value("parse_todo"))
+                .andExpect(jsonPath("$.data.statusCounts[0].status").value("success"));
+    }
+
+    @Test
+    void callLogSummaryRequiresAuth() throws Exception {
+        mockMvc.perform(get("/api/ai/spaces/" + spaceId + "/call-logs/summary"))
+                .andExpect(status().isForbidden());
+    }
+
     private static org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder get(String url) {
         return org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(url);
     }

@@ -3,8 +3,11 @@ package com.lifepilot.ai;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
@@ -12,6 +15,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lifepilot.ai.dto.AiCallLogResponse;
+import com.lifepilot.ai.dto.AiCallLogSummaryResponse;
 
 @Service
 public class AiCallLogService {
@@ -70,6 +74,52 @@ public class AiCallLogService {
         return aiCallLogMapper.selectList(wrapper).stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    public AiCallLogSummaryResponse summarizeLogs(Long spaceId, int days) {
+        int safeDays = Math.max(1, Math.min(days, 365));
+        LocalDateTime since = LocalDateTime.now().minusDays(safeDays);
+        List<AiCallLog> logs = aiCallLogMapper.selectList(new LambdaQueryWrapper<AiCallLog>()
+                .eq(AiCallLog::getHouseholdId, spaceId)
+                .ge(AiCallLog::getCreatedAt, since));
+
+        long totalCount = logs.size();
+        long successCount = logs.stream().filter(log -> "success".equals(log.getStatus())).count();
+        long failedCount = logs.stream().filter(log -> "failed".equals(log.getStatus())).count();
+        double successRate = totalCount == 0 ? 0 : (double) successCount / totalCount;
+        long averageDurationMs = Math.round(logs.stream()
+                .map(AiCallLog::getDurationMs)
+                .filter(duration -> duration != null)
+                .mapToLong(Long::longValue)
+                .average()
+                .orElse(0));
+
+        List<AiCallLogSummaryResponse.ScenarioCount> scenarioCounts = logs.stream()
+                .collect(Collectors.groupingBy(AiCallLog::getScenario, Collectors.counting()))
+                .entrySet()
+                .stream()
+                .map(entry -> new AiCallLogSummaryResponse.ScenarioCount(entry.getKey(), entry.getValue()))
+                .sorted(Comparator.comparing(AiCallLogSummaryResponse.ScenarioCount::count).reversed()
+                        .thenComparing(AiCallLogSummaryResponse.ScenarioCount::scenario))
+                .toList();
+
+        List<AiCallLogSummaryResponse.StatusCount> statusCounts = logs.stream()
+                .collect(Collectors.groupingBy(AiCallLog::getStatus, Collectors.counting()))
+                .entrySet()
+                .stream()
+                .map(entry -> new AiCallLogSummaryResponse.StatusCount(entry.getKey(), entry.getValue()))
+                .sorted(Comparator.comparing(AiCallLogSummaryResponse.StatusCount::status))
+                .toList();
+
+        return new AiCallLogSummaryResponse(
+                totalCount,
+                successCount,
+                failedCount,
+                successRate,
+                averageDurationMs,
+                scenarioCounts,
+                statusCounts
+        );
     }
 
     private void insertLog(Long userId, Long spaceId, String provider, String scenario,

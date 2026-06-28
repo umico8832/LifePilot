@@ -159,3 +159,28 @@ export async function listAiCallLogs(spaceId: number, query: AiCallLogQuery = {}
   const res = await http.get(`/api/ai/spaces/${spaceId}/call-logs`, { params: query })
   return res.data.data
 }
+
+export interface AiCallLogScenarioCount {
+  scenario: string
+  count: number
+}
+
+export interface AiCallLogStatusCount {
+  status: string
+  count: number
+}
+
+export interface AiCallLogSummary {
+  totalCount: number
+  successCount: number
+  failedCount: number
+  successRate: number
+  averageDurationMs: number
+  scenarioCounts: AiCallLogScenarioCount[]
+  statusCounts: AiCallLogStatusCount[]
+}
+
+export async function getAiCallLogSummary(spaceId: number, days?: number): Promise<AiCallLogSummary> {
+  const res = await http.get(`/api/ai/spaces/${spaceId}/call-logs/summary`, { params: { days } })
+  return res.data.data
+}

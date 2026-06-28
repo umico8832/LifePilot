@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.lifepilot.ai.dto.MonthlyReportResponse;
 import com.lifepilot.ai.dto.AiCallLogResponse;
+import com.lifepilot.ai.dto.AiCallLogSummaryResponse;
 import com.lifepilot.ai.dto.ParseShoppingRequest;
 import com.lifepilot.ai.dto.ParseTodoRequest;
 import com.lifepilot.ai.dto.ParseTransactionRequest;
@@ -116,5 +117,16 @@ public class AiController {
             throw new BusinessException("UNAUTHORIZED", "Authentication required");
         }
         return ApiResponse.ok(aiService.listCallLogs(principal.id(), spaceId, scenario, status, limit));
+    }
+
+    @GetMapping("/spaces/{spaceId}/call-logs/summary")
+    public ApiResponse<AiCallLogSummaryResponse> summarizeCallLogs(
+            @AuthenticationPrincipal CurrentUserPrincipal principal,
+            @PathVariable Long spaceId,
+            @RequestParam(required = false) Integer days) {
+        if (principal == null) {
+            throw new BusinessException("UNAUTHORIZED", "Authentication required");
+        }
+        return ApiResponse.ok(aiService.summarizeCallLogs(principal.id(), spaceId, days));
     }
 }

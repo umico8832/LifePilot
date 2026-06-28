@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Home, Receipt, ShoppingCart, Package, LogOut, LayoutGrid, ListTodo, ChefHat, CalendarDays, FileText, Settings } from '@lucide/vue'
+import { Home, Receipt, ShoppingCart, Package, LogOut, LayoutGrid, ListTodo, ChefHat, CalendarDays, FileText, Bot, Settings } from '@lucide/vue'
 
 import { useAuthStore } from '@/stores/auth'
 
@@ -28,6 +28,7 @@ const navItems: NavItem[] = [
   { label: '菜谱', routeName: 'recipe', icon: ChefHat },
   { label: '饮食计划', routeName: 'mealplan', icon: CalendarDays },
   { label: '文档', routeName: 'document', icon: FileText },
+  { label: 'AI 日志', routeName: 'aiLogs', icon: Bot },
   { label: '设置', routeName: 'profile', icon: Settings },
 ]
 

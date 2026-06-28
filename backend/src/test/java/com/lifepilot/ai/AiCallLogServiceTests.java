@@ -110,4 +110,54 @@ class AiCallLogServiceTests {
         assertEquals(100L, result.get(0).id());
         assertEquals("parse_todo", result.get(0).scenario());
     }
+
+    @Test
+    void summarizeLogs_returnsCountsRateAndAverageDuration() {
+        AiCallLog successTodo = log("parse_todo", "success", 10L);
+        AiCallLog successReport = log("monthly_report", "success", 20L);
+        AiCallLog failedTodo = log("parse_todo", "failed", 30L);
+        org.mockito.Mockito.when(aiCallLogMapper.selectList(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(java.util.List.of(successTodo, successReport, failedTodo));
+
+        com.lifepilot.ai.dto.AiCallLogSummaryResponse result =
+                aiCallLogService.summarizeLogs(10L, 500);
+
+        assertEquals(3, result.totalCount());
+        assertEquals(2, result.successCount());
+        assertEquals(1, result.failedCount());
+        assertEquals(2.0 / 3.0, result.successRate(), 0.0001);
+        assertEquals(20, result.averageDurationMs());
+        assertEquals("parse_todo", result.scenarioCounts().get(0).scenario());
+        assertEquals(2, result.scenarioCounts().get(0).count());
+        assertEquals(2, result.statusCounts().size());
+    }
+
+    @Test
+    void summarizeLogs_returnsZeroValuesWhenNoLogs() {
+        org.mockito.Mockito.when(aiCallLogMapper.selectList(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(java.util.List.of());
+
+        com.lifepilot.ai.dto.AiCallLogSummaryResponse result =
+                aiCallLogService.summarizeLogs(10L, 30);
+
+        assertEquals(0, result.totalCount());
+        assertEquals(0, result.successCount());
+        assertEquals(0, result.failedCount());
+        assertEquals(0, result.successRate());
+        assertEquals(0, result.averageDurationMs());
+        assertTrue(result.scenarioCounts().isEmpty());
+        assertTrue(result.statusCounts().isEmpty());
+    }
+
+    private AiCallLog log(String scenario, String status, Long durationMs) {
+        AiCallLog log = new AiCallLog();
+        log.setUserId(1L);
+        log.setHouseholdId(10L);
+        log.setProvider("mock");
+        log.setScenario(scenario);
+        log.setStatus(status);
+        log.setDurationMs(durationMs);
+        log.setCreatedAt(LocalDateTime.now());
+        return log;
+    }
 }

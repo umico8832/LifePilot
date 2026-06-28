@@ -123,6 +123,7 @@
 - `GET /api/ai/spaces/{spaceId}/recommend-recipes` ✅
 - `GET /api/ai/spaces/{spaceId}/meal-plan-shopping-draft?startDate=&endDate=` ✅
 - `GET /api/ai/spaces/{spaceId}/call-logs?scenario=&status=&limit=` ✅
+- `GET /api/ai/spaces/{spaceId}/call-logs/summary?days=` ✅
 
 AI 接口返回草稿，用户确认后再调用业务写入接口。
 
@@ -131,6 +132,8 @@ AI 接口返回草稿，用户确认后再调用业务写入接口。
 `GET /api/ai/spaces/{spaceId}/call-logs?scenario=&status=&limit=`
 
 返回当前用户所属空间内的 AI 调用审计记录，默认按创建时间倒序返回最近 50 条，`limit` 上限为 100。可选 `scenario` 和 `status` 过滤。
+
+前端已通过 `/ai-logs` 页面接入该接口，展示空间内调用记录、脱敏请求/响应摘要、状态、耗时和错误摘要；页面不展示自然语言输入原文。
 
 返回字段：
 
@@ -141,6 +144,21 @@ AI 接口返回草稿，用户确认后再调用业务写入接口。
 - `requestJson` / `responseJson`：脱敏后的摘要 JSON，不保存自然语言输入原文。
 - `status`：`success` 或 `failed`。
 - `durationMs`、`errorMessage`、`createdAt`。
+
+### AI 调用日志统计摘要
+
+`GET /api/ai/spaces/{spaceId}/call-logs/summary?days=`
+
+返回当前用户所属空间内最近一段时间的 AI 调用审计摘要。`days` 默认 30 天，后端限制在 1～365 天之间。
+
+返回字段：
+
+- `totalCount`：统计范围内总调用数。
+- `successCount` / `failedCount`：成功和失败调用数。
+- `successRate`：成功率，0～1 小数。
+- `averageDurationMs`：平均耗时，单位毫秒；无日志时为 0。
+- `scenarioCounts`：按 `scenario` 分组的调用量列表。
+- `statusCounts`：按 `status` 分组的调用量列表。
 
 ### 饮食计划生成采购草稿
 

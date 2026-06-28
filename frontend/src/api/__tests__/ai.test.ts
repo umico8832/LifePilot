@@ -15,6 +15,7 @@ import {
   generateMonthlyReport,
   draftShoppingListFromMealPlan,
   listAiCallLogs,
+  getAiCallLogSummary,
 } from '../ai'
 
 const mockedGet = vi.mocked(http.get)
@@ -157,6 +158,26 @@ describe('ai API', () => {
       params: { scenario: 'parse_todo', status: 'success', limit: 20 },
     })
     expect(result).toEqual(mockLogs)
+  })
+
+  it('getAiCallLogSummary calls GET with days param', async () => {
+    const mockSummary = {
+      totalCount: 3,
+      successCount: 2,
+      failedCount: 1,
+      successRate: 0.6667,
+      averageDurationMs: 18,
+      scenarioCounts: [{ scenario: 'parse_todo', count: 2 }],
+      statusCounts: [{ status: 'success', count: 2 }],
+    }
+    mockedGet.mockResolvedValue({ data: { data: mockSummary } })
+
+    const result = await getAiCallLogSummary(3, 7)
+
+    expect(mockedGet).toHaveBeenCalledWith('/api/ai/spaces/3/call-logs/summary', {
+      params: { days: 7 },
+    })
+    expect(result).toEqual(mockSummary)
   })
 
   it('propagates errors from http calls', async () => {
