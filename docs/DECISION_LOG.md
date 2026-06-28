@@ -93,3 +93,13 @@
 
 - 决策：小提交允许一行 subject；中型提交建议写中文 bullet body；大型提交必须写中文 bullet body，概括新增能力、关键模块、安全边界和验证结果。
 - 原因：LifePilot 主要由 AI Agent 长期接手开发，较详细的 commit body 可以帮助后续 Agent 快速理解提交意图和影响范围，同时避免把完整 changelog 复制进 Git 历史造成噪音。
+
+## 2026-06-28：任务池耗尽时先规划下一阶段
+
+- 决策：当 `docs/BACKLOG.md` 没有 `todo` 任务时，Agent 不能直接把“backlog 清空”作为停止结果；必须先阅读产品策略、PRD、Roadmap 和近期历史，若能安全推导下一阶段，就补充 Roadmap、Backlog、Current State 和 Changelog，并继续执行最高优先级任务。只有无法安全规划下一阶段时，才触发停止条件等待用户。
+- 原因：LifePilot 是长期自主开发项目，backlog 清空通常代表当前阶段完成，不代表项目完成。若规则允许直接停在“无下一任务”，会让后续 Agent 失去接手入口，破坏长期开发连续性。
+
+## 2026-06-28：文档时间戳必须由系统时间确认
+
+- 决策：凡写入 changelog、current state、recent history、归档或交接文档的当前时间戳，必须先运行系统 `date` 命令确认，并按 `Asia/Shanghai` 格式写入；禁止凭对话节奏、模型时间或主观估算填写。
+- 原因：时间戳是 Agent 接手和审计的重要线索，错误时间会误导任务顺序和验证记录。模型推断时间不可靠，必须以本机系统时间为准。

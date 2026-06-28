@@ -20,7 +20,8 @@ LifePilot 的目标是让 AI Agent 可以长期、连续、自主地维护和开
 7. 追加 `docs/CHANGELOG_AGENT.md`，运行 `python3 scripts/agent_changelog_archive.py` 刷新近期历史并自动归档旧历史。
 8. 运行文档一致性检查（当前为 `python3 scripts/agent_doc_check.py`）。
 9. 自审 `docs/AGENT_REVIEW_CHECKLIST.md`。
-10. 未触发停止条件时，继续选择下一项任务。
+10. 若当前任务完成后 `docs/BACKLOG.md` 没有 `todo` 任务，先执行“任务池耗尽处理”，再判断是否触发停止条件。
+11. 未触发停止条件时，继续选择下一项任务。
 
 ## 任务选择规则
 
@@ -29,11 +30,26 @@ LifePilot 的目标是让 AI Agent 可以长期、连续、自主地维护和开
 - 优先选择能解锁后续工作的任务。
 - 不做与产品定位冲突的功能。
 - 不为了演示做长期假接口；mock 只能用于明确标记的 AI provider 或开发占位。
-- 如果 `docs/BACKLOG.md` 中没有 `todo` 任务，必须触发停止条件，等待用户补充任务或确认新阶段。
+- 如果 `docs/BACKLOG.md` 中没有 `todo` 任务，不能直接停下；必须先执行“任务池耗尽处理”，确认无法安全规划下一阶段后，才触发停止条件。
+
+## 任务池耗尽处理
+
+当完成当前任务后发现 `docs/BACKLOG.md` 没有 `todo` 任务时，Agent 必须先补救长期开发入口：
+
+1. 阅读 `docs/PRODUCT_STRATEGY.md`、`docs/PRD.md`、`docs/ROADMAP.md` 和最近历史，判断是否存在不需要重大产品决策、真实外部资源或高风险操作的自然下一阶段。
+2. 若存在合理下一阶段，必须：
+   - 在 `docs/ROADMAP.md` 补充或确认下一阶段 Phase。
+   - 在 `docs/BACKLOG.md` 新增至少 2～4 个可执行任务，使用机器化任务格式，并标记最高优先级任务为 `todo`。
+   - 更新 `docs/CURRENT_STATE.md` 的当前阶段、最高优先级任务、阻塞项和下一项自动任务。
+   - 追加 `docs/CHANGELOG_AGENT.md`，运行 `python3 scripts/agent_changelog_archive.py` 和 `python3 scripts/agent_doc_check.py`。
+   - 未触发其他停止条件时，继续执行新增任务池中的最高优先级任务。
+3. 若无法合理规划下一阶段，必须在 `docs/CURRENT_STATE.md` 写明原因，例如需要重大产品决策、真实外部资源、所有规划阶段均完成或文档冲突，并按停止条件等待用户。
+4. 不允许只因为当前 backlog 清空就把长期开发状态留成“无下一任务”。
 
 ## 继续开发规则
 
 - 完成一个任务后，必须更新状态、任务池和日志。
+- 完成一个阶段最后一个任务后，必须先维护下一阶段任务池；只有无法安全规划下一阶段时才停止。
 - 如果未触发停止条件，自动继续下一项任务。
 - 当前任务足够明确时，合理默认决策并继续。
 - 遇到普通实现细节，不频繁询问用户。
@@ -58,7 +74,7 @@ LifePilot 的目标是让 AI Agent 可以长期、连续、自主地维护和开
 7. 连续多次测试失败且无法定位原因。
 8. Git 出现冲突且无法安全自动解决。
 9. 当前任务需求与已有文档发生重大冲突。
-10. 所有当前阶段 P0/P1/P2 任务均已完成。
+10. 任务池耗尽，且已执行“任务池耗尽处理”后仍无法安全规划下一阶段。
 11. 文档与代码严重冲突，且无法判断哪个来源可信。
 12. 工作区存在会被误提交的无关用户改动。
 13. 需要 push、force push、rebase、reset、删除分支、删除 tag 或其他高风险 Git 操作。
@@ -79,7 +95,7 @@ LifePilot 的目标是让 AI Agent 可以长期、连续、自主地维护和开
 ## 文档维护规则
 
 - `AGENTS.md` 只保留长期协作入口，不写临时进度。
-- `docs/CURRENT_STATE.md` 是唯一当前状态源，只在这里记录当前阶段、阻塞项、最近验证和下一任务。
+- `docs/CURRENT_STATE.md` 是唯一当前状态源，只在这里记录当前阶段、阻塞项、最近验证和下一任务；除非已确认停止条件，否则不得长期写成“无下一任务”。
 - `docs/BACKLOG.md` 是唯一任务源，只在这里记录任务状态、优先级、验收标准和后续任务建议。
 - `docs/RECENT_HISTORY.md` 是默认接手阅读的短历史摘要，由 `scripts/agent_changelog_archive.py` 生成或刷新，不作为当前状态来源。
 - `docs/CHANGELOG_AGENT.md` 是近期完整历史记录，每完成任务追加记录；旧记录由 `scripts/agent_changelog_archive.py` 自动归档到 `docs/changelog/`，不作为当前状态来源。
@@ -87,9 +103,16 @@ LifePilot 的目标是让 AI Agent 可以长期、连续、自主地维护和开
 - `docs/NEXT_CHAT_PROMPT.md` 是极简新对话入口，只引用权威文档；不要复制当前阶段、下一任务或长篇状态。
 - 设计改变时更新对应设计文档和 `docs/DECISION_LOG.md`。
 
+## 时间戳规则
+
+- 任何写入 `docs/CHANGELOG_AGENT.md`、`docs/CURRENT_STATE.md`、`docs/RECENT_HISTORY.md`、`docs/changelog/` 或其他交接文档的当前时间，必须先通过系统命令确认，例如 `date '+%Y-%m-%d %H:%M:%S %Z %z'`。
+- 文档中展示给 Agent 阅读的时间统一使用 `YYYY-MM-DD HH:mm Asia/Shanghai`，并以系统命令返回的 `+0800` 时间换算；禁止凭对话节奏、模型当前时间或主观估算填写时间。
+- 如果时间只需要日期、不需要分钟，仍必须确认系统日期，避免跨时区或跨日写错。
+
 ## 文档更新分层
 
 - 每个完成的开发任务：更新 `docs/CURRENT_STATE.md`、`docs/BACKLOG.md`、`docs/CHANGELOG_AGENT.md`，并运行 `python3 scripts/agent_changelog_archive.py`。
+- 每个阶段任务池耗尽时：先按“任务池耗尽处理”补充 `docs/ROADMAP.md`、`docs/BACKLOG.md`、`docs/CURRENT_STATE.md` 和 `docs/CHANGELOG_AGENT.md`，再运行归档和文档一致性检查。
 - API 改动：同步 `docs/API_DESIGN.md`。
 - 数据库或迁移改动：同步 `docs/DB_DESIGN.md`。
 - 架构、模块边界或目录结构变化：同步 `docs/ARCHITECTURE.md`。
@@ -101,6 +124,7 @@ LifePilot 的目标是让 AI Agent 可以长期、连续、自主地维护和开
 
 - 文档任务至少检查文件是否完整、互相引用是否正确。
 - 文档历史任务运行 `python3 scripts/agent_changelog_archive.py` 和 `python3 scripts/agent_doc_check.py`。
+- 涉及当前时间戳的文档任务必须先运行 `date '+%Y-%m-%d %H:%M:%S %Z %z'`，并在需要记录时间时使用该结果。
 - 后端任务优先运行 `cd backend && mvn test`。
 - 前端任务优先运行 `cd frontend && npm install && npm run build`。
 - 无法运行测试时，必须说明原因并记录到 `docs/CHANGELOG_AGENT.md`。

@@ -12,6 +12,20 @@ python3 scripts/agent_changelog_archive.py --keep 10
 
 脚本默认保留最近 10 条完整记录，并刷新 `docs/RECENT_HISTORY.md`。
 
+## 2026-06-28 23:08 Asia/Shanghai 修正任务池耗尽与时间戳规则
+
+- 任务：修正自主开发协议，避免 backlog 清空后长期开发断线，并修正当前时间戳不能凭估算写入的问题。
+- 改动：
+  - `docs/AUTO_DEV_PROTOCOL.md` 新增“任务池耗尽处理”：backlog 无 `todo` 时必须先检查产品规划并补充下一阶段任务池，只有无法安全规划时才停止。
+  - `docs/AUTO_DEV_PROTOCOL.md` 新增“时间戳规则”：写入 changelog、current state、recent history、归档或交接文档时间前，必须先运行系统 `date` 命令确认。
+  - `AGENTS.md` 协作原则补充同一约束，提醒新 Agent 不要直接停在无下一任务状态。
+  - `docs/AGENT_REVIEW_CHECKLIST.md` 新增时间戳自审项；`docs/DECISION_LOG.md` 记录长期流程决策和时间戳决策。
+**验证**：
+  - `date '+%Y-%m-%d %H:%M:%S %Z %z'`：确认当前系统时间为 `2026-06-28 23:08:03 CST +0800`。
+  - `python3 scripts/agent_changelog_archive.py`：通过。
+  - `python3 scripts/agent_doc_check.py`：通过，确认 BACKLOG 存在 P9-001～P9-004 todo，且 `CURRENT_STATE` 下一任务与 P9-001 一致。
+  - `git diff --check`：通过。
+
 ## 2026-06-28 21:35 Asia/Shanghai 规划 P9 家庭邀请与协作闭环任务池
 
 - 任务：补齐 P8 完成后的下一阶段长期开发入口，避免 backlog 清空导致新 Agent 无可执行任务。
@@ -168,18 +182,5 @@ python3 scripts/agent_changelog_archive.py --keep 10
   - `python3 scripts/agent_doc_check.py`：按预期返回“BACKLOG has no todo tasks”，触发当前阶段完成的停止条件。
   - `git diff --check`：通过。
 - **文档更新**：`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/API_DESIGN.md`、`docs/ARCHITECTURE.md`、`docs/ROADMAP.md`、`docs/CHANGELOG_AGENT.md`。
-
----
-
-## 2026-06-20 22:26 Asia/Shanghai 修复饮食计划 Mapper 注册导致的服务启动失败
-
-- 任务：修复实际体验验证发现的后端启动阻断问题。
-- 改动：为 `backend/src/main/java/com/lifepilot/recipe/MealPlanMapper.java` 补充 MyBatis `@Mapper` 注解，使其与其余 Mapper 的注册方式一致。
-- 影响：修复 `MealPlanService` 无法注入 `MealPlanMapper` 的问题；恢复所有 `@SpringBootTest` 控制器测试和真实 MySQL 环境中的后端服务启动。
-
-**验证**：
-- `cd backend && ./mvnw test -B`：234 tests passed。
-- MySQL（3307）联调下，后端（18081）启动成功，`GET /api/health` 返回 `UP`。
-- 浏览器：完成注册、自动登录、创建家庭空间；未发现 console error。
 
 ---
