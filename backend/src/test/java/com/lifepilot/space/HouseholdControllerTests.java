@@ -1,6 +1,7 @@
 package com.lifepilot.space;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -226,8 +227,129 @@ class HouseholdControllerTests {
     }
 
     @Test
+    void adminCanUpdateRoleAndRemoveMember() throws Exception {
+        UserRegistration admin = registerUser("admin", "Admin");
+        UserRegistration member = registerUser("managed", "Managed Member");
+        addMember(admin.email(), "admin");
+        long memberId = addMember(member.email(), "member");
+
+        mockMvc.perform(patch("/api/spaces/" + spaceId + "/members/" + memberId)
+                        .header("Authorization", "Bearer " + admin.token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"role\": \"viewer\" }"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.role").value("viewer"));
+
+        mockMvc.perform(delete("/api/spaces/" + spaceId + "/members/" + memberId)
+                        .header("Authorization", "Bearer " + admin.token()))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/spaces/" + spaceId + "/members")
+                        .header("Authorization", "Bearer " + ownerToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(2));
+    }
+
+    @Test
+    void ordinaryMemberCannotUpdateOrRemoveMembers() throws Exception {
+        UserRegistration member = registerUser("ordinary", "Ordinary Member");
+        long memberId = addMember(member.email(), "member");
+
+        mockMvc.perform(patch("/api/spaces/" + spaceId + "/members/" + memberId)
+                        .header("Authorization", "Bearer " + member.token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"role\": \"viewer\" }"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+
+        mockMvc.perform(delete("/api/spaces/" + spaceId + "/members/" + memberId)
+                        .header("Authorization", "Bearer " + member.token()))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+    }
+
+    @Test
+    void nonMemberCannotManageMembers() throws Exception {
+        UserRegistration outsider = registerUser("outsider_manage", "Outsider");
+        long ownerMemberId = getFirstMemberId();
+
+        mockMvc.perform(delete("/api/spaces/" + spaceId + "/members/" + ownerMemberId)
+                        .header("Authorization", "Bearer " + outsider.token()))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+    }
+
+    @Test
+    void cannotRemoveOrDemoteLastManager() throws Exception {
+        long ownerMemberId = getFirstMemberId();
+
+        mockMvc.perform(patch("/api/spaces/" + spaceId + "/members/" + ownerMemberId)
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"role\": \"member\" }"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("BUSINESS_ERROR"));
+
+        mockMvc.perform(delete("/api/spaces/" + spaceId + "/members/" + ownerMemberId)
+                        .header("Authorization", "Bearer " + ownerToken))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("BUSINESS_ERROR"));
+    }
+
+    @Test
     void spacesRequiresAuthentication() throws Exception {
         mockMvc.perform(get("/api/spaces"))
                 .andExpect(status().isForbidden());
     }
+
+    private UserRegistration registerUser(String prefix, String displayName) throws Exception {
+        String email = "%s_%d@example.com".formatted(prefix, System.nanoTime());
+        String body = """
+                {
+                  "email": "%s",
+                  "password": "strong-pass-123",
+                  "displayName": "%s"
+                }
+                """.formatted(email, displayName);
+
+        MvcResult result = mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode json = objectMapper.readTree(result.getResponse().getContentAsString());
+        return new UserRegistration(
+                json.at("/data/accessToken").asText(),
+                json.at("/data/user/email").asText()
+        );
+    }
+
+    private long addMember(String email, String role) throws Exception {
+        String addBody = """
+                { "email": "%s", "role": "%s" }
+                """.formatted(email, role);
+
+        MvcResult result = mockMvc.perform(post("/api/spaces/" + spaceId + "/members")
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(addBody))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode json = objectMapper.readTree(result.getResponse().getContentAsString());
+        return json.at("/data/id").asLong();
+    }
+
+    private long getFirstMemberId() throws Exception {
+        MvcResult result = mockMvc.perform(get("/api/spaces/" + spaceId + "/members")
+                        .header("Authorization", "Bearer " + ownerToken))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode json = objectMapper.readTree(result.getResponse().getContentAsString());
+        return json.at("/data/0/id").asLong();
+    }
+
+    private record UserRegistration(String token, String email) {}
 }

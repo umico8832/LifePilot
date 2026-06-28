@@ -1,6 +1,7 @@
 package com.lifepilot.space;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -19,6 +20,9 @@ import com.lifepilot.user.UserMapper;
 
 @Service
 public class HouseholdService {
+
+    private static final Set<String> VALID_ROLES = Set.of("owner", "admin", "member", "viewer");
+    private static final Set<String> MANAGER_ROLES = Set.of("owner", "admin");
 
     private final HouseholdMapper householdMapper;
     private final HouseholdMemberMapper memberMapper;
@@ -180,11 +184,18 @@ public class HouseholdService {
                         .eq(HouseholdMember::getHouseholdId, spaceId)
                         .eq(HouseholdMember::getUserId, targetUser.getId())
         );
-        if (existing != null) {
+        String role = normalizeRole(request.role());
+        if (existing != null && "active".equals(existing.getStatus())) {
             throw new BusinessException("CONFLICT", "User is already a member of this space");
         }
+        if (existing != null) {
+            existing.setRole(role);
+            existing.setStatus("active");
+            existing.setUpdatedAt(LocalDateTime.now());
+            memberMapper.updateById(existing);
+            return MemberResponse.from(existing, targetUser.getEmail(), targetUser.getDisplayName());
+        }
 
-        String role = request.role() != null ? request.role() : "member";
         HouseholdMember newMember = new HouseholdMember();
         newMember.setHouseholdId(spaceId);
         newMember.setUserId(targetUser.getId());
@@ -205,13 +216,12 @@ public class HouseholdService {
     public MemberResponse updateMemberRole(Long userId, Long spaceId, Long memberId, String newRole) {
         HouseholdMember callerMembership = getMembershipOrThrow(userId, spaceId);
         requireRole(callerMembership.getRole(), "owner", "admin");
+        String role = normalizeRole(newRole);
 
-        HouseholdMember targetMember = memberMapper.selectById(memberId);
-        if (targetMember == null || !targetMember.getHouseholdId().equals(spaceId)) {
-            throw new BusinessException("NOT_FOUND", "Member not found in this space");
-        }
+        HouseholdMember targetMember = getActiveMemberOrThrow(spaceId, memberId);
+        ensureManagerWillRemain(spaceId, targetMember, role);
 
-        targetMember.setRole(newRole);
+        targetMember.setRole(role);
         targetMember.setUpdatedAt(LocalDateTime.now());
         memberMapper.updateById(targetMember);
 
@@ -219,6 +229,22 @@ public class HouseholdService {
         String email = user != null ? user.getEmail() : "unknown";
         String displayName = user != null ? user.getDisplayName() : "unknown";
         return MemberResponse.from(targetMember, email, displayName);
+    }
+
+    /**
+     * Remove a member from a space. Only owner/admin can remove, and at least one owner/admin must remain.
+     */
+    @Transactional
+    public void removeMember(Long userId, Long spaceId, Long memberId) {
+        HouseholdMember callerMembership = getMembershipOrThrow(userId, spaceId);
+        requireRole(callerMembership.getRole(), "owner", "admin");
+
+        HouseholdMember targetMember = getActiveMemberOrThrow(spaceId, memberId);
+        ensureManagerWillRemain(spaceId, targetMember, null);
+
+        targetMember.setStatus("removed");
+        targetMember.setUpdatedAt(LocalDateTime.now());
+        memberMapper.updateById(targetMember);
     }
 
     /**
@@ -247,6 +273,42 @@ public class HouseholdService {
             throw new BusinessException("FORBIDDEN", "You are not a member of this space");
         }
         return membership;
+    }
+
+    private HouseholdMember getActiveMemberOrThrow(Long spaceId, Long memberId) {
+        HouseholdMember targetMember = memberMapper.selectById(memberId);
+        if (targetMember == null
+                || !targetMember.getHouseholdId().equals(spaceId)
+                || !"active".equals(targetMember.getStatus())) {
+            throw new BusinessException("NOT_FOUND", "Member not found in this space");
+        }
+        return targetMember;
+    }
+
+    private String normalizeRole(String role) {
+        String normalized = role == null || role.isBlank() ? "member" : role.trim();
+        if (!VALID_ROLES.contains(normalized)) {
+            throw new BusinessException("VALIDATION_ERROR", "Invalid member role");
+        }
+        return normalized;
+    }
+
+    private void ensureManagerWillRemain(Long spaceId, HouseholdMember targetMember, String newRole) {
+        if (!MANAGER_ROLES.contains(targetMember.getRole())) {
+            return;
+        }
+        if (newRole != null && MANAGER_ROLES.contains(newRole)) {
+            return;
+        }
+        long activeManagers = memberMapper.selectCount(
+                new LambdaQueryWrapper<HouseholdMember>()
+                        .eq(HouseholdMember::getHouseholdId, spaceId)
+                        .eq(HouseholdMember::getStatus, "active")
+                        .in(HouseholdMember::getRole, MANAGER_ROLES)
+        );
+        if (activeManagers <= 1) {
+            throw new BusinessException("BUSINESS_ERROR", "At least one owner or admin must remain");
+        }
     }
 
     private void requireRole(String actual, String... allowed) {

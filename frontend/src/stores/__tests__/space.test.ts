@@ -8,6 +8,8 @@ vi.mock('@/api/space', () => ({
   updateSpace: vi.fn(),
   listMembers: vi.fn(),
   addMember: vi.fn(),
+  updateMemberRole: vi.fn(),
+  removeMember: vi.fn(),
 }))
 
 import { useSpaceStore } from '../space'
@@ -18,6 +20,8 @@ import {
   updateSpace,
   listMembers,
   addMember,
+  updateMemberRole,
+  removeMember,
 } from '@/api/space'
 
 const mockedListSpaces = vi.mocked(listSpaces)
@@ -26,6 +30,8 @@ const mockedCreateSpace = vi.mocked(createSpace)
 const mockedUpdateSpace = vi.mocked(updateSpace)
 const mockedListMembers = vi.mocked(listMembers)
 const mockedAddMember = vi.mocked(addMember)
+const mockedUpdateMemberRole = vi.mocked(updateMemberRole)
+const mockedRemoveMember = vi.mocked(removeMember)
 
 const mockSpaces = [
   { id: 1, name: 'Home', type: 'personal', ownerId: 1 },
@@ -124,6 +130,30 @@ describe('useSpaceStore', () => {
 
     expect(result).toEqual(newMember)
     expect(store.members).toContainEqual(newMember)
+  })
+
+  it('changeMemberRole updates member in list', async () => {
+    const updated = { ...mockMembers[0], role: 'admin' }
+    mockedUpdateMemberRole.mockResolvedValue(updated as any)
+    const store = useSpaceStore()
+    store.members = [...mockMembers] as any
+
+    const result = await store.changeMemberRole(1, 1, 'admin')
+
+    expect(mockedUpdateMemberRole).toHaveBeenCalledWith(1, 1, 'admin')
+    expect(result).toEqual(updated)
+    expect(store.members[0]).toEqual(updated)
+  })
+
+  it('deleteMember removes member from list', async () => {
+    mockedRemoveMember.mockResolvedValue(undefined)
+    const store = useSpaceStore()
+    store.members = [...mockMembers, { id: 2, userId: 2, email: 'b@c.com', displayName: 'Bob', role: 'member' }] as any
+
+    await store.deleteMember(1, 2)
+
+    expect(mockedRemoveMember).toHaveBeenCalledWith(1, 2)
+    expect(store.members).toEqual(mockMembers)
   })
 
   it('clear resets all state', () => {

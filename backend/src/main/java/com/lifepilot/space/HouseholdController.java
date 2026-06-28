@@ -3,6 +3,7 @@ package com.lifepilot.space;
 import java.util.List;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -90,6 +91,16 @@ public class HouseholdController {
             @Valid @RequestBody UpdateMemberRoleRequest request) {
         requireAuth(principal);
         return ApiResponse.ok(householdService.updateMemberRole(principal.id(), spaceId, memberId, request.role()));
+    }
+
+    @DeleteMapping("/{spaceId}/members/{memberId}")
+    public ApiResponse<Void> removeMember(
+            @AuthenticationPrincipal CurrentUserPrincipal principal,
+            @PathVariable Long spaceId,
+            @PathVariable Long memberId) {
+        requireAuth(principal);
+        householdService.removeMember(principal.id(), spaceId, memberId);
+        return ApiResponse.ok(null);
     }
 
     private void requireAuth(CurrentUserPrincipal principal) {

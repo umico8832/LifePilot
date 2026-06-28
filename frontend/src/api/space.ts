@@ -55,3 +55,7 @@ export async function updateMemberRole(spaceId: number, memberId: number, role: 
   const res = await http.patch(`/api/spaces/${spaceId}/members/${memberId}`, { role })
   return res.data.data
 }
+
+export async function removeMember(spaceId: number, memberId: number): Promise<void> {
+  await http.delete(`/api/spaces/${spaceId}/members/${memberId}`)
+}

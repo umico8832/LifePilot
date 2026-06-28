@@ -57,6 +57,9 @@
 - `GET /api/spaces/{spaceId}/members`
 - `POST /api/spaces/{spaceId}/members`
 - `PATCH /api/spaces/{spaceId}/members/{memberId}`
+- `DELETE /api/spaces/{spaceId}/members/{memberId}` ✅
+
+当前已实现成员管理接口：成员列表、按邮箱添加成员、更新成员角色、移除成员。读取成员列表要求当前用户是空间成员；添加、角色更新和移除要求当前用户是 `owner` 或 `admin`。角色取值为 `owner`、`admin`、`member`、`viewer`；更新或移除成员时必须至少保留一名 `owner` 或 `admin`。
 
 ## 记账接口
 

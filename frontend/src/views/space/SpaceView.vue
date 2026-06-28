@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Home, AlertCircle, RefreshCw } from '@lucide/vue'
 
 import AppShell from '@/layouts/AppShell.vue'
 import { useSpaceStore } from '@/stores/space'
+import { useAuthStore } from '@/stores/auth'
+import type { MemberResponse } from '@/api/space'
 
 const spaceStore = useSpaceStore()
+const authStore = useAuthStore()
 const spacesLoading = ref(false)
 const spacesError = ref(false)
 const newSpaceName = ref('')
@@ -19,6 +22,15 @@ const inviteDialogVisible = ref(false)
 
 const personalSpaces = computed(() => spaceStore.spaces.filter((s) => s.type === 'personal'))
 const familySpaces = computed(() => spaceStore.spaces.filter((s) => s.type !== 'personal'))
+const canManageMembers = computed(() => isManagerRole(spaceStore.currentSpace?.memberRole))
+const activeManagerCount = computed(() => spaceStore.members.filter((m) => isManagerRole(m.role) && m.status === 'active').length)
+
+const roleOptions = [
+  { label: '所有者', value: 'owner' },
+  { label: '管理员', value: 'admin' },
+  { label: '成员', value: 'member' },
+  { label: '只读', value: 'viewer' },
+]
 
 onMounted(async () => {
   await loadSpaces()
@@ -75,6 +87,33 @@ async function handleInvite() {
   }
 }
 
+async function handleChangeMemberRole(member: MemberResponse, role: string) {
+  if (!spaceStore.currentSpace || member.role === role) return
+  try {
+    await spaceStore.changeMemberRole(spaceStore.currentSpace.id, member.id, role)
+    ElMessage.success('成员角色已更新')
+  } catch {
+    ElMessage.error('角色更新失败，请确认至少保留一名管理员')
+  }
+}
+
+async function handleRemoveMember(member: MemberResponse) {
+  if (!spaceStore.currentSpace || !canRemoveMember(member)) return
+  const confirmed = await ElMessageBox.confirm(
+    `确定要移除 ${member.displayName || member.email} 吗？`,
+    '移除成员',
+    { type: 'warning', confirmButtonText: '移除', cancelButtonText: '取消' },
+  ).catch(() => null)
+  if (!confirmed) return
+
+  try {
+    await spaceStore.deleteMember(spaceStore.currentSpace.id, member.id)
+    ElMessage.success('成员已移除')
+  } catch {
+    ElMessage.error('移除失败，请确认至少保留一名管理员')
+  }
+}
+
 function openRenameDialog() {
   renameValue.value = spaceStore.currentSpace?.name || ''
   renameDialogVisible.value = true
@@ -82,6 +121,27 @@ function openRenameDialog() {
 
 function openInviteDialog() {
   inviteDialogVisible.value = true
+}
+
+function isManagerRole(role?: string) {
+  return role === 'owner' || role === 'admin'
+}
+
+function roleLabel(role: string) {
+  return roleOptions.find((option) => option.value === role)?.label || role
+}
+
+function roleTagType(role: string) {
+  if (role === 'owner') return 'danger'
+  if (role === 'admin') return 'warning'
+  if (role === 'viewer') return 'info'
+  return 'success'
+}
+
+function canRemoveMember(member: MemberResponse) {
+  if (!canManageMembers.value) return false
+  if (authStore.user?.id === member.userId) return false
+  return !(isManagerRole(member.role) && activeManagerCount.value <= 1)
 }
 </script>
 
@@ -145,8 +205,8 @@ function openInviteDialog() {
                 </p>
               </div>
               <div class="detail-actions">
-                <el-button size="small" @click="openRenameDialog">重命名</el-button>
-                <el-button v-if="spaceStore.currentSpace.type !== 'personal'" size="small" type="primary" @click="openInviteDialog">
+                <el-button v-if="canManageMembers" size="small" @click="openRenameDialog">重命名</el-button>
+                <el-button v-if="canManageMembers && spaceStore.currentSpace.type !== 'personal'" size="small" type="primary" @click="openInviteDialog">
                   邀请成员
                 </el-button>
               </div>
@@ -155,12 +215,54 @@ function openInviteDialog() {
             <div class="members-section">
               <h3>成员列表</h3>
               <div v-if="spaceStore.members.length > 0" class="table-scroll">
-              <el-table :data="spaceStore.members" stripe style="width: 100%">
-                <el-table-column prop="displayName" label="名称" />
-                <el-table-column prop="email" label="邮箱" />
-                <el-table-column prop="role" label="角色" width="120" />
-                <el-table-column prop="status" label="状态" width="100" />
-              </el-table>
+                <el-table :data="spaceStore.members" stripe style="width: 100%">
+                  <el-table-column prop="displayName" label="名称" min-width="140">
+                    <template #default="{ row }">
+                      <span>{{ row.displayName }}</span>
+                      <span v-if="authStore.user?.id === row.userId" class="self-mark">你</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="email" label="邮箱" min-width="190" />
+                  <el-table-column prop="role" label="角色" min-width="150">
+                    <template #default="{ row }">
+                      <el-select
+                        v-if="canManageMembers"
+                        :model-value="row.role"
+                        size="small"
+                        class="role-select"
+                        @change="(role: string) => handleChangeMemberRole(row, role)"
+                      >
+                        <el-option
+                          v-for="option in roleOptions"
+                          :key="option.value"
+                          :label="option.label"
+                          :value="option.value"
+                        />
+                      </el-select>
+                      <el-tag v-else :type="roleTagType(row.role)" size="small">
+                        {{ roleLabel(row.role) }}
+                      </el-tag>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="status" label="状态" width="100">
+                    <template #default="{ row }">
+                      <el-tag size="small" type="success">{{ row.status === 'active' ? '正常' : row.status }}</el-tag>
+                    </template>
+                  </el-table-column>
+                  <el-table-column v-if="canManageMembers" label="操作" width="100" fixed="right">
+                    <template #default="{ row }">
+                      <el-button
+                        size="small"
+                        type="danger"
+                        plain
+                        :disabled="!canRemoveMember(row)"
+                        @click="handleRemoveMember(row)"
+                      >
+                        移除
+                      </el-button>
+                    </template>
+                  </el-table-column>
+                </el-table>
               </div>
               <div v-else class="members-empty">
                 <p>暂无成员，{{ spaceStore.currentSpace.type !== 'personal' ? '点击「邀请成员」添加家庭成员。' : '个人空间仅包含你自己。' }}</p>
@@ -310,6 +412,21 @@ function openInviteDialog() {
 .space-meta {
   color: var(--color-muted, #888);
   font-size: 13px;
+}
+
+.self-mark {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--el-color-primary-light-9, #ecf5ff);
+  color: var(--el-color-primary, #409eff);
+  font-size: 12px;
+}
+
+.role-select {
+  width: 118px;
 }
 
 .detail-actions {

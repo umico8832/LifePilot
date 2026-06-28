@@ -12,6 +12,24 @@ python3 scripts/agent_changelog_archive.py --keep 10
 
 脚本默认保留最近 10 条完整记录，并刷新 `docs/RECENT_HISTORY.md`。
 
+## 2026-06-28 21:16 Asia/Shanghai P8-004 家庭成员管理体验完善
+
+- 任务：P8-004 家庭成员管理体验完善
+- 改动：
+  - 后端：`HouseholdController` 新增 `DELETE /api/spaces/{spaceId}/members/{memberId}`；`HouseholdService` 为成员添加、角色更新和移除补充角色白名单、owner/admin 管理权限、inactive 成员重新激活和至少保留一名 owner/admin 的保护。
+  - 前端：`space.ts` 新增 `removeMember()`；space store 新增 `changeMemberRole()` 和 `deleteMember()`；`SpaceView.vue` 在管理员视图中展示角色下拉与移除按钮，普通成员保持只读。
+  - 测试：`HouseholdControllerTests` 覆盖管理员更新/移除、普通成员禁止、非成员禁止和最后管理员保护；新增 `frontend/src/api/__tests__/space.test.ts` 并扩展 space store 测试。
+  - 文档：`docs/API_DESIGN.md` 记录成员移除接口和权限规则；`docs/ARCHITECTURE.md` 补充成员管理权限边界。
+**验证**：
+  - `cd backend && ./mvnw test -B -Dtest=HouseholdControllerTests`：13 tests passed。
+  - `cd frontend && npm test -- space.test.ts`：2 个测试文件 15 tests passed。
+  - `cd frontend && npm run build`：通过；仍有既有第三方 `@vueuse/core` Rolldown pure annotation 警告。
+  - `cd backend && ./mvnw test -B`：256 tests passed。
+  - `cd frontend && npm test`：13 个测试文件 103 tests passed。
+  - `python3 scripts/agent_changelog_archive.py`：通过。
+  - `git diff --check`：通过。
+  - `python3 scripts/agent_doc_check.py`：按预期返回 “BACKLOG has no todo tasks”，触发自主开发停止条件。
+
 ## 2026-06-28 21:10 Asia/Shanghai P8-003 演示数据与本地体验种子脚本
 
 - 任务：P8-003 演示数据与本地体验种子脚本
@@ -163,17 +181,3 @@ python3 scripts/agent_changelog_archive.py --keep 10
   - 测试：AiServiceTests 新增 4 个单元测试（`recommendRecipes_returnsProviderRecommendation`、`recommendRecipes_throwsWhenNotMember`、`recommendRecipes_passesInventoryAndRecipesToProvider`、`recommendRecipes_emptyRecipesWhenNoData`）
 - **验证**：`cd backend && ./mvnw test -B -Dtest="AiServiceTests"`：13 tests passed；`cd frontend && npm run build`：通过；`cd frontend && npm test`：91 tests passed
 - **文档更新**：BACKLOG.md、CURRENT_STATE.md、CHANGELOG_AGENT.md、ROADMAP.md
-
-## 2026-06-19 17:26 Asia/Shanghai P5-001 实现一周饮食计划 CRUD
-
-- **任务**：P5-001 实现一周饮食计划 CRUD
-- **改动**：
-  - 后端：新建 `V9__create_meal_plan.sql` 迁移（meal_plan 表含 household_id、recipe_id、planned_date、meal_type、note 等字段）；recipe 模块新增 MealPlan 实体、MealPlanMapper、MealPlanService、MealPlanController 和 3 个 DTO
-  - 前端：新建 `mealplan.ts` API 模块、`MealPlanView.vue` 周历视图页面（7 天 × 4 餐次网格、周导航、今日高亮、菜谱选择弹窗）；路由新增 `/mealplan`；AppShell 导航栏新增"饮食计划"入口
-  - 测试：新增 13 个 MealPlanService 单元测试
-- **验证**：
-  - `cd backend && ./mvnw test -Dtest="MealPlanServiceTests"`：13 tests passed
-  - `cd frontend && npm test`：11 文件 91 tests passed
-  - `cd frontend && npm run build`：通过
-
----

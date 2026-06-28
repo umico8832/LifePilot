@@ -7,6 +7,8 @@ import {
   updateSpace,
   listMembers,
   addMember,
+  updateMemberRole,
+  removeMember,
   type SpaceResponse,
   type MemberResponse,
 } from '@/api/space'
@@ -62,6 +64,20 @@ export const useSpaceStore = defineStore('space', () => {
     return member
   }
 
+  async function changeMemberRole(spaceId: number, memberId: number, role: string) {
+    const member = await updateMemberRole(spaceId, memberId, role)
+    const idx = members.value.findIndex((m) => m.id === memberId)
+    if (idx >= 0) {
+      members.value[idx] = member
+    }
+    return member
+  }
+
+  async function deleteMember(spaceId: number, memberId: number) {
+    await removeMember(spaceId, memberId)
+    members.value = members.value.filter((m) => m.id !== memberId)
+  }
+
   function setCurrentSpace(space: SpaceResponse) {
     currentSpace.value = space
   }
@@ -83,6 +99,8 @@ export const useSpaceStore = defineStore('space', () => {
     renameSpace,
     fetchMembers,
     inviteMember,
+    changeMemberRole,
+    deleteMember,
     setCurrentSpace,
     clear,
   }
