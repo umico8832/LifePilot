@@ -2,11 +2,11 @@
 
 ## 当前阶段
 
-P8-004 完成。当前进入 P9 家庭邀请与协作闭环阶段（Phase 23/24）；已补充下一阶段可执行任务池，恢复长期自主开发入口。
+P9-004 已按本机环境限制完成替代验证；由于 Docker Desktop 处于手动暂停状态、3307 MySQL 只读探测超时且项目未安装 Playwright，真实 demo seed 写入和浏览器冒烟未能执行，已记录补跑命令。当前进入 P10 跨模块权限矩阵落地阶段（Phase 25/26）。
 
 ## 当前最高优先级任务
 
-P9-001 家庭空间邀请链接基础能力。
+P10-001 购物清单 viewer 写保护加固。
 
 ## 最近完成任务
 
@@ -31,6 +31,10 @@ P9-001 家庭空间邀请链接基础能力。
 - P8-002 AI 调用日志统计摘要接口：新增 `AiCallLogSummaryResponse` DTO、`AiCallLogService.summarizeLogs`、`AiService.summarizeCallLogs` 和 `GET /api/ai/spaces/{spaceId}/call-logs/summary?days=` 端点；前端 `ai.ts` 新增 `AiCallLogSummary` 类型和 `getAiCallLogSummary()`；测试覆盖统计计算、空数据、权限委托、控制器端点和前端 API 参数。
 - P8-003 演示数据与本地体验种子脚本：新增 `scripts/demo_seed.sql` 和 `scripts/demo_seed.sh`，默认 dry-run，显式 `--apply` 后重置并创建 `demo@lifepilot.local` demo 用户、家庭空间和记账、购物、库存、待办、菜谱、饮食计划、票据文档、AI 日志数据；README 和 HANDOFF 记录默认账号、使用方式、幂等清理说明和验证命令。
 - P8-004 家庭成员管理体验完善：后端新增 `DELETE /api/spaces/{spaceId}/members/{memberId}`，成员角色更新和移除加入角色白名单、owner/admin 权限和至少保留一名 owner/admin 保护；inactive 成员可通过添加流程重新激活；前端空间页新增管理员角色下拉、移除成员操作、普通成员只读视图；API/store 测试和控制器测试覆盖管理路径。
+- P9-001 家庭空间邀请链接基础能力：新增 `household_invitation` 表、邀请实体/Mapper/DTO 和 `HouseholdInvitationService`；后端提供创建、列表、撤销和接受邀请接口，token 只以 SHA-256 hash 落库，创建响应一次性返回明文 token；前端 `space.ts` 新增邀请 API 类型和方法；后端控制器测试覆盖管理员创建、普通成员/非成员禁止、过期/撤销/重复接受、邮箱不匹配、非法角色和接受后成为成员。
+- P9-002 前端邀请管理与接受邀请体验：空间页管理员视图新增邀请链接列表、生成邀请弹窗、复制链接和撤销操作；普通成员保持只读且不显示邀请管理入口；新增 `/spaces/invitations/accept?token=` 接受邀请页，支持 URL token 或手动输入，成功后刷新空间列表并跳转空间页；新增 store 和页面测试覆盖创建、撤销、接受和只读状态。
+- P9-003 角色权限体验和测试矩阵加固：`docs/API_DESIGN.md` 和 `docs/ARCHITECTURE.md` 明确 owner/admin/member/viewer 在空间、成员、邀请、记账、购物、库存、待办、菜谱、饮食计划、票据和 AI 日志中的读写边界；后端记账写操作改为 `owner/admin/member` 可写、`viewer` 只读；FinanceView 根据角色隐藏写操作并显示只读提示；补充 controller/service 和页面测试覆盖 viewer/member/admin 路径。
+- P9-004 Demo seed 真实 MySQL 冒烟验证与浏览器检查：完成脚本语法和 dry-run 验证，确认 mysql 客户端存在；Docker Desktop 手动暂停、`MYSQL_PORT=3307` 只读连接探测 10 秒超时、项目未安装 Playwright，因此未执行真实 `--apply`/`--verify` 和浏览器冒烟；已补充 Phase 25/26 与 P10-001～P10-004 任务池，避免 backlog 清空。
 
 ## 当前阻塞项
 
@@ -38,7 +42,7 @@ P9-001 家庭空间邀请链接基础能力。
 
 ## 下一项自动任务
 
-P9-001 家庭空间邀请链接基础能力：实现不依赖真实邮件/短信的邀请 token 模型和接受邀请流程，让家庭空间协作从“管理员按邮箱添加已注册用户”升级为“可生成邀请并由受邀用户确认加入”。
+P10-001 购物清单 viewer 写保护加固：按 P9-003 角色矩阵补齐购物清单后端写权限和前端只读体验，确保 viewer 只能查看购物清单和清单项。
 
 ## 最近验证结果
 
@@ -57,6 +61,14 @@ P9-001 家庭空间邀请链接基础能力：实现不依赖真实邮件/短信
 - P8-003 本地验证（2026-06-28 21:10 Asia/Shanghai）：`bash -n scripts/demo_seed.sh` 通过；`scripts/demo_seed.sh --dry-run` 通过；`cd backend && ./mvnw test -B` 通过，252 tests passed；`cd frontend && npm run build` 通过，仍有既有第三方 `@vueuse/core` Rolldown pure annotation 警告；真实 `--apply` 未运行，因为 Docker Desktop 处于手动暂停状态，无法启动 MySQL，且本地 `3306` 未监听、`3307` 探测无响应后已中断；后续需在 MySQL 可用后补跑 `MYSQL_PORT=3307 scripts/demo_seed.sh --apply && MYSQL_PORT=3307 scripts/demo_seed.sh --verify`。
 - P8-004 本地验证（2026-06-28 21:18 Asia/Shanghai）：`cd backend && ./mvnw test -B -Dtest=HouseholdControllerTests` 通过，13 tests passed；`cd frontend && npm test -- space.test.ts` 通过，2 个测试文件 15 tests passed；`cd frontend && npm run build` 通过，仍有既有第三方 `@vueuse/core` Rolldown pure annotation 警告；`cd backend && ./mvnw test -B` 通过，256 tests passed；`cd frontend && npm test` 通过，13 个测试文件 103 tests passed；`python3 scripts/agent_changelog_archive.py` 通过；`git diff --check` 通过；`python3 scripts/agent_doc_check.py` 按预期返回 “BACKLOG has no todo tasks”，触发自主开发停止条件。
 - 下一阶段规划（2026-06-28 21:35 Asia/Shanghai）：新增 Phase 23/24 和 P9-001～P9-004 任务池；待运行文档归档和一致性检查。
+- P9-001 本地验证（2026-06-28 23:18 Asia/Shanghai）：`cd backend && ./mvnw test -B -Dtest=HouseholdControllerTests` 通过，19 tests passed；`cd frontend && npm test -- space.test.ts` 通过，2 个测试文件 19 tests passed；`cd backend && ./mvnw test -B` 通过，262 tests passed；`cd frontend && npm test` 通过，13 个测试文件 107 tests passed；`cd frontend && npm run build` 通过，仍有既有第三方 `@vueuse/core` Rolldown pure annotation 警告。
+- P9-001 文档验证（2026-06-28 23:18 Asia/Shanghai）：`python3 scripts/agent_changelog_archive.py` 通过，保留 10 条并刷新 `docs/RECENT_HISTORY.md`；`python3 scripts/agent_doc_check.py` 通过，确认下一任务 P9-002 与 BACKLOG 一致；`git diff --check` 通过。
+- P9-002 本地验证（2026-06-28 23:25 Asia/Shanghai）：`cd frontend && npm test -- space.test.ts SpaceView.test.ts AcceptInvitationView.test.ts` 通过，4 个测试文件 27 tests passed；`cd frontend && npm run build` 通过，仍有既有第三方 `@vueuse/core` Rolldown pure annotation 警告；`cd frontend && npm test` 通过，15 个测试文件 115 tests passed；浏览器冒烟未运行，因为 Docker Desktop 处于手动暂停状态且项目未安装 Playwright 包，已由 API/store/页面组件测试覆盖主要交互状态。
+- P9-002 文档验证（2026-06-28 23:25 Asia/Shanghai）：`python3 scripts/agent_changelog_archive.py` 通过，保留 10 条并刷新 `docs/RECENT_HISTORY.md`；`python3 scripts/agent_doc_check.py` 通过，确认下一任务 P9-003 与 BACKLOG 一致；`git diff --check` 通过。
+- P9-003 本地验证（2026-06-28 23:31 Asia/Shanghai）：`cd backend && ./mvnw test -B -Dtest=TransactionControllerTests,HouseholdControllerTests` 通过，27 tests passed；`cd frontend && npm test -- FinanceView.test.ts SpaceView.test.ts space.test.ts` 通过，4 个测试文件 38 tests passed；首次 `cd backend && ./mvnw test -B` 因旧 `TransactionServiceTests` 仍断言 `requireSpaceMembership` 失败，已修正为 `requireSpaceRole` 后重跑通过，265 tests passed；`cd frontend && npm test` 通过，15 个测试文件 116 tests passed；`cd frontend && npm run build` 通过，仍有既有第三方 `@vueuse/core` Rolldown pure annotation 警告。
+- P9-003 文档验证（2026-06-28 23:31 Asia/Shanghai）：`python3 scripts/agent_changelog_archive.py` 通过，保留 10 条并刷新 `docs/RECENT_HISTORY.md`；`python3 scripts/agent_doc_check.py` 通过，确认下一任务 P9-004 与 BACKLOG 一致；`git diff --check` 通过。
+- P9-004 替代验证（2026-06-28 23:33 Asia/Shanghai）：`bash -n scripts/demo_seed.sh` 通过；`scripts/demo_seed.sh --dry-run` 通过；`docker compose ps --format json` 未通过，Docker Desktop 手动暂停；`command -v mysql && mysql --version` 通过，mysql client 为 8.0.43；`nc -z 127.0.0.1 3306` 返回未监听，`nc -z 127.0.0.1 3307` 返回端口开放；`MYSQL_PORT=3307 perl -e 'alarm 10; exec @ARGV' scripts/demo_seed.sh --verify` 与直接 `mysql SELECT 1` 均在 10 秒后退出 142，未确认可用 MySQL 会话；`test -d frontend/node_modules/playwright` 返回 `no-playwright`。未执行真实写入；后续补跑命令：`MYSQL_PORT=3307 scripts/demo_seed.sh --apply && MYSQL_PORT=3307 scripts/demo_seed.sh --verify`，再启动前后端并检查首页、购物清单、库存提醒、饮食计划和 AI 日志页面。
+- P9-004 文档验证（2026-06-28 23:33 Asia/Shanghai）：`python3 scripts/agent_changelog_archive.py` 通过，保留 10 条并刷新 `docs/RECENT_HISTORY.md`；`python3 scripts/agent_doc_check.py` 通过，确认下一任务 P10-001 与 BACKLOG 一致；`git diff --check` 通过。
 
 ## 注意事项
 
@@ -78,3 +90,8 @@ P9-001 家庭空间邀请链接基础能力：实现不依赖真实邮件/短信
 - `MealPlanMapper` 已显式标注 `@Mapper`，完整测试与真实 MySQL 服务启动均已恢复。
 - `ai_call_log` 由 V10 迁移创建，记录 AI 调用审计摘要；自然语言输入只保存 SHA-256 hash 和长度摘要，不保存原文。
 - AI 调用日志查询接口为 `GET /api/ai/spaces/{spaceId}/call-logs?scenario=&status=&limit=`，默认 50 条，上限 100 条，需空间成员权限。
+- 家庭邀请表 `household_invitation` 由 V11 迁移创建，token 只保存 SHA-256 hash；创建邀请响应会一次性返回明文 token，列表和接受响应不返回明文 token。
+- 家庭邀请接口为 `POST/GET/DELETE /api/spaces/{spaceId}/invitations` 和 `POST /api/spaces/invitations/accept`；创建、列表、撤销要求 `owner` 或 `admin`，接受邀请要求登录用户且目标邮箱匹配。
+- 前端接受邀请路由为 `/spaces/invitations/accept?token=`，需要登录；空间页的邀请管理仅在家庭空间 `owner/admin` 视图展示。
+- 当前角色矩阵约定：`viewer` 只读，`member` 可写普通业务数据，`admin/owner` 可管理空间成员和邀请；记账模块已经在后端和前端完成 viewer 写保护，其余业务模块按该矩阵作为后续加固标准。
+- Demo seed 真实写入仍待 MySQL 可用后补跑；本机当前 Docker Desktop 手动暂停，`3307` 端口开放但 MySQL 会话探测超时。

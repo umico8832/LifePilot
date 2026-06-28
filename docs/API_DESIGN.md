@@ -58,8 +58,63 @@
 - `POST /api/spaces/{spaceId}/members`
 - `PATCH /api/spaces/{spaceId}/members/{memberId}`
 - `DELETE /api/spaces/{spaceId}/members/{memberId}` ✅
+- `POST /api/spaces/{spaceId}/invitations` ✅
+- `GET /api/spaces/{spaceId}/invitations` ✅
+- `DELETE /api/spaces/{spaceId}/invitations/{invitationId}` ✅
+- `POST /api/spaces/invitations/accept` ✅
 
 当前已实现成员管理接口：成员列表、按邮箱添加成员、更新成员角色、移除成员。读取成员列表要求当前用户是空间成员；添加、角色更新和移除要求当前用户是 `owner` 或 `admin`。角色取值为 `owner`、`admin`、`member`、`viewer`；更新或移除成员时必须至少保留一名 `owner` 或 `admin`。
+
+当前已实现邀请链接接口：`owner` 或 `admin` 可创建、列出和撤销空间邀请；邀请记录保存 token hash，不保存明文 token。创建邀请时响应会一次性返回 `token` 供前端复制本地邀请链接；列表接口返回邀请元数据但 `token` 为 `null`。已登录用户通过 `POST /api/spaces/invitations/accept` 提交 token 接受邀请；过期、撤销、已接受、目标邮箱不匹配、重复加入和非法角色均返回统一错误响应。
+
+创建邀请请求：
+
+```json
+{
+  "targetEmail": "guest@example.com",
+  "role": "member",
+  "expiresInDays": 7
+}
+```
+
+接受邀请请求：
+
+```json
+{
+  "token": "one-time-token"
+}
+```
+
+邀请响应字段：
+
+- `id`、`householdId`、`invitedBy`
+- `targetEmail`：可为空；非空时只允许该邮箱用户接受。
+- `role`：`admin`、`member` 或 `viewer`；邀请不能直接授予 `owner`。
+- `status`：`pending`、`revoked` 或 `accepted`。
+- `expiresAt`、`acceptedAt`、`acceptedBy`、`createdAt`
+- `token`：仅创建响应返回明文 token，列表和接受响应为 `null`。
+
+前端接受邀请路由为 `/spaces/invitations/accept?token=`。该路由需要登录；未登录用户会先进入登录页，登录后回到原邀请链接继续确认。
+
+## 角色权限矩阵
+
+空间角色统一为 `owner`、`admin`、`member`、`viewer`。读权限均要求当前用户是目标空间 active 成员；写权限不能只依赖前端隐藏按钮，后端必须校验角色。
+
+| 模块 | owner | admin | member | viewer |
+|---|---|---|---|---|
+| 空间资料 | 读写 | 读写 | 只读 | 只读 |
+| 成员管理 | 读写，可调整角色/移除成员 | 读写，可调整角色/移除成员 | 只读成员列表 | 只读成员列表 |
+| 邀请链接 | 创建、列表、撤销 | 创建、列表、撤销 | 不可管理 | 不可管理 |
+| 记账 | 读写 | 读写 | 读写 | 只读 |
+| 购物清单 | 读写 | 读写 | 读写 | 只读 |
+| 库存 | 读写 | 读写 | 读写 | 只读 |
+| 待办 | 读写 | 读写 | 读写 | 只读 |
+| 菜谱 | 读写 | 读写 | 读写 | 只读 |
+| 饮食计划 | 读写 | 读写 | 读写 | 只读 |
+| 票据文档 | 读写 | 读写 | 读写 | 只读 |
+| AI 日志 | 只读 | 只读 | 只读 | 只读 |
+
+当前后端已强制校验：空间成员/邀请管理只允许 `owner/admin` 管理；记账写操作只允许 `owner/admin/member`，`viewer` 可读取但不可新增、编辑或删除。其他业务模块的 viewer 写保护按该矩阵作为后续加固标准。
 
 ## 记账接口
 

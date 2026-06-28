@@ -10,6 +10,10 @@ vi.mock('@/api/space', () => ({
   addMember: vi.fn(),
   updateMemberRole: vi.fn(),
   removeMember: vi.fn(),
+  createInvitation: vi.fn(),
+  listInvitations: vi.fn(),
+  revokeInvitation: vi.fn(),
+  acceptInvitation: vi.fn(),
 }))
 
 import { useSpaceStore } from '../space'
@@ -22,6 +26,10 @@ import {
   addMember,
   updateMemberRole,
   removeMember,
+  createInvitation,
+  listInvitations,
+  revokeInvitation,
+  acceptInvitation,
 } from '@/api/space'
 
 const mockedListSpaces = vi.mocked(listSpaces)
@@ -32,6 +40,10 @@ const mockedListMembers = vi.mocked(listMembers)
 const mockedAddMember = vi.mocked(addMember)
 const mockedUpdateMemberRole = vi.mocked(updateMemberRole)
 const mockedRemoveMember = vi.mocked(removeMember)
+const mockedCreateInvitation = vi.mocked(createInvitation)
+const mockedListInvitations = vi.mocked(listInvitations)
+const mockedRevokeInvitation = vi.mocked(revokeInvitation)
+const mockedAcceptInvitation = vi.mocked(acceptInvitation)
 
 const mockSpaces = [
   { id: 1, name: 'Home', type: 'personal', ownerId: 1 },
@@ -41,6 +53,20 @@ const mockSpaces = [
 const mockMembers = [
   { id: 1, userId: 1, email: 'a@b.com', displayName: 'Alice', role: 'owner' },
 ]
+
+const mockInvitation = {
+  id: 10,
+  householdId: 2,
+  invitedBy: 1,
+  targetEmail: 'guest@example.com',
+  role: 'member',
+  status: 'pending',
+  expiresAt: '2026-07-05T20:00:00',
+  acceptedAt: null,
+  acceptedBy: null,
+  createdAt: '2026-06-28T20:00:00',
+  token: 'token-value',
+}
 
 describe('useSpaceStore', () => {
   beforeEach(() => {
@@ -121,6 +147,16 @@ describe('useSpaceStore', () => {
     expect(store.members).toEqual(mockMembers)
   })
 
+  it('fetchInvitations loads invitations', async () => {
+    mockedListInvitations.mockResolvedValue([mockInvitation] as any)
+    const store = useSpaceStore()
+
+    await store.fetchInvitations(2)
+
+    expect(mockedListInvitations).toHaveBeenCalledWith(2)
+    expect(store.invitations).toEqual([mockInvitation])
+  })
+
   it('inviteMember adds to members list', async () => {
     const newMember = { id: 2, userId: 2, email: 'b@c.com', displayName: 'Bob', role: 'member' }
     mockedAddMember.mockResolvedValue(newMember as any)
@@ -145,6 +181,41 @@ describe('useSpaceStore', () => {
     expect(store.members[0]).toEqual(updated)
   })
 
+  it('createSpaceInvitation prepends invitation', async () => {
+    mockedCreateInvitation.mockResolvedValue(mockInvitation as any)
+    const store = useSpaceStore()
+    store.invitations = [{ ...mockInvitation, id: 9, token: null }] as any
+
+    const result = await store.createSpaceInvitation(2, { targetEmail: 'guest@example.com', role: 'member' })
+
+    expect(mockedCreateInvitation).toHaveBeenCalledWith(2, { targetEmail: 'guest@example.com', role: 'member' })
+    expect(result).toEqual(mockInvitation)
+    expect(store.invitations[0]).toEqual(mockInvitation)
+  })
+
+  it('revokeSpaceInvitation marks invitation revoked', async () => {
+    mockedRevokeInvitation.mockResolvedValue(undefined)
+    const store = useSpaceStore()
+    store.invitations = [mockInvitation] as any
+
+    await store.revokeSpaceInvitation(2, 10)
+
+    expect(mockedRevokeInvitation).toHaveBeenCalledWith(2, 10)
+    expect(store.invitations[0].status).toBe('revoked')
+  })
+
+  it('acceptSpaceInvitation accepts token and refreshes spaces', async () => {
+    mockedAcceptInvitation.mockResolvedValue({ ...mockInvitation, status: 'accepted', token: null } as any)
+    mockedListSpaces.mockResolvedValue(mockSpaces as any)
+    const store = useSpaceStore()
+
+    const result = await store.acceptSpaceInvitation('token-value')
+
+    expect(mockedAcceptInvitation).toHaveBeenCalledWith('token-value')
+    expect(mockedListSpaces).toHaveBeenCalled()
+    expect(result.status).toBe('accepted')
+  })
+
   it('deleteMember removes member from list', async () => {
     mockedRemoveMember.mockResolvedValue(undefined)
     const store = useSpaceStore()
@@ -161,12 +232,14 @@ describe('useSpaceStore', () => {
     store.spaces = mockSpaces as any
     store.currentSpace = mockSpaces[0] as any
     store.members = mockMembers as any
+    store.invitations = [mockInvitation] as any
 
     store.clear()
 
     expect(store.spaces).toEqual([])
     expect(store.currentSpace).toBeNull()
     expect(store.members).toEqual([])
+    expect(store.invitations).toEqual([])
   })
 
   it('setCurrentSpace updates current space', () => {

@@ -46,7 +46,7 @@ class TransactionServiceTests {
 
         TransactionResponse response = transactionService.create(USER_ID, SPACE_ID, request);
 
-        verify(householdService).requireSpaceMembership(USER_ID, SPACE_ID);
+        verify(householdService).requireSpaceRole(USER_ID, SPACE_ID, "owner", "admin", "member");
         verify(recordMapper).insert((TransactionRecord) any());
         assertNotNull(response);
     }
@@ -67,7 +67,21 @@ class TransactionServiceTests {
     @Test
     void create_nonMember_throwsException() {
         doThrow(new BusinessException("FORBIDDEN", "Not a member"))
-                .when(householdService).requireSpaceMembership(USER_ID, SPACE_ID);
+                .when(householdService).requireSpaceRole(USER_ID, SPACE_ID, "owner", "admin", "member");
+
+        CreateTransactionRequest request = new CreateTransactionRequest(
+                new BigDecimal("50"), null, null, null, null, null, null
+        );
+
+        assertThrows(BusinessException.class,
+                () -> transactionService.create(USER_ID, SPACE_ID, request));
+        verify(recordMapper, never()).insert((TransactionRecord) any());
+    }
+
+    @Test
+    void create_viewer_throwsException() {
+        doThrow(new BusinessException("FORBIDDEN", "Insufficient permissions"))
+                .when(householdService).requireSpaceRole(USER_ID, SPACE_ID, "owner", "admin", "member");
 
         CreateTransactionRequest request = new CreateTransactionRequest(
                 new BigDecimal("50"), null, null, null, null, null, null
@@ -165,6 +179,7 @@ class TransactionServiceTests {
         TransactionResponse result = transactionService.update(USER_ID, SPACE_ID, TX_ID, request);
 
         assertNotNull(result);
+        verify(householdService).requireSpaceRole(USER_ID, SPACE_ID, "owner", "admin", "member");
         verify(recordMapper).updateById((TransactionRecord) any());
     }
 
@@ -193,6 +208,7 @@ class TransactionServiceTests {
 
         transactionService.delete(USER_ID, SPACE_ID, TX_ID);
 
+        verify(householdService).requireSpaceRole(USER_ID, SPACE_ID, "owner", "admin", "member");
         verify(recordMapper).deleteById(TX_ID);
     }
 

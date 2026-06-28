@@ -9,14 +9,20 @@ import {
   addMember,
   updateMemberRole,
   removeMember,
+  createInvitation,
+  listInvitations,
+  revokeInvitation,
+  acceptInvitation,
   type SpaceResponse,
   type MemberResponse,
+  type InvitationResponse,
 } from '@/api/space'
 
 export const useSpaceStore = defineStore('space', () => {
   const spaces = ref<SpaceResponse[]>([])
   const currentSpace = ref<SpaceResponse | null>(null)
   const members = ref<MemberResponse[]>([])
+  const invitations = ref<InvitationResponse[]>([])
   const loading = ref(false)
 
   async function fetchSpaces() {
@@ -58,10 +64,40 @@ export const useSpaceStore = defineStore('space', () => {
     members.value = await listMembers(spaceId)
   }
 
+  async function fetchInvitations(spaceId: number) {
+    invitations.value = await listInvitations(spaceId)
+  }
+
   async function inviteMember(spaceId: number, email: string, role?: string) {
     const member = await addMember(spaceId, email, role)
     members.value.push(member)
     return member
+  }
+
+  async function createSpaceInvitation(
+    spaceId: number,
+    payload: { targetEmail?: string; role?: string; expiresInDays?: number },
+  ) {
+    const invitation = await createInvitation(spaceId, payload)
+    invitations.value = [invitation, ...invitations.value]
+    return invitation
+  }
+
+  async function revokeSpaceInvitation(spaceId: number, invitationId: number) {
+    await revokeInvitation(spaceId, invitationId)
+    const idx = invitations.value.findIndex((invitation) => invitation.id === invitationId)
+    if (idx >= 0) {
+      invitations.value[idx] = {
+        ...invitations.value[idx],
+        status: 'revoked',
+      }
+    }
+  }
+
+  async function acceptSpaceInvitation(token: string) {
+    const invitation = await acceptInvitation(token)
+    await fetchSpaces()
+    return invitation
   }
 
   async function changeMemberRole(spaceId: number, memberId: number, role: string) {
@@ -86,19 +122,25 @@ export const useSpaceStore = defineStore('space', () => {
     spaces.value = []
     currentSpace.value = null
     members.value = []
+    invitations.value = []
   }
 
   return {
     spaces,
     currentSpace,
     members,
+    invitations,
     loading,
     fetchSpaces,
     fetchSpace,
     createNewSpace,
     renameSpace,
     fetchMembers,
+    fetchInvitations,
     inviteMember,
+    createSpaceInvitation,
+    revokeSpaceInvitation,
+    acceptSpaceInvitation,
     changeMemberRole,
     deleteMember,
     setCurrentSpace,

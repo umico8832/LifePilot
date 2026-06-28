@@ -15,8 +15,11 @@ import org.springframework.web.bind.annotation.RestController;
 import com.lifepilot.common.ApiResponse;
 import com.lifepilot.common.BusinessException;
 import com.lifepilot.security.CurrentUserPrincipal;
+import com.lifepilot.space.dto.AcceptInvitationRequest;
 import com.lifepilot.space.dto.AddMemberRequest;
 import com.lifepilot.space.dto.CreateSpaceRequest;
+import com.lifepilot.space.dto.CreateInvitationRequest;
+import com.lifepilot.space.dto.InvitationResponse;
 import com.lifepilot.space.dto.MemberResponse;
 import com.lifepilot.space.dto.SpaceResponse;
 import com.lifepilot.space.dto.UpdateMemberRoleRequest;
@@ -29,9 +32,12 @@ import jakarta.validation.Valid;
 public class HouseholdController {
 
     private final HouseholdService householdService;
+    private final HouseholdInvitationService invitationService;
 
-    public HouseholdController(HouseholdService householdService) {
+    public HouseholdController(HouseholdService householdService,
+                               HouseholdInvitationService invitationService) {
         this.householdService = householdService;
+        this.invitationService = invitationService;
     }
 
     @GetMapping
@@ -101,6 +107,41 @@ public class HouseholdController {
         requireAuth(principal);
         householdService.removeMember(principal.id(), spaceId, memberId);
         return ApiResponse.ok(null);
+    }
+
+    @PostMapping("/{spaceId}/invitations")
+    public ApiResponse<InvitationResponse> createInvitation(
+            @AuthenticationPrincipal CurrentUserPrincipal principal,
+            @PathVariable Long spaceId,
+            @Valid @RequestBody CreateInvitationRequest request) {
+        requireAuth(principal);
+        return ApiResponse.ok(invitationService.createInvitation(principal.id(), spaceId, request));
+    }
+
+    @GetMapping("/{spaceId}/invitations")
+    public ApiResponse<List<InvitationResponse>> listInvitations(
+            @AuthenticationPrincipal CurrentUserPrincipal principal,
+            @PathVariable Long spaceId) {
+        requireAuth(principal);
+        return ApiResponse.ok(invitationService.listInvitations(principal.id(), spaceId));
+    }
+
+    @DeleteMapping("/{spaceId}/invitations/{invitationId}")
+    public ApiResponse<Void> revokeInvitation(
+            @AuthenticationPrincipal CurrentUserPrincipal principal,
+            @PathVariable Long spaceId,
+            @PathVariable Long invitationId) {
+        requireAuth(principal);
+        invitationService.revokeInvitation(principal.id(), spaceId, invitationId);
+        return ApiResponse.ok(null);
+    }
+
+    @PostMapping("/invitations/accept")
+    public ApiResponse<InvitationResponse> acceptInvitation(
+            @AuthenticationPrincipal CurrentUserPrincipal principal,
+            @Valid @RequestBody AcceptInvitationRequest request) {
+        requireAuth(principal);
+        return ApiResponse.ok(invitationService.acceptInvitation(principal.id(), request.token()));
     }
 
     private void requireAuth(CurrentUserPrincipal principal) {

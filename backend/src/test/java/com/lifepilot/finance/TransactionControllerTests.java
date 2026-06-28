@@ -184,6 +184,59 @@ class TransactionControllerTests {
     }
 
     @Test
+    void viewerCanReadButCannotWriteTransactions() throws Exception {
+        long txId = createTransaction(token, 30.00);
+        UserRegistration viewer = registerUser("finance_viewer", "Finance Viewer");
+        addMember(viewer.email(), "viewer");
+
+        mockMvc.perform(get("/api/spaces/" + spaceId + "/transactions")
+                        .header("Authorization", "Bearer " + viewer.token()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(1));
+
+        mockMvc.perform(post("/api/spaces/" + spaceId + "/transactions")
+                        .header("Authorization", "Bearer " + viewer.token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"amount\": 11.00 }"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+
+        mockMvc.perform(patch("/api/spaces/" + spaceId + "/transactions/" + txId)
+                        .header("Authorization", "Bearer " + viewer.token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"amount\": 12.00 }"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+
+        mockMvc.perform(delete("/api/spaces/" + spaceId + "/transactions/" + txId)
+                        .header("Authorization", "Bearer " + viewer.token()))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+    }
+
+    @Test
+    void memberAndAdminCanCreateTransactions() throws Exception {
+        UserRegistration member = registerUser("finance_member", "Finance Member");
+        UserRegistration admin = registerUser("finance_admin", "Finance Admin");
+        addMember(member.email(), "member");
+        addMember(admin.email(), "admin");
+
+        mockMvc.perform(post("/api/spaces/" + spaceId + "/transactions")
+                        .header("Authorization", "Bearer " + member.token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"amount\": 21.00 }"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.amount").value(21.00));
+
+        mockMvc.perform(post("/api/spaces/" + spaceId + "/transactions")
+                        .header("Authorization", "Bearer " + admin.token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"amount\": 22.00 }"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.amount").value(22.00));
+    }
+
+    @Test
     void validationRejectsNegativeAmount() throws Exception {
         String createBody = """
                 { "amount": -10 }
@@ -202,4 +255,53 @@ class TransactionControllerTests {
         mockMvc.perform(get("/api/spaces/" + spaceId + "/transactions"))
                 .andExpect(status().isForbidden());
     }
+
+    private UserRegistration registerUser(String prefix, String displayName) throws Exception {
+        String email = "%s_%d@example.com".formatted(prefix, System.nanoTime());
+        String body = """
+                {
+                  "email": "%s",
+                  "password": "strong-pass-123",
+                  "displayName": "%s"
+                }
+                """.formatted(email, displayName);
+
+        MvcResult result = mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode json = objectMapper.readTree(result.getResponse().getContentAsString());
+        return new UserRegistration(
+                json.at("/data/accessToken").asText(),
+                json.at("/data/user/email").asText()
+        );
+    }
+
+    private void addMember(String email, String role) throws Exception {
+        mockMvc.perform(post("/api/spaces/" + spaceId + "/members")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "email": "%s", "role": "%s" }
+                                """.formatted(email, role)))
+                .andExpect(status().isOk());
+    }
+
+    private long createTransaction(String accessToken, double amount) throws Exception {
+        MvcResult createResult = mockMvc.perform(post("/api/spaces/" + spaceId + "/transactions")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "amount": %.2f }
+                                """.formatted(amount)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode createJson = objectMapper.readTree(createResult.getResponse().getContentAsString());
+        return createJson.at("/data/id").asLong();
+    }
+
+    private record UserRegistration(String token, String email) {}
 }

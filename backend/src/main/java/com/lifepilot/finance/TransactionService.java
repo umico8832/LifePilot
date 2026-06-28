@@ -27,7 +27,7 @@ public class TransactionService {
 
     @Transactional
     public TransactionResponse create(Long userId, Long spaceId, CreateTransactionRequest request) {
-        householdService.requireSpaceMembership(userId, spaceId);
+        householdService.requireSpaceRole(userId, spaceId, "owner", "admin", "member");
 
         TransactionRecord record = new TransactionRecord();
         record.setHouseholdId(spaceId);
@@ -72,7 +72,7 @@ public class TransactionService {
 
     @Transactional
     public TransactionResponse update(Long userId, Long spaceId, Long transactionId, UpdateTransactionRequest request) {
-        householdService.requireSpaceMembership(userId, spaceId);
+        householdService.requireSpaceRole(userId, spaceId, "owner", "admin", "member");
 
         TransactionRecord record = recordMapper.selectById(transactionId);
         if (record == null || !record.getHouseholdId().equals(spaceId)) {
@@ -93,7 +93,7 @@ public class TransactionService {
 
     @Transactional
     public void delete(Long userId, Long spaceId, Long transactionId) {
-        householdService.requireSpaceMembership(userId, spaceId);
+        householdService.requireSpaceRole(userId, spaceId, "owner", "admin", "member");
 
         TransactionRecord record = recordMapper.selectById(transactionId);
         if (record == null || !record.getHouseholdId().equals(spaceId)) {

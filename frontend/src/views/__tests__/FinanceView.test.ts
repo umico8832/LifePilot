@@ -10,8 +10,8 @@ vi.mock('vue-router', () => ({
 }))
 
 // Mock space store
-const mockCurrentSpace = ref<{ id: number; name: string } | null>(null)
-const mockSpaces = ref<{ id: number; name: string }[]>([])
+const mockCurrentSpace = ref<{ id: number; name: string; memberRole?: string } | null>(null)
+const mockSpaces = ref<{ id: number; name: string; memberRole?: string }[]>([])
 const mockFetchSpaces = vi.fn()
 const mockSetCurrentSpace = vi.fn()
 vi.mock('@/stores/space', () => ({
@@ -111,8 +111,8 @@ describe('FinanceView', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
-    mockCurrentSpace.value = { id: 1, name: 'Test Space' }
-    mockSpaces.value = [{ id: 1, name: 'Test Space' }]
+    mockCurrentSpace.value = { id: 1, name: 'Test Space', memberRole: 'member' }
+    mockSpaces.value = [{ id: 1, name: 'Test Space', memberRole: 'member' }]
     mockListTransactions.mockResolvedValue(sampleTransactions)
     mockListCategories.mockResolvedValue(sampleCategories)
     mockFetchSpaces.mockResolvedValue(undefined)
@@ -185,6 +185,19 @@ describe('FinanceView', () => {
     expect(text).toContain('AI 记账')
     expect(text).toContain('分类管理')
     expect(text).toContain('记一笔')
+  })
+
+  it('shows read-only permission note and hides write actions for viewers', async () => {
+    mockCurrentSpace.value = { id: 1, name: 'Test Space', memberRole: 'viewer' }
+    mockSpaces.value = [{ id: 1, name: 'Test Space', memberRole: 'viewer' }]
+    const wrapper = mountFinance()
+    await flushPromises()
+
+    const text = wrapper.text()
+    expect(text).toContain('当前空间为只读角色')
+    expect(text).not.toContain('AI 记账')
+    expect(text).not.toContain('分类管理')
+    expect(text).not.toContain('记一笔')
   })
 
   it('does not load transactions when no space is selected', async () => {

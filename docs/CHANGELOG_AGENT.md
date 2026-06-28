@@ -12,6 +12,87 @@ python3 scripts/agent_changelog_archive.py --keep 10
 
 脚本默认保留最近 10 条完整记录，并刷新 `docs/RECENT_HISTORY.md`。
 
+## 2026-06-28 23:33 Asia/Shanghai P9-004 Demo seed 真实 MySQL 冒烟验证与 P10 任务池规划
+
+- 任务：P9-004 Demo seed 真实 MySQL 冒烟验证与浏览器检查；任务池耗尽前补充下一阶段可执行 backlog。
+- 改动：
+  - 验证：确认 `scripts/demo_seed.sh` 语法和 dry-run 正常，mysql client 存在；Docker Desktop 仍处于手动暂停状态，3307 端口虽然开放但 MySQL 会话探测 10 秒超时，项目未安装 Playwright，因此未执行真实 `--apply`/`--verify` 和浏览器冒烟。
+  - 文档状态：`docs/BACKLOG.md` 标记 P9-004 完成；`docs/CURRENT_STATE.md` 记录真实 MySQL/浏览器验证未运行的原因、替代验证和后续补跑命令。
+  - 任务池补充：`docs/ROADMAP.md` 新增 Phase 25 跨模块权限矩阵落地、Phase 26 权限回归与演示路径整理；`docs/BACKLOG.md` 新增 P10-001～P10-004，继续将 viewer 写保护扩展到购物、库存、待办、菜谱、饮食计划和票据文档，并整理权限回归演示路径。
+**验证**：
+  - `date '+%Y-%m-%d %H:%M:%S %Z %z'`：确认当前系统时间为 `2026-06-28 23:33:36 CST +0800`。
+  - `bash -n scripts/demo_seed.sh`：通过。
+  - `scripts/demo_seed.sh --dry-run`：通过，确认 SQL 文件存在且默认 dry-run 不写库。
+  - `docker compose ps --format json`：未通过，Docker Desktop is manually paused。
+  - `command -v mysql && mysql --version`：通过，mysql client 为 8.0.43。
+  - `nc -z 127.0.0.1 3306`：未监听；`nc -z 127.0.0.1 3307`：端口开放。
+  - `MYSQL_PORT=3307 perl -e 'alarm 10; exec @ARGV' scripts/demo_seed.sh --verify`：10 秒超时退出 142，未确认可用 MySQL 会话。
+  - `MYSQL_PWD=lifepilot_dev_password perl -e 'alarm 10; exec @ARGV' mysql --host=127.0.0.1 --port=3307 --user=lifepilot --database=lifepilot --execute='SELECT 1 AS ok;'`：10 秒超时退出 142。
+  - `test -d frontend/node_modules/playwright`：返回 `no-playwright`，浏览器自动化未运行。
+  - 后续补跑：MySQL 可用后执行 `MYSQL_PORT=3307 scripts/demo_seed.sh --apply && MYSQL_PORT=3307 scripts/demo_seed.sh --verify`，再启动服务并检查首页、购物清单、库存提醒、饮食计划和 AI 日志页面。
+  - `python3 scripts/agent_changelog_archive.py`：通过，保留 10 条并刷新 `docs/RECENT_HISTORY.md`。
+  - `python3 scripts/agent_doc_check.py`：通过，确认 BACKLOG 存在 P10-001～P10-004 todo，且 `CURRENT_STATE` 下一任务与 P10-001 一致。
+  - `git diff --check`：通过。
+
+## 2026-06-28 23:31 Asia/Shanghai P9-003 角色权限体验和测试矩阵加固
+
+- 任务：P9-003 角色权限体验和测试矩阵加固。
+- 改动：
+  - 权限文档：`docs/API_DESIGN.md` 新增角色权限矩阵，明确 owner/admin/member/viewer 在空间资料、成员管理、邀请链接、记账、购物、库存、待办、菜谱、饮食计划、票据文档和 AI 日志中的读写边界；`docs/ARCHITECTURE.md` 记录 viewer 只读、member 普通写、admin/owner 管理的统一模型。
+  - 后端：`TransactionService` 写操作从仅校验空间成员改为 `requireSpaceRole(owner, admin, member)`；viewer 仍可读取记账列表和详情，但不能新增、编辑或删除。
+  - 前端：`FinanceView.vue` 根据当前空间角色隐藏分类管理、AI 记账、记一笔、编辑和删除操作；viewer 看到只读权限提示，误触写流程会显示统一权限提示。
+  - 测试：`TransactionControllerTests` 覆盖 viewer 可读不可写、member/admin 可写；`TransactionServiceTests` 覆盖 `requireSpaceRole` 和 viewer 被拒；`FinanceView.test.ts` 覆盖 viewer 只读 UI。
+  - 文档状态：`docs/BACKLOG.md` 标记 P9-003 完成；`docs/CURRENT_STATE.md` 指向 P9-004。
+**验证**：
+  - `date '+%Y-%m-%d %H:%M:%S %Z %z'`：确认当前系统时间为 `2026-06-28 23:31:05 CST +0800`。
+  - `cd backend && ./mvnw test -B -Dtest=TransactionControllerTests,HouseholdControllerTests`：27 tests passed。
+  - `cd frontend && npm test -- FinanceView.test.ts SpaceView.test.ts space.test.ts`：4 个测试文件 38 tests passed。
+  - `cd backend && ./mvnw test -B`：首次运行失败，原因是旧 `TransactionServiceTests` 仍断言 `requireSpaceMembership`；修正后重跑通过，265 tests passed。
+  - `cd frontend && npm test`：15 个测试文件 116 tests passed。
+  - `cd frontend && npm run build`：通过；仍有既有第三方 `@vueuse/core` Rolldown pure annotation 警告。
+  - `python3 scripts/agent_changelog_archive.py`：通过，保留 10 条并刷新 `docs/RECENT_HISTORY.md`。
+  - `python3 scripts/agent_doc_check.py`：通过，确认 BACKLOG 存在 P9-004 todo，且 `CURRENT_STATE` 下一任务与 P9-004 一致。
+  - `git diff --check`：通过。
+
+## 2026-06-28 23:25 Asia/Shanghai P9-002 前端邀请管理与接受邀请体验
+
+- 任务：P9-002 前端邀请管理与接受邀请体验。
+- 改动：
+  - 前端状态：space store 新增 `invitations`、`fetchInvitations()`、`createSpaceInvitation()`、`revokeSpaceInvitation()` 和 `acceptSpaceInvitation()`，接受邀请后刷新空间列表。
+  - 空间页：管理员家庭空间视图新增邀请链接列表，展示目标邮箱、角色、过期时间、状态和撤销操作；生成邀请弹窗支持目标邮箱、角色、有效期和复制本地接受链接；普通成员只读且不显示邀请管理入口。
+  - 接受流程：新增 `/spaces/invitations/accept?token=` 页面，支持链接 token 预填或手动输入，成功后刷新空间并跳转空间页；过期、撤销、邮箱不匹配、重复加入等错误显示更明确的中文提示。
+  - 测试：新增 `AcceptInvitationView.test.ts` 和 `SpaceView.test.ts`，扩展 `space` API/store 测试，覆盖创建、撤销、接受邀请和普通成员只读状态。
+  - 文档：`docs/API_DESIGN.md` 记录前端接受邀请路由；`docs/BACKLOG.md` 标记 P9-002 完成；`docs/CURRENT_STATE.md` 指向 P9-003。
+**验证**：
+  - `date '+%Y-%m-%d %H:%M:%S %Z %z'`：确认当前系统时间为 `2026-06-28 23:25:35 CST +0800`。
+  - `cd frontend && npm test -- space.test.ts SpaceView.test.ts AcceptInvitationView.test.ts`：4 个测试文件 27 tests passed。
+  - `cd frontend && npm run build`：通过；仍有既有第三方 `@vueuse/core` Rolldown pure annotation 警告。
+  - `cd frontend && npm test`：15 个测试文件 115 tests passed。
+  - 浏览器冒烟未运行：Docker Desktop 处于手动暂停状态，且项目未安装 Playwright 包；已用 API、Pinia store 和页面组件测试覆盖主要 UI 状态、接受流程和只读状态。
+  - `python3 scripts/agent_changelog_archive.py`：通过，保留 10 条并刷新 `docs/RECENT_HISTORY.md`。
+  - `python3 scripts/agent_doc_check.py`：通过，确认 BACKLOG 存在 P9-003～P9-004 todo，且 `CURRENT_STATE` 下一任务与 P9-003 一致。
+  - `git diff --check`：通过。
+
+## 2026-06-28 23:18 Asia/Shanghai P9-001 家庭空间邀请链接基础能力
+
+- 任务：P9-001 家庭空间邀请链接基础能力。
+- 改动：
+  - 数据库：新增 `V11__create_household_invitation.sql`，创建 `household_invitation` 表，记录空间、邀请人、可选目标邮箱、角色、token hash、状态、过期时间、接受时间和接受人。
+  - 后端：新增 `HouseholdInvitation`、`HouseholdInvitationMapper`、`HouseholdInvitationService` 和邀请 DTO；`HouseholdController` 新增创建、列表、撤销、接受邀请接口。创建/列表/撤销要求 `owner` 或 `admin`；接受邀请要求登录用户、token 有效未过期、状态 pending、目标邮箱匹配且未重复加入。
+  - 安全边界：邀请 token 只以 SHA-256 hash 落库，创建响应一次性返回明文 token；不接入真实邮件、短信或外部账号服务，邀请不能直接授予 `owner`。
+  - 前端 API：`frontend/src/api/space.ts` 新增 `InvitationResponse`、`createInvitation()`、`listInvitations()`、`revokeInvitation()` 和 `acceptInvitation()`；`space.test.ts` 覆盖新增 API 路径。
+  - 文档：`docs/API_DESIGN.md`、`docs/DB_DESIGN.md`、`docs/ARCHITECTURE.md` 同步邀请接口、表结构和权限边界；`docs/BACKLOG.md` 标记 P9-001 完成；`docs/CURRENT_STATE.md` 指向 P9-002。
+**验证**：
+  - `date '+%Y-%m-%d %H:%M:%S %Z %z'`：确认当前系统时间为 `2026-06-28 23:18:49 CST +0800`。
+  - `cd backend && ./mvnw test -B -Dtest=HouseholdControllerTests`：19 tests passed。
+  - `cd frontend && npm test -- space.test.ts`：2 个测试文件 19 tests passed。
+  - `cd backend && ./mvnw test -B`：262 tests passed。
+  - `cd frontend && npm test`：13 个测试文件 107 tests passed。
+  - `cd frontend && npm run build`：通过；仍有既有第三方 `@vueuse/core` Rolldown pure annotation 警告。
+  - `python3 scripts/agent_changelog_archive.py`：通过，保留 10 条并刷新 `docs/RECENT_HISTORY.md`。
+  - `python3 scripts/agent_doc_check.py`：通过，确认 BACKLOG 存在 P9-002～P9-004 todo，且 `CURRENT_STATE` 下一任务与 P9-002 一致。
+  - `git diff --check`：通过。
+
 ## 2026-06-28 23:08 Asia/Shanghai 修正任务池耗尽与时间戳规则
 
 - 任务：修正自主开发协议，避免 backlog 清空后长期开发断线，并修正当前时间戳不能凭估算写入的问题。
@@ -107,80 +188,5 @@ python3 scripts/agent_changelog_archive.py --keep 10
   - `cd frontend && npm test`：12 个测试文件 97 tests passed。
   - `cd frontend && npm run build`：通过；仍有既有第三方 `@vueuse/core` Rolldown pure annotation 警告。
   - 浏览器自动化：尝试用 Playwright 检查 `/ai-logs`，但项目未安装 `playwright` 包且本轮未暴露 in-app browser 控制工具；未完成浏览器截图检查，主要 UI 状态已由组件测试覆盖。
-
----
-
-## 2026-06-28 19:52 Asia/Shanghai 规划 P8 可观测性与演示体验任务池
-
-- 任务：补齐上一个阶段完成后的下一批可执行 backlog，恢复自主开发入口。
-- 改动：
-  - `docs/BACKLOG.md` 新增 P8-001～P8-004：前端 AI 调用日志审计页、AI 调用日志统计摘要接口、演示数据与本地体验种子脚本、家庭成员管理体验完善。
-  - `docs/CURRENT_STATE.md` 将当前阶段更新为 P8 可观测性与演示体验阶段，明确最高优先级任务和下一项自动任务为 P8-001。
-  - `docs/ROADMAP.md` 新增 Phase 21 可观测性与演示体验、Phase 22 家庭协作体验完善。
-**验证**：
-  - `python3 scripts/agent_changelog_archive.py`：通过，刷新 `docs/RECENT_HISTORY.md`。
-  - `python3 scripts/agent_doc_check.py`：通过，确认 BACKLOG 存在 P8-001～P8-004 todo，且 `CURRENT_STATE` 下一任务与 P8-001 一致。
-  - `git diff --check`：通过。
-
----
-
-## 2026-06-27 14:42 Asia/Shanghai P7-001 AI 调用日志持久化与查询
-
-- 任务：P7-001 AI 调用日志持久化与查询
-- 改动：
-  - 后端：新增 `V10__create_ai_call_log.sql`，创建 `ai_call_log` 表和按 user/household/scenario/status 的查询索引；新增 `AiCallLog`、`AiCallLogMapper`、`AiCallLogService` 和 `AiCallLogResponse`；`AiService` 为自然语言记账、购物草稿、待办草稿、月报、菜谱推荐和饮食计划采购草稿记录成功日志，并在 provider 异常时记录失败日志后继续抛出；`AiController` 新增 `GET /api/ai/spaces/{spaceId}/call-logs?scenario=&status=&limit=` 查询接口。
-  - 安全边界：自然语言输入不保存原文，只保存 SHA-256 `promptHash` 和输入长度等摘要；响应日志只保存类型、条目数、是否需要复核、是否有校验消息等摘要。
-  - 前端：`frontend/src/api/ai.ts` 新增 `AiCallLog`、`AiCallLogQuery` 类型和 `listAiCallLogs()` 方法；`ai.test.ts` 覆盖日志查询路径和参数。
-  - 测试：新增 `AiCallLogServiceTests`；扩展 `AiServiceTests` 和 `AiControllerTests` 覆盖成功日志、失败日志、日志查询和脱敏摘要。
-**验证**：
-  - `cd backend && ./mvnw test -B -Dtest="AiServiceTests,AiCallLogServiceTests,AiControllerTests"`：45 tests passed。
-  - `cd frontend && npm test -- ai.test.ts`：1 个测试文件 7 tests passed。
-  - `cd backend && ./mvnw test -B`：247 tests passed。
-  - `cd frontend && npm test`：11 个测试文件 93 tests passed。
-  - `cd frontend && npm run build`：通过；仍有既有第三方 `@vueuse/core` Rolldown pure annotation 警告。
-  - `python3 scripts/agent_changelog_archive.py`：通过。
-  - `python3 scripts/agent_doc_check.py`：按预期返回“BACKLOG has no todo tasks”，触发当前阶段完成的停止条件。
-  - `git diff --check`：通过。
-- **文档更新**：`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/API_DESIGN.md`、`docs/DB_DESIGN.md`、`docs/ARCHITECTURE.md`、`docs/ROADMAP.md`、`docs/CHANGELOG_AGENT.md`。
-
----
-
-## 2026-06-25 14:25 Asia/Shanghai 工程体检与构建稳定性修复
-
-- 任务：按用户要求对当前项目做完整工程体检，检查 CI、本地安装、测试、构建和文档运行方式。
-- 改动：
-  - 新增 `REPORT.md`，记录技术栈、CI 失败定位、本地验证结果、已修复问题、仍存在问题和运行/测试/构建方式。
-  - 前端 `vite.config.ts` 新增 `build.chunkSizeWarningLimit: 1000`，匹配当前 Element Plus + ECharts 应用体量，消除既有大 chunk 阈值噪音。
-  - 更新 `docs/CURRENT_STATE.md` 最近验证结果，补充本次工程体检结论。
-- CI 检查：
-  - GitHub Actions 最近远端 CI #12（`14ebfb1`）成功。
-  - 上一失败 CI #11（`ddf0408`）失败 job 为 Backend Tests，失败步骤为 Run tests；公共 API 无权限下载完整 job logs（403），后续提交 `14ebfb1` 已修复 `MealPlanMapper` 注册问题。
-**验证**：
-  - `cd backend && ./mvnw test -B`：240 tests passed。
-  - `cd frontend && npm ci`：通过。
-  - `cd frontend && npm test`：11 个测试文件 92 tests passed。
-  - `cd frontend && npm run build`：通过；大 chunk 警告已消除，仍有第三方 `@vueuse/core` Rolldown pure annotation 警告。
-  - `cd frontend && npm audit --audit-level=high`：0 vulnerabilities。
-  - `cd frontend && npm run lint`：失败，项目尚未定义 lint 脚本。
-
----
-
-## 2026-06-25 14:00 Asia/Shanghai P6-002 根据饮食计划和库存生成购物清单草稿
-
-- 任务：P6-002 根据饮食计划和库存生成购物清单草稿
-- 改动：
-  - 后端：`AiProvider` 新增 `draftShoppingListFromMealPlan(List<MealPlan>, List<Recipe>, List<InventoryItem>)` 方法；`MockAiProvider` 新增菜谱食材解析与库存缺口计算，支持从 `ingredientsJson` 中读取食材名称、数量和单位，并在同单位库存不足时只生成差额采购项；`OpenAiProvider` 继续委托本地 mock 算法，不新增真实 AI 调用；`AiService` 新增按日期范围查询饮食计划、对应菜谱和库存的草稿方法；`AiController` 新增 `GET /api/ai/spaces/{spaceId}/meal-plan-shopping-draft?startDate=&endDate=` 端点。
-  - 前端：`ai.ts` 新增 `draftShoppingListFromMealPlan()` API 方法；`MealPlanView.vue` 新增“生成采购清单”按钮、采购草稿面板和确认创建流程，用户确认后复用现有 `createShoppingList` / `addShoppingItem` API 写入业务数据。
-  - 测试：新增 `MockAiProviderTest` 覆盖库存缺口计算和无计划提示；`AiServiceTests` 新增饮食计划购物草稿查询、空计划和日期校验测试；`ai.test.ts` 新增前端 API 路径与参数测试。
-**验证**：
-  - `cd backend && ./mvnw test -B -Dtest="AiServiceTests,MockAiProviderTest,OpenAiProviderTest"`：26 tests passed。
-  - `cd frontend && npm test -- ai.test.ts`：1 个测试文件 6 tests passed。
-  - `cd backend && ./mvnw test -B`：240 tests passed。
-  - `cd frontend && npm test`：11 个测试文件 92 tests passed。
-  - `cd frontend && npm run build`：通过；仍有既有 Rolldown pure annotation 和大 chunk 警告。
-  - `python3 scripts/agent_changelog_archive.py`：通过。
-  - `python3 scripts/agent_doc_check.py`：按预期返回“BACKLOG has no todo tasks”，触发当前阶段完成的停止条件。
-  - `git diff --check`：通过。
-- **文档更新**：`docs/BACKLOG.md`、`docs/CURRENT_STATE.md`、`docs/API_DESIGN.md`、`docs/ARCHITECTURE.md`、`docs/ROADMAP.md`、`docs/CHANGELOG_AGENT.md`。
 
 ---

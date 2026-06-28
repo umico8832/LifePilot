@@ -108,8 +108,11 @@ lifepilot:
 - 用户通过 JWT 鉴权。
 - 业务数据归属某个生活空间。
 - 家庭空间通过 `household_member` 控制成员角色。
+- 家庭空间邀请通过 `household_invitation` 记录一次性邀请 token 的 hash、目标邮箱、授予角色、状态和过期时间；系统不依赖真实邮件或短信服务，创建接口只在响应中一次性返回明文 token。
 - 后端接口必须校验当前用户是否属于目标空间。
 - 空间成员管理由 `space` 模块负责，`owner` 和 `admin` 可添加成员、调整角色或移除成员；系统保护每个空间至少保留一名 `owner` 或 `admin`。
+- 空间邀请管理同样只允许 `owner` 和 `admin` 创建、列表和撤销；已登录用户接受邀请后由后端写入或重新激活 `household_member`。
+- 角色边界遵循“viewer 只读、member 普通写、admin/owner 管理”的模型：空间成员和邀请管理要求 `owner/admin`；普通业务模块默认 `owner/admin/member` 可写、`viewer` 只读；AI 日志仅提供只读审计视图。当前记账模块已经在后端强制 viewer 不可写，前端同步隐藏写操作。
 
 ## 数据流
 

@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS household_invitation (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    household_id BIGINT NOT NULL,
+    invited_by BIGINT NOT NULL,
+    target_email VARCHAR(255) NULL,
+    role VARCHAR(32) NOT NULL DEFAULT 'member',
+    token_hash VARCHAR(64) NOT NULL,
+    status VARCHAR(32) NOT NULL DEFAULT 'pending',
+    expires_at DATETIME(6) NOT NULL,
+    accepted_at DATETIME(6) NULL,
+    accepted_by BIGINT NULL,
+    created_at DATETIME(6) NOT NULL,
+    updated_at DATETIME(6) NOT NULL,
+    CONSTRAINT fk_invitation_household FOREIGN KEY (household_id) REFERENCES household(id),
+    CONSTRAINT fk_invitation_invited_by FOREIGN KEY (invited_by) REFERENCES users(id),
+    CONSTRAINT fk_invitation_accepted_by FOREIGN KEY (accepted_by) REFERENCES users(id),
+    UNIQUE KEY uk_invitation_token_hash (token_hash),
+    KEY idx_invitation_household_status (household_id, status),
+    KEY idx_invitation_target_email (target_email)
+);

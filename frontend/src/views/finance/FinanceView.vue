@@ -71,6 +71,10 @@ const totalIncome = computed(() =>
     .filter((t) => t.type === 'income')
     .reduce((sum, t) => sum + t.amount, 0),
 )
+const canWriteFinance = computed(() => {
+  const role = spaceStore.currentSpace?.memberRole
+  return role === 'owner' || role === 'admin' || role === 'member'
+})
 
 // Watch type change to clear category if it doesn't match
 watch(() => form.value.type, () => {
@@ -108,12 +112,14 @@ async function handleSpaceChange() {
 }
 
 function openCreateDialog() {
+  if (!ensureCanWriteFinance()) return
   editingId.value = null
   form.value = { amount: 0, type: 'expense', merchant: '', note: '', categoryId: null }
   dialogVisible.value = true
 }
 
 function openEditDialog(tx: TransactionResponse) {
+  if (!ensureCanWriteFinance()) return
   editingId.value = tx.id
   form.value = {
     amount: tx.amount,
@@ -127,6 +133,7 @@ function openEditDialog(tx: TransactionResponse) {
 
 async function handleSubmit() {
   if (!spaceStore.currentSpace) return
+  if (!ensureCanWriteFinance()) return
   if (form.value.amount <= 0) {
     ElMessage.warning('金额必须大于 0')
     return
@@ -155,6 +162,7 @@ async function handleSubmit() {
 
 async function handleDelete(tx: TransactionResponse) {
   if (!spaceStore.currentSpace) return
+  if (!ensureCanWriteFinance()) return
   try {
     await ElMessageBox.confirm('确定删除这条记录？', '删除确认', { type: 'warning' })
     await deleteTransaction(spaceStore.currentSpace.id, tx.id)
@@ -192,12 +200,14 @@ function getCategoryName(id: number | null): string {
 }
 
 function openCategoryDialog() {
+  if (!ensureCanWriteFinance()) return
   newCategoryForm.value = { name: '', icon: '', color: '' }
   categoryDialogVisible.value = true
 }
 
 async function handleCreateCategory(type: string) {
   if (!spaceStore.currentSpace) return
+  if (!ensureCanWriteFinance()) return
   if (!newCategoryForm.value.name.trim()) {
     ElMessage.warning('分类名称不能为空')
     return
@@ -219,6 +229,7 @@ async function handleCreateCategory(type: string) {
 
 async function handleDeleteCategory(cat: CategoryResponse) {
   if (!spaceStore.currentSpace) return
+  if (!ensureCanWriteFinance()) return
   try {
     await ElMessageBox.confirm(`确定删除分类「${cat.name}」？`, '删除确认', { type: 'warning' })
     await deleteCategory(spaceStore.currentSpace.id, cat.id)
@@ -235,6 +246,7 @@ async function handleDeleteCategory(cat: CategoryResponse) {
 // ---- AI parse flow ----
 
 function openAiDialog() {
+  if (!ensureCanWriteFinance()) return
   aiInputText.value = ''
   aiDraft.value = null
   aiDraftDialogVisible.value = false
@@ -273,6 +285,7 @@ async function handleAiParse() {
 
 async function handleAiConfirm() {
   if (!spaceStore.currentSpace) return
+  if (!ensureCanWriteFinance()) return
   if (aiDraftForm.value.amount <= 0) {
     ElMessage.warning('金额必须大于 0')
     return
@@ -294,6 +307,7 @@ async function handleAiConfirm() {
 }
 
 function handleAiEdit() {
+  if (!ensureCanWriteFinance()) return
   // Close draft dialog and open manual create dialog pre-filled
   aiDraftDialogVisible.value = false
   editingId.value = null
@@ -305,6 +319,12 @@ function handleAiEdit() {
     categoryId: null,
   }
   dialogVisible.value = true
+}
+
+function ensureCanWriteFinance() {
+  if (canWriteFinance.value) return true
+  ElMessage.warning('当前空间角色为只读，不能修改记账数据')
+  return false
 }
 </script>
 
@@ -330,12 +350,16 @@ function handleAiEdit() {
             :value="s.id"
           />
         </el-select>
-        <el-button @click="openCategoryDialog">
+        <el-button v-if="canWriteFinance" @click="openCategoryDialog">
           <Tags :size="14" />
           分类管理
         </el-button>
-        <el-button @click="openAiDialog">🤖 AI 记账</el-button>
-        <el-button type="primary" @click="openCreateDialog">记一笔</el-button>
+        <el-button v-if="canWriteFinance" @click="openAiDialog">🤖 AI 记账</el-button>
+        <el-button v-if="canWriteFinance" type="primary" @click="openCreateDialog">记一笔</el-button>
+      </div>
+
+      <div v-if="spaceStore.currentSpace && !canWriteFinance" class="permission-note">
+        当前空间为只读角色，可以查看记账记录，但不能新增、编辑或删除。
       </div>
 
       <!-- Summary -->
@@ -401,7 +425,7 @@ function handleAiEdit() {
           <el-table-column prop="merchant" label="商家" />
           <el-table-column prop="note" label="备注" />
           <el-table-column prop="occurredAt" label="时间" width="180" />
-          <el-table-column label="操作" width="160">
+          <el-table-column v-if="canWriteFinance" label="操作" width="160">
             <template #default="{ row }">
               <el-button size="small" text @click="openEditDialog(row)">编辑</el-button>
               <el-button size="small" text type="danger" @click="handleDelete(row)">删除</el-button>
@@ -628,6 +652,15 @@ function handleAiEdit() {
   gap: 12px;
   align-items: center;
   margin-bottom: 20px;
+}
+
+.permission-note {
+  margin: -8px 0 20px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: var(--el-color-info-light-9, #f4f4f5);
+  color: var(--color-muted, #666);
+  font-size: 13px;
 }
 
 .summary-band {

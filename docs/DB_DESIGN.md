@@ -12,7 +12,9 @@
 ## ER 关系
 
 - `user` 1:N `household_member`
+- `user` 1:N `household_invitation`
 - `household` 1:N `household_member`
+- `household` 1:N `household_invitation`
 - `household` 1:N `transaction_record`
 - `household` 1:N `shopping_list`
 - `shopping_list` 1:N `shopping_item`
@@ -54,6 +56,21 @@
 - `user_id`
 - `role`：owner、admin、member、viewer
 - `status`
+- `created_at`
+- `updated_at`
+
+### household_invitation
+
+- `id`
+- `household_id`
+- `invited_by`
+- `target_email`：可为空；非空时接受邀请用户邮箱必须匹配。
+- `role`：`admin`、`member`、`viewer`
+- `token_hash`：邀请 token 的 SHA-256 hash，不保存明文 token。
+- `status`：`pending`、`revoked`、`accepted`
+- `expires_at`
+- `accepted_at`
+- `accepted_by`
 - `created_at`
 - `updated_at`
 

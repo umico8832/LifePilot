@@ -23,6 +23,12 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/spaces/invitations/accept',
+    name: 'acceptInvitation',
+    component: () => import('@/views/space/AcceptInvitationView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/finance',
     name: 'finance',
     component: () => import('@/views/finance/FinanceView.vue'),

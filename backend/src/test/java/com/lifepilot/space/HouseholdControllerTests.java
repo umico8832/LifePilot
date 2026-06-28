@@ -7,6 +7,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.LocalDateTime;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +30,9 @@ class HouseholdControllerTests {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private HouseholdInvitationMapper invitationMapper;
 
     private String ownerToken;
     private long spaceId;
@@ -227,6 +232,156 @@ class HouseholdControllerTests {
     }
 
     @Test
+    void adminCanCreateListAndRevokeInvitation() throws Exception {
+        UserRegistration admin = registerUser("invite_admin", "Invite Admin");
+        addMember(admin.email(), "admin");
+
+        MvcResult createResult = mockMvc.perform(post("/api/spaces/" + spaceId + "/invitations")
+                        .header("Authorization", "Bearer " + admin.token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "targetEmail": "guest@example.com", "role": "viewer", "expiresInDays": 3 }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.targetEmail").value("guest@example.com"))
+                .andExpect(jsonPath("$.data.role").value("viewer"))
+                .andExpect(jsonPath("$.data.status").value("pending"))
+                .andExpect(jsonPath("$.data.token").isNotEmpty())
+                .andReturn();
+
+        JsonNode createJson = objectMapper.readTree(createResult.getResponse().getContentAsString());
+        long invitationId = createJson.at("/data/id").asLong();
+
+        mockMvc.perform(get("/api/spaces/" + spaceId + "/invitations")
+                        .header("Authorization", "Bearer " + ownerToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].id").value(invitationId))
+                .andExpect(jsonPath("$.data[0].token").doesNotExist());
+
+        mockMvc.perform(delete("/api/spaces/" + spaceId + "/invitations/" + invitationId)
+                        .header("Authorization", "Bearer " + admin.token()))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/spaces/" + spaceId + "/invitations")
+                        .header("Authorization", "Bearer " + ownerToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].status").value("revoked"));
+    }
+
+    @Test
+    void ordinaryMemberAndNonMemberCannotCreateInvitation() throws Exception {
+        UserRegistration member = registerUser("invite_member", "Invite Member");
+        UserRegistration outsider = registerUser("invite_outsider", "Invite Outsider");
+        addMember(member.email(), "member");
+
+        mockMvc.perform(post("/api/spaces/" + spaceId + "/invitations")
+                        .header("Authorization", "Bearer " + member.token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"role\": \"member\" }"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+
+        mockMvc.perform(post("/api/spaces/" + spaceId + "/invitations")
+                        .header("Authorization", "Bearer " + outsider.token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"role\": \"member\" }"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+    }
+
+    @Test
+    void acceptInvitationAddsMemberAndRejectsDuplicateAccept() throws Exception {
+        UserRegistration guest = registerUser("invite_guest", "Invite Guest");
+        InvitationCreated invitation = createInvitation(guest.email(), "member");
+
+        mockMvc.perform(post("/api/spaces/invitations/accept")
+                        .header("Authorization", "Bearer " + guest.token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "token": "%s" }
+                                """.formatted(invitation.token())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("accepted"))
+                .andExpect(jsonPath("$.data.acceptedBy").isNumber());
+
+        mockMvc.perform(get("/api/spaces/" + spaceId + "/members")
+                        .header("Authorization", "Bearer " + ownerToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(2))
+                .andExpect(jsonPath("$.data[1].email").value(guest.email()))
+                .andExpect(jsonPath("$.data[1].role").value("member"));
+
+        mockMvc.perform(post("/api/spaces/invitations/accept")
+                        .header("Authorization", "Bearer " + guest.token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "token": "%s" }
+                                """.formatted(invitation.token())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("BUSINESS_ERROR"));
+    }
+
+    @Test
+    void acceptInvitationRejectsTargetEmailMismatch() throws Exception {
+        UserRegistration guest = registerUser("invite_right", "Invite Right");
+        UserRegistration other = registerUser("invite_wrong", "Invite Wrong");
+        InvitationCreated invitation = createInvitation(guest.email(), "viewer");
+
+        mockMvc.perform(post("/api/spaces/invitations/accept")
+                        .header("Authorization", "Bearer " + other.token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "token": "%s" }
+                                """.formatted(invitation.token())))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+    }
+
+    @Test
+    void acceptInvitationRejectsExpiredAndRevokedInvitations() throws Exception {
+        UserRegistration expiredGuest = registerUser("invite_expired", "Invite Expired");
+        InvitationCreated expired = createInvitation(expiredGuest.email(), "member");
+        HouseholdInvitation expiredEntity = invitationMapper.selectById(expired.id());
+        expiredEntity.setExpiresAt(LocalDateTime.now().minusMinutes(1));
+        invitationMapper.updateById(expiredEntity);
+
+        mockMvc.perform(post("/api/spaces/invitations/accept")
+                        .header("Authorization", "Bearer " + expiredGuest.token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "token": "%s" }
+                                """.formatted(expired.token())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("BUSINESS_ERROR"));
+
+        UserRegistration revokedGuest = registerUser("invite_revoked", "Invite Revoked");
+        InvitationCreated revoked = createInvitation(revokedGuest.email(), "member");
+        mockMvc.perform(delete("/api/spaces/" + spaceId + "/invitations/" + revoked.id())
+                        .header("Authorization", "Bearer " + ownerToken))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/spaces/invitations/accept")
+                        .header("Authorization", "Bearer " + revokedGuest.token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "token": "%s" }
+                                """.formatted(revoked.token())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("BUSINESS_ERROR"));
+    }
+
+    @Test
+    void createInvitationRejectsInvalidRole() throws Exception {
+        mockMvc.perform(post("/api/spaces/" + spaceId + "/invitations")
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"role\": \"owner\" }"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+    }
+
+    @Test
     void adminCanUpdateRoleAndRemoveMember() throws Exception {
         UserRegistration admin = registerUser("admin", "Admin");
         UserRegistration member = registerUser("managed", "Managed Member");
@@ -351,5 +506,24 @@ class HouseholdControllerTests {
         return json.at("/data/0/id").asLong();
     }
 
+    private InvitationCreated createInvitation(String targetEmail, String role) throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/spaces/" + spaceId + "/invitations")
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "targetEmail": "%s", "role": "%s" }
+                                """.formatted(targetEmail, role)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode json = objectMapper.readTree(result.getResponse().getContentAsString());
+        return new InvitationCreated(
+                json.at("/data/id").asLong(),
+                json.at("/data/token").asText()
+        );
+    }
+
     private record UserRegistration(String token, String email) {}
+
+    private record InvitationCreated(long id, String token) {}
 }
