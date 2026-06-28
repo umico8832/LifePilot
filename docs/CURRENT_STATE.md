@@ -2,11 +2,11 @@
 
 ## 当前阶段
 
-P8-004 完成。当前 P8 可观测性与演示体验阶段（Phase 21）和 Phase 22 家庭协作体验完善任务已完成；当前 backlog 无 `todo` 任务，按自主开发协议触发停止条件，等待用户确认下一阶段任务。
+P8-004 完成。当前进入 P9 家庭邀请与协作闭环阶段（Phase 23/24）；已补充下一阶段可执行任务池，恢复长期自主开发入口。
 
 ## 当前最高优先级任务
 
-无。当前 `docs/BACKLOG.md` 没有 `todo` 任务。
+P9-001 家庭空间邀请链接基础能力。
 
 ## 最近完成任务
 
@@ -34,11 +34,11 @@ P8-004 完成。当前 P8 可观测性与演示体验阶段（Phase 21）和 Pha
 
 ## 当前阻塞项
 
-当前 backlog 无 `todo` 任务，等待用户确认下一阶段。
+无。
 
 ## 下一项自动任务
 
-无。等待用户补充下一阶段任务或确认新的 backlog。
+P9-001 家庭空间邀请链接基础能力：实现不依赖真实邮件/短信的邀请 token 模型和接受邀请流程，让家庭空间协作从“管理员按邮箱添加已注册用户”升级为“可生成邀请并由受邀用户确认加入”。
 
 ## 最近验证结果
 
@@ -56,6 +56,7 @@ P8-004 完成。当前 P8 可观测性与演示体验阶段（Phase 21）和 Pha
 - P8-002 本地验证（2026-06-28 20:04 Asia/Shanghai）：`cd backend && ./mvnw test -B -Dtest="AiCallLogServiceTests,AiServiceTests,AiControllerTests"` 通过，50 tests passed；`cd frontend && npm test -- ai.test.ts` 通过，1 个测试文件 8 tests passed；`cd backend && ./mvnw test -B` 通过，252 tests passed；`cd frontend && npm test` 通过，12 个测试文件 98 tests passed；`cd frontend && npm run build` 通过，仍有既有第三方 `@vueuse/core` Rolldown pure annotation 警告；`python3 scripts/agent_changelog_archive.py` 通过；`python3 scripts/agent_doc_check.py` 通过；`git diff --check` 通过。
 - P8-003 本地验证（2026-06-28 21:10 Asia/Shanghai）：`bash -n scripts/demo_seed.sh` 通过；`scripts/demo_seed.sh --dry-run` 通过；`cd backend && ./mvnw test -B` 通过，252 tests passed；`cd frontend && npm run build` 通过，仍有既有第三方 `@vueuse/core` Rolldown pure annotation 警告；真实 `--apply` 未运行，因为 Docker Desktop 处于手动暂停状态，无法启动 MySQL，且本地 `3306` 未监听、`3307` 探测无响应后已中断；后续需在 MySQL 可用后补跑 `MYSQL_PORT=3307 scripts/demo_seed.sh --apply && MYSQL_PORT=3307 scripts/demo_seed.sh --verify`。
 - P8-004 本地验证（2026-06-28 21:18 Asia/Shanghai）：`cd backend && ./mvnw test -B -Dtest=HouseholdControllerTests` 通过，13 tests passed；`cd frontend && npm test -- space.test.ts` 通过，2 个测试文件 15 tests passed；`cd frontend && npm run build` 通过，仍有既有第三方 `@vueuse/core` Rolldown pure annotation 警告；`cd backend && ./mvnw test -B` 通过，256 tests passed；`cd frontend && npm test` 通过，13 个测试文件 103 tests passed；`python3 scripts/agent_changelog_archive.py` 通过；`git diff --check` 通过；`python3 scripts/agent_doc_check.py` 按预期返回 “BACKLOG has no todo tasks”，触发自主开发停止条件。
+- 下一阶段规划（2026-06-28 21:35 Asia/Shanghai）：新增 Phase 23/24 和 P9-001～P9-004 任务池；待运行文档归档和一致性检查。
 
 ## 注意事项
 

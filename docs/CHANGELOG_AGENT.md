@@ -12,6 +12,18 @@ python3 scripts/agent_changelog_archive.py --keep 10
 
 脚本默认保留最近 10 条完整记录，并刷新 `docs/RECENT_HISTORY.md`。
 
+## 2026-06-28 21:35 Asia/Shanghai 规划 P9 家庭邀请与协作闭环任务池
+
+- 任务：补齐 P8 完成后的下一阶段长期开发入口，避免 backlog 清空导致新 Agent 无可执行任务。
+- 改动：
+  - `docs/ROADMAP.md` 新增 Phase 23 家庭邀请与协作闭环、Phase 24 协作权限与演示质量加固。
+  - `docs/BACKLOG.md` 新增 P9-001～P9-004：家庭空间邀请链接基础能力、前端邀请管理与接受邀请体验、角色权限体验和测试矩阵加固、Demo seed 真实 MySQL 冒烟验证与浏览器检查。
+  - `docs/CURRENT_STATE.md` 将当前最高优先级任务更新为 P9-001，并恢复下一项自动任务说明。
+**验证**：
+  - `python3 scripts/agent_changelog_archive.py`：通过。
+  - `python3 scripts/agent_doc_check.py`：通过，确认 BACKLOG 存在 P9-001～P9-004 todo，且 `CURRENT_STATE` 下一任务与 P9-001 一致。
+  - `git diff --check`：通过。
+
 ## 2026-06-28 21:16 Asia/Shanghai P8-004 家庭成员管理体验完善
 
 - 任务：P8-004 家庭成员管理体验完善
@@ -171,13 +183,3 @@ python3 scripts/agent_changelog_archive.py --keep 10
 - 浏览器：完成注册、自动登录、创建家庭空间；未发现 console error。
 
 ---
-
-## 2026-06-19 20:25 Asia/Shanghai P6-001 AI 根据库存推荐菜谱
-
-- **任务**：P6-001 AI 根据库存推荐菜谱
-- **改动**：
-  - 后端：`AiProvider` 接口新增 `recommendRecipes(List<InventoryItem>, List<Recipe>)` 方法；新增 `RecipeRecommendationResponse` DTO（含 `RecommendedRecipe` 子记录）；`MockAiProvider` 实现确定性关键词匹配评分逻辑（解析 `ingredientsJson` 中食材名称与库存双向包含匹配，按匹配度排序）；`OpenAiProvider` 委托 Mock 实现；`AiService.recommendRecipes()` 查询空间库存和菜谱后委托 provider 计算；`AiController` 新增 `GET /api/ai/spaces/{spaceId}/recommend-recipes` 端点；`AiService` 构造函数新增 `RecipeMapper` 依赖
-  - 前端：`ai.ts` 新增 `RecommendedRecipe`、`RecipeRecommendation` 类型和 `recommendRecipes()` API 方法；`MealPlanView.vue` 新增"AI 菜谱推荐"按钮和推荐面板（匹配百分比进度条、已匹配/缺失食材列表、推荐理由，点击可快速填入饮食计划）
-  - 测试：AiServiceTests 新增 4 个单元测试（`recommendRecipes_returnsProviderRecommendation`、`recommendRecipes_throwsWhenNotMember`、`recommendRecipes_passesInventoryAndRecipesToProvider`、`recommendRecipes_emptyRecipesWhenNoData`）
-- **验证**：`cd backend && ./mvnw test -B -Dtest="AiServiceTests"`：13 tests passed；`cd frontend && npm run build`：通过；`cd frontend && npm test`：91 tests passed
-- **文档更新**：BACKLOG.md、CURRENT_STATE.md、CHANGELOG_AGENT.md、ROADMAP.md
